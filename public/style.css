@@ -4,31 +4,31 @@ body {
     background: #000;
     color: #fff;
     margin: 0;
-    /* FIX: Ensure the body takes up full screen height for chat-container sizing */
+    /* FIX: Center the container and ensure full height */
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    padding: 0; 
 }
-
 .chat-container {
-    /* FIX: Set a larger fixed width for the chat window */
+    /* FIX: Wider window (750px) */
     width: 650px; 
     max-width: 90%; 
     background: #111;
     border-radius: 10px;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2); 
     overflow: hidden;
+    /* FIX: Use flex and height for full window size */
     height: 90vh; 
     display: flex;
-    flex-direction: column; 
+    flex-direction: column;
 }
-
 .chat-header {
-    background: #222; 
+    background: #222; /* Gray bar */
     padding: 15px;
     display: flex;
-    /* Ensures the title and user info are on opposite edges */
+    /* FIX: Pushes title and user info to opposite edges (the corners of the bar) */
     justify-content: space-between; 
     align-items: center;
     border-bottom: 1px solid #444;
@@ -45,13 +45,12 @@ body {
     /* Decoration */
     padding: 5px 10px;
     border-radius: 5px;
-    background: #333; 
+    background: #333; /* Darker background */
+    font-weight: bold;
 }
 
-/* Style for the displayed name after sign-in */
 #currentUsername {
-    color: #4CAF50; 
-    font-weight: bold;
+    color: #4CAF50; /* Green highlight for the signed-in name */
 }
 
 .user-info input {
@@ -60,13 +59,7 @@ body {
     border: 1px solid #444;
     background: #222;
     color: #fff;
-    transition: border-color 0.2s;
 }
-.user-info input:focus {
-    border-color: #555;
-    outline: none;
-}
-
 .user-info button {
     padding: 5px 10px;
     margin-left: 5px;
@@ -75,20 +68,20 @@ body {
     background: #4CAF50; 
     color: #fff;
     cursor: pointer;
-    transition: background 0.2s;
 }
 .user-info button:hover {
     background: #3e8e41;
 }
 
 .messages {
-    /* FIX: Message area takes up all available height */
+    /* FIX: Message area takes up all available height (dynamic height) */
     flex-grow: 1; 
+    /* REMOVED: height: 400px; */
     overflow-y: auto;
     padding: 15px;
     background: #111;
 }
-/* Style the scrollbar for decoration */
+/* Scrollbar decoration */
 .messages::-webkit-scrollbar {
     width: 8px;
 }
@@ -97,44 +90,39 @@ body {
     border-radius: 4px;
 }
 
-/* --- Message Bubbles --- */
+/* --- Message Bubbles and Time --- */
 .msg {
     margin: 10px 0;
-    padding: 10px 15px; 
-    border-radius: 18px; 
-    /* Ensures messages look wide within the wider container */
+    padding: 10px 15px; /* Enhanced bubble padding */
+    border-radius: 18px; /* Rounded bubbles */
     max-width: 65%; 
     line-height: 1.4;
     word-wrap: break-word;
 }
-
 .msg.own { 
-    background: #007bff; 
+    background: #007bff; /* Blue for own messages */
     color: #fff;
     margin-left: auto; 
     border-bottom-right-radius: 5px; 
 }
 .msg.other { 
-    background: #333; 
+    background: #333; /* Darker for others' messages */
     color: #fff;
     margin-right: auto; 
     border-bottom-left-radius: 5px; 
 }
 
-.msg-header { 
-    font-size: 13px; 
+.msg-header {
+    font-size: 13px;
     color: rgba(255, 255, 255, 0.7);
     margin-bottom: 2px;
     display: flex;
-    justify-content: space-between; 
+    justify-content: space-between; /* Pushes time to the corner of the bubble */
     align-items: center;
     font-weight: bold;
 }
-.msg.own .msg-header {
-    color: rgba(255, 255, 255, 0.9);
-}
 
-/* --- Small Time Text --- */
+/* FIX: Small time text style */
 .msg-time-small { 
     font-size: 0.75em; 
     font-weight: normal;
@@ -142,35 +130,22 @@ body {
     margin-left: 8px;
 }
 
-.msg-body { font-size: 15px; }
+.msg-body {font-size: 15px;}
 
-/* --- Input Area Decoration --- */
-.input-area {
-    display: flex;
-    padding: 15px;
-    background: #222;
-    border-top: 1px solid #333;
+/* Input Area */
+.input-area{
+    display:flex;padding:15px;background:#222;border-top:1px solid #333;
 }
-
-.input-area input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #444;
-    border-radius: 20px;
-    background: #333;
-    color: #fff;
-    font-size: 1em;
+.input-area input{
+    flex:1;padding:10px;border:1px solid #444;
+    border-radius:20px; 
+    background:#333;color:#fff;
 }
-
-.input-area button {
-    padding: 10px 20px;
-    margin-left: 8px;
-    border: none;
-    border-radius: 20px;
-    background: #4CAF50;
-    color: #fff;
-    cursor: pointer;
-    transition: background 0.2s;
+.input-area button{
+    padding:10px 20px;margin-left:8px;
+    border:none;border-radius:20px; 
+    background:#4CAF50;
+    color:#fff;
+    cursor:pointer;
 }
-
-.input-area button:hover { background: #3e8e41; }
+.input-area button:hover{background:#3e8e41;}
