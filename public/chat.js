@@ -5,7 +5,7 @@ const messagesContainer = document.getElementById("messages");
 // DOM elements
 const currentUsernameDisplay = document.getElementById("currentUsername");
 const clearChatBtn = document.getElementById("clearChatBtn"); 
-const googleSignInContainer = document.getElementById("googleSignInContainer"); // NEW
+const googleSignInContainer = document.getElementById("googleSignInContainer"); 
 
 // Modal elements
 const customModal = document.getElementById("customModal");
@@ -14,12 +14,12 @@ const modalButtons = document.getElementById("modalButtons");
 
 const messageInput = document.getElementById("messageInput");
 
-// NEW: Admin identification is now by email
-const ADMIN_EMAIL = "YOUR_ADMIN_EMAIL@example.com"; // ⬅️ SET YOUR ADMIN EMAIL HERE
+// Hardcoded for display purposes
+const ADMIN_EMAIL = "YOUR_ADMIN_EMAIL@example.com"; // ⬅️ Must match server.js
 const ADMIN_NAME_DISPLAY = "ADMIN";
 let currentUser = null;
 
-// --- POPUP FUNCTIONS (Unchanged from last step) ---
+// --- POPUP FUNCTIONS (Unchanged) ---
 function showCustomAlert(message) {
     modalMessage.textContent = message;
     modalButtons.innerHTML = '';
@@ -62,39 +62,44 @@ function showCustomConfirm(message, callback) {
 // --- END POPUP FUNCTIONS ---
 
 
-// NEW: Google login callback function
+// NEW: Google login callback function - SENDS TOKEN TO SERVER
 window.handleCredentialResponse = function(response) {
-  const base64Url = response.credential.split('.')[1];
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  const payload = JSON.parse(atob(base64));
-
-  currentUser = {
-    name: payload.name,
-    email: payload.email,
-    picture: payload.picture
-  };
-  
-  // Hide Google button, show user info
-  googleSignInContainer.style.display = 'none';
-  currentUsernameDisplay.textContent = `Signed in as: ${currentUser.name}`;
-  currentUsernameDisplay.style.display = 'block';
-
-  // Check for admin status using the user's Google email
-  if (currentUser.email === ADMIN_EMAIL) {
-    clearChatBtn.style.display = 'block';
-    showCustomAlert(`Welcome, Administrator ${currentUser.name}!`);
-  } else {
-    clearChatBtn.style.display = 'none';
-    showCustomAlert(`Welcome ${currentUser.name}`);
-  }
+  // Send the raw, unverified token to the server
+  socket.emit('google login', response.credential);
 }
+
+// NEW: Listener for successful login from server
+socket.on('login success', (user) => {
+    currentUser = user;
+
+    // Hide Google button, show user info
+    googleSignInContainer.style.display = 'none';
+    currentUsernameDisplay.textContent = `Signed in as: ${currentUser.name}`;
+    currentUsernameDisplay.style.display = 'block';
+
+    // Check for admin status using the user's verified email
+    if (currentUser.email === ADMIN_EMAIL) {
+        clearChatBtn.style.display = 'block';
+        showCustomAlert(`Welcome, Administrator ${currentUser.name}!`);
+    } else {
+        clearChatBtn.style.display = 'none';
+        showCustomAlert(`Welcome ${currentUser.name}`);
+    }
+});
+
+// NEW: Listener for failed login from server
+socket.on('login failed', (message) => {
+    console.error("Login failed:", message);
+    showCustomAlert(`Login failed: ${message}. Please try again.`);
+});
 
 
 function clearChat() {
-  if (currentUser && currentUser.email === ADMIN_EMAIL) { // Check against email
+  if (currentUser && currentUser.email === ADMIN_EMAIL) {
     showCustomConfirm("Are you absolutely sure you want to clear ALL chat history for everyone? This cannot be undone.", (result) => {
         if (result) {
-            socket.emit("clear history");
+            // Server will check email before clearing
+            socket.emit("clear history"); 
         }
     });
   } else {
@@ -103,7 +108,7 @@ function clearChat() {
 }
 
 function sendMessage() {
-  if (!currentUser) { // Check if signed in
+  if (!currentUser) {
     showCustomAlert("Please sign in with Google first.");
     return;
   }
@@ -111,15 +116,8 @@ function sendMessage() {
   const text = messageInput.value.trim();
   if (text === "") return;
 
-  const messageData = {
-    username: currentUser.name,
-    email: currentUser.email, // Include email for server-side checks later if needed
-    picture: currentUser.picture,
-    content: text,
-    timestamp: new Date()
-  };
-
-  socket.emit("chat message", messageData);
+  // NEW: Only send the message content; server provides user data
+  socket.emit("chat message", text);
   messageInput.value = "";
 }
 
@@ -128,7 +126,7 @@ function addMessage(username, content, timestamp, email) {
   
   // Change the displayed name if the user is the ADMIN
   let displayName = username;
-  if (email === ADMIN_EMAIL) { // Check against email if available
+  if (email === ADMIN_EMAIL) { 
       displayName = ADMIN_NAME_DISPLAY;
   }
   
@@ -164,7 +162,7 @@ function addMessage(username, content, timestamp, email) {
 // Listen for chat history on connection
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
-  // Note: history should now include 'email' for the admin check to work correctly
+  // History messages should include the email for client-side admin display logic
   msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.email)); 
 });
 
