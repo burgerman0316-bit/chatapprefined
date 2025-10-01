@@ -49,14 +49,17 @@ function sendMessage() {
     timestamp: new Date()
   };
 
+  // Emit the message to the server
   socket.emit("chat message", messageData);
+  
+  // Clear the input field immediately after sending
   input.value = "";
 }
 
-// Add message to chat - Profile picture logic removed, bubble classes added
+// Add message to chat - Handles rendering the message bubble
 function addMessage(username, content, timestamp) {
   const messageElement = document.createElement("div");
-  // Check if the message is from the current user to apply 'own' or 'other' class
+  // Apply 'own' or 'other' class for bubble styling
   if (currentUser && currentUser.name === username) {
     messageElement.className = "msg own";
   } else {
@@ -68,11 +71,9 @@ function addMessage(username, content, timestamp) {
   header.className = "msg-header";
   
   const time = new Date(timestamp);
-  
-  // Format the time (e.g., 9:01 PM)
   const timeText = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   
-  // Set the header content: Username | Time with the small time class
+  // Use innerHTML to inject the username and the small time span
   header.innerHTML = `${username} <span class="msg-time-small">${timeText}</span>`;
 
   // Message body
@@ -88,12 +89,13 @@ function addMessage(username, content, timestamp) {
 }
 
 
-// Listen for chat events
+// Listen for chat history on connection
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
   msgs.forEach(m => addMessage(m.username, m.content, m.timestamp));
 });
 
+// Listen for new chat messages from the server
 socket.on("chat message", (msg) => {
   addMessage(msg.username, msg.content, msg.timestamp);
 });
