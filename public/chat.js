@@ -12,7 +12,10 @@ const customModal = document.getElementById("customModal");
 const modalMessage = document.getElementById("modalMessage");
 const modalButtons = document.getElementById("modalButtons");
 
-const ADMIN_NAME = "ADMIN_CONTROLS1029384756"; // The secret admin login name
+// NEW DOM element for input field
+const messageInput = document.getElementById("messageInput");
+
+const ADMIN_NAME = "OWNER"; // The secret admin login name
 let currentUser = null;
 
 // --- POPUP FUNCTIONS ---
@@ -103,8 +106,8 @@ function sendMessage() {
     return;
   }
 
-  const input = document.getElementById("messageInput");
-  const text = input.value.trim();
+  // The input variable is now taken from the global messageInput element
+  const text = messageInput.value.trim();
   if (text === "") return;
 
   const messageData = {
@@ -114,20 +117,20 @@ function sendMessage() {
   };
 
   socket.emit("chat message", messageData);
-  input.value = "";
+  messageInput.value = ""; // Clear input field
 }
 
 // Add message to chat - Handles rendering the message bubble
 function addMessage(username, content, timestamp) {
   
-  // NEW LOGIC: Change the displayed name if the user is the OWNER
+  // Change the displayed name if the user is the OWNER
   let displayName = username;
   if (username === ADMIN_NAME) {
       displayName = "ADMIN";
   }
   
   const messageElement = document.createElement("div");
-  // IMPORTANT: The 'own' class check must still use the original username
+  // The 'own' class check must still use the original username
   if (currentUser && currentUser.name === username) {
     messageElement.className = "msg own";
   } else {
@@ -170,4 +173,16 @@ socket.on("chat message", (msg) => {
 socket.on("history cleared", () => {
     messagesContainer.innerHTML = "";
     addMessage("System", "Chat history was cleared by the administrator.", new Date());
+});
+
+
+// --- NEW: EVENT LISTENER FOR ENTER KEY PRESS ---
+messageInput.addEventListener('keypress', function(event) {
+    // Check if the key pressed is the Enter key
+    if (event.key === 'Enter') {
+        // Prevent the default action (which might be inserting a newline)
+        event.preventDefault(); 
+        // Call the function to send the message
+        sendMessage();
+    }
 });
