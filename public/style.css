@@ -4,7 +4,7 @@ body {
     background: #000;
     color: #fff;
     margin: 0;
-    /* Removed padding: 20px and added flex for centering */
+    /* Center the chat box vertically and horizontally */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -12,42 +12,44 @@ body {
 }
 
 .chat-container {
-    max-width: 600px;
+    max-width: 700px; /* Increased max-width for a wider feel */
     width: 90%; /* Use a percentage for better responsiveness */
-    /* Changed margin: auto to 0, and increased height */
     background: #111;
     border-radius: 10px;
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2); /* Enhanced shadow for decoration */
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
     overflow: hidden;
-    height: 90vh; /* Make it take up most of the viewport height */
+    height: 90vh; 
     display: flex;
-    flex-direction: column; /* Allows content to stack and stretch */
+    flex-direction: column; 
 }
 
 .chat-header {
     background: #222;
     padding: 15px;
     display: flex;
-    justify-content: space-between; /* Pushes the title and name section to the corners */
+    /* Pushes the title and the name section to opposite corners of the header */
+    justify-content: space-between; 
     align-items: center;
     border-bottom: 1px solid #444;
 }
 
-/* --- Name Input and Display Area Decoration --- */
+/* --- Name Input and Display Area (Corner of Header) --- */
 .user-info {
     display: flex;
     align-items: center;
     font-size: 14px;
-    /* Added decoration for the name section */
+    /* Decoration for the name section */
     padding: 5px 10px;
     border-radius: 5px;
-    background: #333; /* Darker background for distinction */
+    background: #333; 
+    margin-left: 20px; /* Ensure space from the title */
 }
+
 /* Style for the displayed name after sign-in */
 #currentUsername {
     color: #4CAF50; /* Green highlight for the signed-in name */
     font-weight: bold;
-    /* Ensure only the text shows, no background change needed */
+    /* This text is shown when the user is signed in */
 }
 
 .user-info input {
@@ -68,7 +70,7 @@ body {
     margin-left: 5px;
     border: none;
     border-radius: 4px;
-    background: #4CAF50; /* Green button for a nice contrast */
+    background: #4CAF50; 
     color: #fff;
     cursor: pointer;
     transition: background 0.2s;
@@ -78,8 +80,7 @@ body {
 }
 
 .messages {
-    /* REMOVED fixed height: 400px; */
-    flex-grow: 1; /* This is key! It makes the message area take all remaining vertical space */
+    flex-grow: 1; /* Message area takes up all available height */
     overflow-y: auto;
     padding: 15px;
     background: #111;
@@ -93,26 +94,26 @@ body {
     border-radius: 4px;
 }
 
-/* --- Message Bubbles (using .msg from your original CSS) --- */
+/* --- Message Bubbles (Wider Bubbles) --- */
 .msg {
     margin: 10px 0;
-    padding: 10px 15px; /* Slightly larger padding for bubble feel */
-    border-radius: 18px; /* More rounded corners for bubbles */
-    max-width: 80%;
+    padding: 10px 15px; 
+    border-radius: 18px; 
+    max-width: 70%; /* Ensures they don't take up the full width, leaving space for the gap/auto-margin */
     line-height: 1.4;
     word-wrap: break-word;
 }
 
 .msg.own { 
-    background: #007bff; /* Blue for own messages */
+    background: #007bff; 
     color: #fff;
-    margin-left: auto; 
+    margin-left: auto; /* Pushes the bubble to the right */
     border-bottom-right-radius: 5px; 
 }
 .msg.other { 
-    background: #333; /* Darker for others' messages */
+    background: #333; 
     color: #fff;
-    margin-right: auto; 
+    margin-right: auto; /* Pushes the bubble to the left */
     border-bottom-left-radius: 5px; 
 }
 
@@ -121,7 +122,7 @@ body {
     color: rgba(255, 255, 255, 0.7);
     margin-bottom: 2px;
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* Ensures the time text is in the corner of the bubble */
     align-items: center;
     font-weight: bold;
 }
@@ -131,7 +132,7 @@ body {
 
 /* --- Small Time Text --- */
 .msg-time-small { 
-    font-size: 0.75em; /* Smaller size */
+    font-size: 0.75em; 
     font-weight: normal;
     opacity: 0.8;
     margin-left: 8px;
@@ -162,7 +163,7 @@ body {
     margin-left: 8px;
     border: none;
     border-radius: 20px;
-    background: #4CAF50; /* Green button */
+    background: #4CAF50;
     color: #fff;
     cursor: pointer;
     transition: background 0.2s;
