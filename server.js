@@ -15,35 +15,36 @@ const MESSAGES_FILE = path.join(__dirname, 'messages.json');
 let chatHistory = [];
 
 /**
- * Loads chat history from messages.json (Synchronous for server startup)
+ * Loads chat history from messages.json
  */
 function loadHistory() {
   try {
+    if (!fs.existsSync(MESSAGES_FILE)) {
+      console.log('messages.json not found. Creating new file with empty array.');
+      fs.writeFileSync(MESSAGES_FILE, '[]', 'utf8');
+      chatHistory = [];
+      return;
+    }
+    
     const data = fs.readFileSync(MESSAGES_FILE, 'utf8');
-    if (data.trim().length > 0) {
+    
+    if (data.trim().length > 0 && data.trim() !== '[]') {
       chatHistory = JSON.parse(data);
       console.log(`Loaded ${chatHistory.length} messages from file.`);
     } else {
       chatHistory = [];
-      console.log('messages.json is empty. Starting with no history.');
+      console.log('messages.json is empty or contains no valid history.');
     }
   } catch (err) {
-    // If the file doesn't exist, create it.
-    if (err.code === 'ENOENT') {
-      console.log('messages.json not found. Creating new file.');
-      fs.writeFileSync(MESSAGES_FILE, '[]', 'utf8');
-    } else {
-      console.error('Error loading chat history:', err.message);
-      chatHistory = [];
-    }
+    console.error('CRITICAL ERROR loading chat history:', err.message);
+    chatHistory = [];
   }
 }
 
 /**
- * Saves the current chat history to messages.json (Asynchronous to prevent blocking)
+ * Saves the current chat history to messages.json (Asynchronous)
  */
 function saveHistory() {
-  // Keep the last 200 messages before saving
   const historyToSave = chatHistory.slice(-200); 
   
   fs.writeFile(MESSAGES_FILE, JSON.stringify(historyToSave, null, 2), 'utf8', (err) => {
@@ -64,19 +65,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 io.on('connection', (socket) => {
   console.log('A user connected');
 
-  // Send chat history to new client
+  // Send chat history to new client immediately
   socket.emit('chat history', chatHistory);
 
   // Listen for incoming messages
   socket.on('chat message', (msg) => {
-    // 1. Add new message
     chatHistory.push(msg);
-    
-    // 2. BROADCAST THE MESSAGE (This makes the message appear immediately for all clients)
     io.emit('chat message', msg);
-    
-    // 3. Save history to disk after the broadcast (asynchronous)
     saveHistory(); 
+  });
+  
+  // NEW: Listen for chat clear request from client
+  socket.on('clear history', () => {
+    console.log('Admin requested to clear chat history.');
+    // 1. Clear server-side memory
+    chatHistory = [];
+    // 2. Save empty history to file
+    saveHistory(); 
+    // 3. Notify ALL clients to clear their screen
+    io.emit('history cleared');
   });
 
   socket.on('disconnect', () => {
@@ -88,5 +95,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log('🎉 Use your Railway URL to access the app!');
+  console.log('🎉 Deploying to Railway will ensure persistence!');
 });
