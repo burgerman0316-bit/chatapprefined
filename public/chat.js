@@ -7,15 +7,15 @@ const currentUsernameDisplay = document.getElementById("currentUsername");
 const nameInputArea = document.getElementById("nameInputArea");
 const clearChatBtn = document.getElementById("clearChatBtn"); 
 
-// Modal elements (NEW)
+// Modal elements
 const customModal = document.getElementById("customModal");
 const modalMessage = document.getElementById("modalMessage");
 const modalButtons = document.getElementById("modalButtons");
 
-const ADMIN_NAME = "ADMIN_CONTROLS1029384756";
+const ADMIN_NAME = "OWNER"; // The secret admin login name
 let currentUser = null;
 
-// --- NEW POPUP FUNCTIONS ---
+// --- POPUP FUNCTIONS ---
 function showCustomAlert(message) {
     modalMessage.textContent = message;
     modalButtons.innerHTML = '';
@@ -28,7 +28,7 @@ function showCustomAlert(message) {
     };
     
     modalButtons.appendChild(okBtn);
-    customModal.style.display = 'flex'; // Show modal
+    customModal.style.display = 'flex';
 }
 
 function showCustomConfirm(message, callback) {
@@ -40,7 +40,7 @@ function showCustomConfirm(message, callback) {
     yesBtn.className = 'yes-btn';
     yesBtn.onclick = () => {
         customModal.style.display = 'none';
-        callback(true); // Execute callback with 'true'
+        callback(true);
     };
 
     const noBtn = document.createElement('button');
@@ -48,14 +48,14 @@ function showCustomConfirm(message, callback) {
     noBtn.className = 'no-btn';
     noBtn.onclick = () => {
         customModal.style.display = 'none';
-        callback(false); // Execute callback with 'false'
+        callback(false);
     };
     
     modalButtons.appendChild(yesBtn);
     modalButtons.appendChild(noBtn);
-    customModal.style.display = 'flex'; // Show modal
+    customModal.style.display = 'flex';
 }
-// --- END NEW POPUP FUNCTIONS ---
+// --- END POPUP FUNCTIONS ---
 
 
 function setUsername() {
@@ -63,7 +63,7 @@ function setUsername() {
   const name = nameInput.value.trim();
 
   if (name.length < 2) {
-    showCustomAlert("Please enter a name with at least 2 characters."); // Replaced alert
+    showCustomAlert("Please enter a name with at least 2 characters.");
     return;
   }
 
@@ -82,27 +82,24 @@ function setUsername() {
     clearChatBtn.style.display = 'none';
   }
 
-  showCustomAlert(`Welcome ${currentUser.name}`); // Replaced alert
+  showCustomAlert(`Welcome ${currentUser.name}`);
 }
 
 function clearChat() {
   if (currentUser && currentUser.name === ADMIN_NAME) {
-    
-    // Replaced confirm with custom showCustomConfirm
     showCustomConfirm("Are you absolutely sure you want to clear ALL chat history for everyone? This cannot be undone.", (result) => {
         if (result) {
             socket.emit("clear history");
         }
     });
-
   } else {
-    showCustomAlert("You do not have permission to clear the chat."); // Replaced alert
+    showCustomAlert("You do not have permission to clear the chat.");
   }
 }
 
 function sendMessage() {
   if (!currentUser || !currentUser.name) {
-    showCustomAlert("Please set your name first."); // Replaced alert
+    showCustomAlert("Please set your name first.");
     return;
   }
 
@@ -122,7 +119,15 @@ function sendMessage() {
 
 // Add message to chat - Handles rendering the message bubble
 function addMessage(username, content, timestamp) {
+  
+  // NEW LOGIC: Change the displayed name if the user is the OWNER
+  let displayName = username;
+  if (username === ADMIN_NAME) {
+      displayName = "ADMIN";
+  }
+  
   const messageElement = document.createElement("div");
+  // IMPORTANT: The 'own' class check must still use the original username
   if (currentUser && currentUser.name === username) {
     messageElement.className = "msg own";
   } else {
@@ -135,7 +140,8 @@ function addMessage(username, content, timestamp) {
   const time = new Date(timestamp);
   const timeText = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   
-  header.innerHTML = `${username} <span class="msg-time-small">${timeText}</span>`;
+  // Use the determined displayName
+  header.innerHTML = `${displayName} <span class="msg-time-small">${timeText}</span>`;
 
   const body = document.createElement("div");
   body.className = "msg-body";
