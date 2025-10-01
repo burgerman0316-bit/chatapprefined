@@ -14,6 +14,22 @@
     <h2>Chat Room</h2>
   </div>
 
+  <!-- Google Sign-In button -->
+  <div id="g_id_onload"
+       data-client_id="493692831187-r8cjticre9tj30ven2ubrl39tuniofao.apps.googleusercontent.com"
+       data-context="signin"
+       data-ux_mode="popup"
+       data-callback="handleCredentialResponse">
+  </div>
+
+  <div class="g_id_signin"
+       data-type="standard"
+       data-shape="rectangular"
+       data-theme="outline"
+       data-text="signin_with"
+       data-size="large">
+  </div>
+
   <div class="messages" id="messages"></div>
 
   <div class="input-area">
@@ -24,7 +40,7 @@
 
 <script src="chat.js"></script>
 <script>
-  // Google login setup
+  // Google login callback
   window.handleCredentialResponse = function(response) {
     handleCredentialResponse(response);
   };
@@ -32,3 +48,4 @@
 
 </body>
 </html>
+493692831187-r8cjticre9tj30ven2ubrl39tuniofao.apps.googleusercontent.com
