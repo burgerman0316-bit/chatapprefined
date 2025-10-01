@@ -1,8 +1,6 @@
+// Connect to Socket.IO server (automatic URL)
 const socket = io();
-const msgBox = document.getElementById("msgBox");
-const msgInput = document.getElementById("msgInput");
-const sendBtn = document.getElementById("sendBtn");
-
+const messagesContainer = document.getElementById("messages");
 let currentUser = null;
 
 // Google login callback
@@ -20,70 +18,72 @@ function handleCredentialResponse(response) {
   alert("Welcome " + currentUser.name);
 }
 
-// Send message
+// Send a message
 function sendMessage() {
   if (!currentUser) {
     alert("Please sign in with Google first.");
     return;
   }
 
-  const text = msgInput.value.trim();
-  if (!text) return;
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
+  if (text === "") return;
 
-  const msg = {
-    user: currentUser.name,
+  const messageData = {
+    username: currentUser.name,
     picture: currentUser.picture,
-    text,
-    ts: Date.now()
+    content: text,
+    timestamp: new Date()
   };
 
-  socket.emit("chat message", msg);
-  msgInput.value = '';
+  socket.emit("chat message", messageData);
+  input.value = "";
 }
 
-sendBtn.addEventListener('click', sendMessage);
-msgInput.addEventListener('keypress', e => { if (e.key === 'Enter') sendMessage(); });
+// Add message to chat
+function addMessage(username, content, timestamp, picture) {
+  const messageElement = document.createElement("div");
+  messageElement.className = "msg";
 
-// Display message
-function displayMessage(msg) {
-  const isOwn = currentUser && msg.user === currentUser.name;
-  const div = document.createElement('div');
-  div.className = `msg ${isOwn ? 'own' : 'other'}`;
+  if (username === currentUser?.name) messageElement.classList.add("own");
+  else messageElement.classList.add("other");
 
-  if (msg.picture) {
-    const img = document.createElement('img');
-    img.src = msg.picture;
-    img.alt = msg.user;
-    div.appendChild(img);
+  if (picture) {
+    const img = document.createElement("img");
+    img.src = picture;
+    img.alt = username;
+    img.style.width = "32px";
+    img.style.height = "32px";
+    img.style.borderRadius = "50%";
+    img.style.marginRight = "8px";
+    messageElement.appendChild(img);
   }
 
-  const content = document.createElement('div');
-  const header = document.createElement('div');
-  header.className = 'msg-header';
-  header.textContent = `${msg.user} • ${new Date(msg.ts).toLocaleTimeString()}`;
+  const contentWrapper = document.createElement("div");
 
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-  body.textContent = msg.text;
+  const header = document.createElement("div");
+  header.className = "msg-header";
+  const time = new Date(timestamp);
+  header.textContent = `${username} • ${time.toLocaleTimeString()}`;
 
-  content.appendChild(header);
-  content.appendChild(body);
-  div.appendChild(content);
+  const body = document.createElement("div");
+  body.className = "msg-body";
+  body.textContent = content;
 
-  msgBox.appendChild(div);
-  msgBox.scrollTop = msgBox.scrollHeight;
+  contentWrapper.appendChild(header);
+  contentWrapper.appendChild(body);
+  messageElement.appendChild(contentWrapper);
+
+  messagesContainer.appendChild(messageElement);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// Socket.IO events
-socket.on('chat history', msgs => {
-  msgBox.innerHTML = '';
-  msgs.forEach(displayMessage);
+// Listen for chat events
+socket.on("chat history", (msgs) => {
+  messagesContainer.innerHTML = "";
+  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.picture));
 });
 
-socket.on('chat message', displayMessage);
-
-// System messages
-function addSystemMessage(text) {
-  const msg = { user: 'System', text, ts: Date.now() };
-  displayMessage(msg);
-}
+socket.on("chat message", (msg) => {
+  addMessage(msg.username, msg.content, msg.timestamp, msg.picture);
+});
