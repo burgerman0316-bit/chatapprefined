@@ -5,19 +5,65 @@ const messagesContainer = document.getElementById("messages");
 // DOM elements
 const currentUsernameDisplay = document.getElementById("currentUsername");
 const nameInputArea = document.getElementById("nameInputArea");
-const clearChatBtn = document.getElementById("clearChatBtn"); // NEW
+const clearChatBtn = document.getElementById("clearChatBtn"); 
 
-// NEW: Secret Name
+// Modal elements (NEW)
+const customModal = document.getElementById("customModal");
+const modalMessage = document.getElementById("modalMessage");
+const modalButtons = document.getElementById("modalButtons");
+
 const ADMIN_NAME = "OWNER";
-
 let currentUser = null;
+
+// --- NEW POPUP FUNCTIONS ---
+function showCustomAlert(message) {
+    modalMessage.textContent = message;
+    modalButtons.innerHTML = '';
+    
+    const okBtn = document.createElement('button');
+    okBtn.textContent = 'OK';
+    okBtn.className = 'ok-btn';
+    okBtn.onclick = () => {
+        customModal.style.display = 'none';
+    };
+    
+    modalButtons.appendChild(okBtn);
+    customModal.style.display = 'flex'; // Show modal
+}
+
+function showCustomConfirm(message, callback) {
+    modalMessage.textContent = message;
+    modalButtons.innerHTML = '';
+    
+    const yesBtn = document.createElement('button');
+    yesBtn.textContent = 'Yes, Clear Chat';
+    yesBtn.className = 'yes-btn';
+    yesBtn.onclick = () => {
+        customModal.style.display = 'none';
+        callback(true); // Execute callback with 'true'
+    };
+
+    const noBtn = document.createElement('button');
+    noBtn.textContent = 'Cancel';
+    noBtn.className = 'no-btn';
+    noBtn.onclick = () => {
+        customModal.style.display = 'none';
+        callback(false); // Execute callback with 'false'
+    };
+    
+    modalButtons.appendChild(yesBtn);
+    modalButtons.appendChild(noBtn);
+    customModal.style.display = 'flex'; // Show modal
+}
+// --- END NEW POPUP FUNCTIONS ---
+
 
 function setUsername() {
   const nameInput = document.getElementById("nameInputField");
   const name = nameInput.value.trim();
 
   if (name.length < 2) {
-    alert("Please enter a name with at least 2 characters.");
+    showCustomAlert("Please enter a name with at least 2 characters."); // Replaced alert
     return;
   }
 
@@ -26,38 +72,37 @@ function setUsername() {
     picture: null 
   };
 
-  // 1. Hide the input area
   nameInputArea.style.display = 'none';
-
-  // 2. Show the display span and set the username
   currentUsernameDisplay.textContent = `Signed in as: ${currentUser.name}`;
   currentUsernameDisplay.style.display = 'block';
 
-  // NEW: Check for admin name and show the clear button
   if (currentUser.name === ADMIN_NAME) {
     clearChatBtn.style.display = 'block';
   } else {
     clearChatBtn.style.display = 'none';
   }
 
-  alert(`Welcome ${currentUser.name}`);
+  showCustomAlert(`Welcome ${currentUser.name}`); // Replaced alert
 }
 
-// NEW: Function to emit clear chat request
 function clearChat() {
   if (currentUser && currentUser.name === ADMIN_NAME) {
-    if (confirm("Are you absolutely sure you want to clear ALL chat history for everyone? This cannot be undone.")) {
-      socket.emit("clear history");
-    }
+    
+    // Replaced confirm with custom showCustomConfirm
+    showCustomConfirm("Are you absolutely sure you want to clear ALL chat history for everyone? This cannot be undone.", (result) => {
+        if (result) {
+            socket.emit("clear history");
+        }
+    });
+
   } else {
-    alert("You do not have permission to clear the chat.");
+    showCustomAlert("You do not have permission to clear the chat."); // Replaced alert
   }
 }
 
-// Send a message
 function sendMessage() {
   if (!currentUser || !currentUser.name) {
-    alert("Please set your name first.");
+    showCustomAlert("Please set your name first."); // Replaced alert
     return;
   }
 
@@ -115,9 +160,8 @@ socket.on("chat message", (msg) => {
   addMessage(msg.username, msg.content, msg.timestamp);
 });
 
-// NEW: Listen for history cleared event from server
+// Listen for history cleared event from server
 socket.on("history cleared", () => {
     messagesContainer.innerHTML = "";
-    // Optionally add a system message to the empty chat
     addMessage("System", "Chat history was cleared by the administrator.", new Date());
 });
