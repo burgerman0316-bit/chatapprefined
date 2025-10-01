@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Serve static files from 'public' folder
+// Serve static files from 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory chat history (keep last 200 messages)
@@ -23,8 +23,8 @@ io.on('connection', (socket) => {
   // Listen for incoming messages
   socket.on('chat message', (msg) => {
     chatHistory.push(msg);
-    if (chatHistory.length > 200) chatHistory.shift(); // Keep last 200 messages
-    io.emit('chat message', msg); // Send message to all clients
+    if (chatHistory.length > 200) chatHistory.shift();
+    io.emit('chat message', msg);
   });
 
   socket.on('disconnect', () => {
@@ -32,7 +32,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// Use Railway-provided port or fallback to 3000 locally
+// Railway assigns PORT automatically
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
