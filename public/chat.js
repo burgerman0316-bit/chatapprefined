@@ -1,124 +1,188 @@
 // Connects automatically to the same host as the page
 const socket = io();
 const messagesContainer = document.getElementById("messages");
+
+// DOM elements
+const currentUsernameDisplay = document.getElementById("currentUsername");
+const nameInputArea = document.getElementById("nameInputArea");
+const clearChatBtn = document.getElementById("clearChatBtn"); 
+
+// Modal elements
+const customModal = document.getElementById("customModal");
+const modalMessage = document.getElementById("modalMessage");
+const modalButtons = document.getElementById("modalButtons");
+
+// NEW DOM element for input field
+const messageInput = document.getElementById("messageInput");
+
+const ADMIN_NAME = "OWNER"; // The secret admin login name
 let currentUser = null;
 
-// New login logic to replace Google Sign-In
-function loginUser() {
-    const nameInput = document.getElementById("usernameInput").value.trim();
-    const passInput = document.getElementById("passwordInput").value.trim();
-
-    // *** IMPORTANT: SET YOUR SIMPLE PASSWORD HERE ***
-    // This is the password all 8th graders must use.
-    const correctPassword = "8thgradechat2025"; 
-
-    if (nameInput === "") {
-        alert("Please enter your real name.");
-        return;
-    }
-
-    // Basic check to ensure a name is not just a bunch of spaces
-    if (nameInput.length < 2) {
-        alert("Name is too short.");
-        return;
-    }
-
-    if (passInput !== correctPassword) {
-        alert("Invalid password.");
-        return;
-    }
-
-    // --- Successful Login ---
-    currentUser = {
-        name: nameInput,
-        picture: null // No Google picture now
-    };
-
-    // 1. Hide the login area
-    document.getElementById("loginArea").style.display = "none";
-
-    // 2. Show the chat and input area
-    messagesContainer.style.display = 'block';
-    document.getElementById("inputArea").style.display = 'flex'; // Use flex to match original CSS
-
-    // Optional: Send a welcome message to the user
-    addMessage("System", `Welcome, ${currentUser.name}! You are now in the chat.`, new Date(), null);
+// --- POPUP FUNCTIONS ---
+function showCustomAlert(message) {
+    modalMessage.textContent = message;
+    modalButtons.innerHTML = '';
     
-    // Clear the password input for security
-    document.getElementById("passwordInput").value = "";
-    document.getElementById("messageInput").focus();
+    const okBtn = document.createElement('button');
+    okBtn.textContent = 'OK';
+    okBtn.className = 'ok-btn';
+    okBtn.onclick = () => {
+        customModal.style.display = 'none';
+    };
+    
+    modalButtons.appendChild(okBtn);
+    customModal.style.display = 'flex';
 }
 
-// Send a message
-function sendMessage() {
-  // Check if currentUser is set (i.e., if user is logged in)
-  if (!currentUser) {
-    alert("Please join the chat first.");
+function showCustomConfirm(message, callback) {
+    modalMessage.textContent = message;
+    modalButtons.innerHTML = '';
+    
+    const yesBtn = document.createElement('button');
+    yesBtn.textContent = 'Yes, Clear Chat';
+    yesBtn.className = 'yes-btn';
+    yesBtn.onclick = () => {
+        customModal.style.display = 'none';
+        callback(true);
+    };
+
+    const noBtn = document.createElement('button');
+    noBtn.textContent = 'Cancel';
+    noBtn.className = 'no-btn';
+    noBtn.onclick = () => {
+        customModal.style.display = 'none';
+        callback(false);
+    };
+    
+    modalButtons.appendChild(yesBtn);
+    modalButtons.appendChild(noBtn);
+    customModal.style.display = 'flex';
+}
+// --- END POPUP FUNCTIONS ---
+
+
+function setUsername() {
+  const nameInput = document.getElementById("nameInputField");
+  const name = nameInput.value.trim();
+
+  if (name.length < 2) {
+    showCustomAlert("Please enter a name with at least 2 characters.");
     return;
   }
 
-  const input = document.getElementById("messageInput");
-  const text = input.value.trim();
+  currentUser = {
+    name: name,
+    picture: null 
+  };
+
+  nameInputArea.style.display = 'none';
+  currentUsernameDisplay.textContent = `Signed in as: ${currentUser.name}`;
+  currentUsernameDisplay.style.display = 'block';
+
+  if (currentUser.name === ADMIN_NAME) {
+    clearChatBtn.style.display = 'block';
+  } else {
+    clearChatBtn.style.display = 'none';
+  }
+
+  showCustomAlert(`Welcome ${currentUser.name}`);
+}
+
+function clearChat() {
+  if (currentUser && currentUser.name === ADMIN_NAME) {
+    showCustomConfirm("Are you absolutely sure you want to clear ALL chat history for everyone? This cannot be undone.", (result) => {
+        if (result) {
+            socket.emit("clear history");
+        }
+    });
+  } else {
+    showCustomAlert("You do not have permission to clear the chat.");
+  }
+}
+
+function sendMessage() {
+  if (!currentUser || !currentUser.name) {
+    showCustomAlert("Please set your name first.");
+    return;
+  }
+
+  // The input variable is now taken from the global messageInput element
+  const text = messageInput.value.trim();
   if (text === "") return;
 
   const messageData = {
     username: currentUser.name,
-    picture: currentUser.picture,
     content: text,
     timestamp: new Date()
   };
 
   socket.emit("chat message", messageData);
-  input.value = "";
+  messageInput.value = ""; // Clear input field
 }
 
-// Add message to chat
-function addMessage(username, content, timestamp, picture) {
+// Add message to chat - Handles rendering the message bubble
+function addMessage(username, content, timestamp) {
+  
+  // Change the displayed name if the user is the OWNER
+  let displayName = username;
+  if (username === ADMIN_NAME) {
+      displayName = "ADMIN";
+  }
+  
   const messageElement = document.createElement("div");
-  messageElement.className = "msg"; // Use the existing 'msg' class
-
-  // Check if the message is from the current user
-  if (currentUser && username === currentUser.name) {
-    messageElement.classList.add("own");
+  // The 'own' class check must still use the original username
+  if (currentUser && currentUser.name === username) {
+    messageElement.className = "msg own";
+  } else {
+    messageElement.className = "msg other";
   }
-
-  // Optional: Add a special class for System messages
-  if (username === "System") {
-      messageElement.classList.add("system-msg");
-  }
-
-
-  // The full content with username and time
+  
+  const header = document.createElement("div");
+  header.className = "msg-header";
+  
   const time = new Date(timestamp);
-  const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const timeText = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  // Use the determined displayName
+  header.innerHTML = `${displayName} <span class="msg-time-small">${timeText}</span>`;
 
-  messageElement.innerHTML = `
-    <div class="msg-header">
-      <span class="msg-username">${username}</span>
-      <span class="msg-timestamp">${timeString}</span>
-    </div>
-    <div class="msg-content">${content}</div>
-  `;
+  const body = document.createElement("div");
+  body.className = "msg-body";
+  body.textContent = content;
+
+  messageElement.appendChild(header);
+  messageElement.appendChild(body);
 
   messagesContainer.appendChild(messageElement);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// Listen for chat events
+
+// Listen for chat history on connection
 socket.on("chat history", (msgs) => {
-  // Only display history if the user has successfully logged in
-  if (currentUser) {
-    messagesContainer.innerHTML = "";
-    msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.picture));
-  }
+  messagesContainer.innerHTML = "";
+  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp));
 });
 
+// Listen for new chat messages from the server
 socket.on("chat message", (msg) => {
-  // Only display new messages if the user has successfully logged in
-  if (currentUser) {
-    addMessage(msg.username, msg.content, msg.timestamp, msg.picture);
-  }
+  addMessage(msg.username, msg.content, msg.timestamp);
 });
 
-// Remove the window.handleCredentialResponse function from the global scope
-window.handleCredentialResponse = undefined;
+// Listen for history cleared event from server
+socket.on("history cleared", () => {
+    messagesContainer.innerHTML = "";
+    addMessage("System", "Chat history was cleared by the administrator.", new Date());
+});
+
+
+// --- NEW: EVENT LISTENER FOR ENTER KEY PRESS ---
+messageInput.addEventListener('keypress', function(event) {
+    // Check if the key pressed is the Enter key
+    if (event.key === 'Enter') {
+        // Prevent the default action (which might be inserting a newline)
+        event.preventDefault(); 
+        // Call the function to send the message
+        sendMessage();
+    }
+});
