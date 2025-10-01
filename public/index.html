@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>8th Grade Chat</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="chat.js"></script>
+</head>
+<body>
+
+<div class="chat-container">
+  <div class="chat-header">
+    <h2>8th Grade Chat</h2>
+  </div>
+
+  <!-- Google Sign-In -->
+  <div id="g_id_onload"
+       data-client_id="YOUR_GOOGLE_CLIENT_ID"
+       data-context="signin"
+       data-ux_mode="popup"
+       data-callback="handleCredentialResponse">
+  </div>
+
+  <div class="g_id_signin" 
+       data-type="standard"
+       data-shape="rectangular"
+       data-theme="outline"
+       data-text="signin_with"
+       data-size="large">
+  </div>
+
+  <!-- Chat messages -->
+  <div class="messages" id="msgBox"></div>
+
+  <!-- Input area -->
+  <div class="input-area">
+    <input id="msgInput" type="text" placeholder="Type a message...">
+    <button id="sendBtn">Send</button>
+  </div>
+</div>
+
+</body>
+</html>
