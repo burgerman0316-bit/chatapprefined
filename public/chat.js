@@ -1,4 +1,4 @@
-// Connect to Socket.IO server (automatic URL)
+// Connects automatically to the same host as the page
 const socket = io();
 const messagesContainer = document.getElementById("messages");
 let currentUser = null;
@@ -43,10 +43,7 @@ function sendMessage() {
 // Add message to chat
 function addMessage(username, content, timestamp, picture) {
   const messageElement = document.createElement("div");
-  messageElement.className = "msg";
-
-  if (username === currentUser?.name) messageElement.classList.add("own");
-  else messageElement.classList.add("other");
+  messageElement.className = "message";
 
   if (picture) {
     const img = document.createElement("img");
@@ -62,12 +59,12 @@ function addMessage(username, content, timestamp, picture) {
   const contentWrapper = document.createElement("div");
 
   const header = document.createElement("div");
-  header.className = "msg-header";
+  header.className = "message-header";
   const time = new Date(timestamp);
-  header.textContent = `${username} • ${time.toLocaleTimeString()}`;
+  header.textContent = `${username} - ${time.toLocaleTimeString()}`;
 
   const body = document.createElement("div");
-  body.className = "msg-body";
+  body.className = "message-content";
   body.textContent = content;
 
   contentWrapper.appendChild(header);
