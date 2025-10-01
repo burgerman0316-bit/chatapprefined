@@ -1,13 +1,14 @@
 // Connects automatically to the same host as the page
 const socket = io();
 const messagesContainer = document.getElementById("messages");
-// New DOM elements
+
+// Updated DOM element selection based on new HTML structure
 const currentUsernameDisplay = document.getElementById("currentUsername");
 const nameInputArea = document.getElementById("nameInputArea");
+const nameSection = document.getElementById("nameSection");
 
 let currentUser = null;
 
-// New function to set the username
 function setUsername() {
   const nameInput = document.getElementById("nameInputField");
   const name = nameInput.value.trim();
@@ -17,25 +18,22 @@ function setUsername() {
     return;
   }
 
-  // Set the current user object
   currentUser = {
     name: name,
-    // Setting picture to null since we are not getting one from Google
     picture: null 
   };
 
-  // 1. Update the corner display
-  currentUsernameDisplay.textContent = `(Signed in as: ${currentUser.name})`;
+  // 1. Update the display text in the upper right
+  currentUsernameDisplay.textContent = `Signed in as: ${currentUser.name}`;
 
-  // 2. Hide the name input area
+  // 2. Hide the name input fields, showing only the display text
   nameInputArea.style.display = 'none';
+  nameSection.classList.add('signed-in'); // Add class for styling
 
   alert(`Welcome ${currentUser.name}`);
 }
 
-// Removed the old handleCredentialResponse function
-
-// Send a message - Updated to check for name instead of Google sign-in status
+// Send a message
 function sendMessage() {
   if (!currentUser || !currentUser.name) {
     alert("Please set your name first.");
@@ -48,7 +46,7 @@ function sendMessage() {
 
   const messageData = {
     username: currentUser.name,
-    picture: currentUser.picture, // Will be null, but keeps structure compatible
+    picture: currentUser.picture, 
     content: text,
     timestamp: new Date()
   };
@@ -57,46 +55,29 @@ function sendMessage() {
   input.value = "";
 }
 
-// Add message to chat - Modified to handle missing (null) picture by showing a name initial
+// Add message to chat - Profile picture logic removed, bubble classes added
 function addMessage(username, content, timestamp, picture) {
   const messageElement = document.createElement("div");
-  messageElement.className = "message";
-
-  // Handle user avatar: use picture if available, otherwise show a colored initial
-  if (picture) {
-    const img = document.createElement("img");
-    img.src = picture;
-    img.alt = username;
-    img.style.width = "32px";
-    img.style.height = "32px";
-    img.style.borderRadius = "50%";
-    img.style.marginRight = "8px";
-    messageElement.appendChild(img);
-  } else {
-    // Show a colored initial if no picture is available
-    const nameInitial = document.createElement("span");
-    nameInitial.textContent = username.charAt(0).toUpperCase();
-    nameInitial.style.cssText = `
-      display: inline-flex; 
-      justify-content: center; 
-      align-items: center;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background-color: #007bff; /* Example color */
-      color: white;
-      font-weight: bold;
-      margin-right: 8px;
-    `;
-    messageElement.appendChild(nameInitial);
-  }
-
+  messageElement.className = "message"; 
+  
   const contentWrapper = document.createElement("div");
+  contentWrapper.className = "message-bubble"; // Class for bubble styling
 
   const header = document.createElement("div");
   header.className = "message-header";
+  
+  const userSpan = document.createElement("span");
+  userSpan.className = "message-username";
+  userSpan.textContent = username;
+
   const time = new Date(timestamp);
-  header.textContent = `${username} - ${time.toLocaleTimeString()}`;
+  const timeSpan = document.createElement("span");
+  timeSpan.className = "message-time"; // Class for smaller time text
+  timeSpan.textContent = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // Append username and small time text
+  header.appendChild(userSpan);
+  header.appendChild(timeSpan);
 
   const body = document.createElement("div");
   body.className = "message-content";
@@ -113,8 +94,6 @@ function addMessage(username, content, timestamp, picture) {
 // Listen for chat events
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
-  // The 'picture' field in history might still exist for old messages, 
-  // and the updated addMessage function handles null/existing pictures gracefully.
   msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.picture));
 });
 
