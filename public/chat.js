@@ -12,7 +12,7 @@ const customModal = document.getElementById("customModal");
 const modalMessage = document.getElementById("modalMessage");
 const modalButtons = document.getElementById("modalButtons");
 
-const ADMIN_NAME = "OWNER";
+const ADMIN_NAME = "ADMIN_CONTROLS1029384756";
 let currentUser = null;
 
 // --- NEW POPUP FUNCTIONS ---
