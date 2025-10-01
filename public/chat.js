@@ -1,27 +1,44 @@
 // Connects automatically to the same host as the page
 const socket = io();
 const messagesContainer = document.getElementById("messages");
+// New DOM elements
+const currentUsernameDisplay = document.getElementById("currentUsername");
+const nameInputArea = document.getElementById("nameInputArea");
+
 let currentUser = null;
 
-// Google login callback
-function handleCredentialResponse(response) {
-  const base64Url = response.credential.split('.')[1];
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  const payload = JSON.parse(atob(base64));
+// New function to set the username
+function setUsername() {
+  const nameInput = document.getElementById("nameInputField");
+  const name = nameInput.value.trim();
 
+  if (name.length < 2) {
+    alert("Please enter a name with at least 2 characters.");
+    return;
+  }
+
+  // Set the current user object
   currentUser = {
-    name: payload.name,
-    email: payload.email,
-    picture: payload.picture
+    name: name,
+    // Setting picture to null since we are not getting one from Google
+    picture: null 
   };
 
-  alert("Welcome " + currentUser.name);
+  // 1. Update the corner display
+  currentUsernameDisplay.textContent = `(Signed in as: ${currentUser.name})`;
+
+  // 2. Hide the name input area
+  nameInputArea.style.display = 'none';
+
+  alert(`Welcome ${currentUser.name}`);
 }
 
-// Send a message
+// Removed the old handleCredentialResponse function
+
+// Send a message - Updated to check for name instead of Google sign-in status
 function sendMessage() {
-  if (!currentUser) {
-    alert("Please sign in with Google first.");
+  if (!currentUser || !currentUser.name) {
+    alert("Please set your name first.");
     return;
   }
 
@@ -31,7 +48,7 @@ function sendMessage() {
 
   const messageData = {
     username: currentUser.name,
-    picture: currentUser.picture,
+    picture: currentUser.picture, // Will be null, but keeps structure compatible
     content: text,
     timestamp: new Date()
   };
@@ -40,11 +57,12 @@ function sendMessage() {
   input.value = "";
 }
 
-// Add message to chat
+// Add message to chat - Modified to handle missing (null) picture by showing a name initial
 function addMessage(username, content, timestamp, picture) {
   const messageElement = document.createElement("div");
   messageElement.className = "message";
 
+  // Handle user avatar: use picture if available, otherwise show a colored initial
   if (picture) {
     const img = document.createElement("img");
     img.src = picture;
@@ -54,6 +72,23 @@ function addMessage(username, content, timestamp, picture) {
     img.style.borderRadius = "50%";
     img.style.marginRight = "8px";
     messageElement.appendChild(img);
+  } else {
+    // Show a colored initial if no picture is available
+    const nameInitial = document.createElement("span");
+    nameInitial.textContent = username.charAt(0).toUpperCase();
+    nameInitial.style.cssText = `
+      display: inline-flex; 
+      justify-content: center; 
+      align-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: #007bff; /* Example color */
+      color: white;
+      font-weight: bold;
+      margin-right: 8px;
+    `;
+    messageElement.appendChild(nameInitial);
   }
 
   const contentWrapper = document.createElement("div");
@@ -78,6 +113,8 @@ function addMessage(username, content, timestamp, picture) {
 // Listen for chat events
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
+  // The 'picture' field in history might still exist for old messages, 
+  // and the updated addMessage function handles null/existing pictures gracefully.
   msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.picture));
 });
 
