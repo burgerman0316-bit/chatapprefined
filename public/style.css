@@ -4,7 +4,7 @@ body {
     background: #000;
     color: #fff;
     margin: 0;
-    /* Center the chat box vertically and horizontally */
+    /* FIX: Ensure the body takes up full screen height for chat-container sizing */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -12,22 +12,23 @@ body {
 }
 
 .chat-container {
-    max-width: 750px; /* INCREASED MAX WIDTH for a wider window */
-    width: 90%; 
+    /* FIX: Set a larger fixed width for the chat window */
+    width: 650px; 
+    max-width: 90%; 
     background: #111;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
     overflow: hidden;
-    height: 90vh; /* Takes up most of the screen height */
+    height: 90vh; 
     display: flex;
     flex-direction: column; 
 }
 
 .chat-header {
-    background: #222; /* Gray Bar/Header */
+    background: #222; 
     padding: 15px;
     display: flex;
-    /* FIX: Pushes 'Chat Room' title to the left and 'User Info' to the right corner */
+    /* Ensures the title and user info are on opposite edges */
     justify-content: space-between; 
     align-items: center;
     border-bottom: 1px solid #444;
@@ -35,19 +36,21 @@ body {
 
 /* --- Name Input and Display Area (Corner of Header) --- */
 .user-info {
+    /* FIX: Ensure no wrapping happens */
+    white-space: nowrap; 
     display: flex;
     align-items: center;
     font-size: 14px;
-    /* Decoration: Minimal styling to fit inside the dark bar */
+    
+    /* Decoration */
     padding: 5px 10px;
     border-radius: 5px;
-    background: #333; /* Darker background */
-    /* Removed margin-left to ensure it sits flush in the corner */
+    background: #333; 
 }
 
 /* Style for the displayed name after sign-in */
 #currentUsername {
-    color: #4CAF50; /* Green highlight for the signed-in name */
+    color: #4CAF50; 
     font-weight: bold;
 }
 
@@ -79,7 +82,8 @@ body {
 }
 
 .messages {
-    flex-grow: 1; /* Message area takes up all available height */
+    /* FIX: Message area takes up all available height */
+    flex-grow: 1; 
     overflow-y: auto;
     padding: 15px;
     background: #111;
@@ -98,7 +102,8 @@ body {
     margin: 10px 0;
     padding: 10px 15px; 
     border-radius: 18px; 
-    max-width: 65%; /* Adjusted max-width slightly for better look in a wider container */
+    /* Ensures messages look wide within the wider container */
+    max-width: 65%; 
     line-height: 1.4;
     word-wrap: break-word;
 }
@@ -106,13 +111,13 @@ body {
 .msg.own { 
     background: #007bff; 
     color: #fff;
-    margin-left: auto; /* Pushes the bubble to the right */
+    margin-left: auto; 
     border-bottom-right-radius: 5px; 
 }
 .msg.other { 
     background: #333; 
     color: #fff;
-    margin-right: auto; /* Pushes the bubble to the left */
+    margin-right: auto; 
     border-bottom-left-radius: 5px; 
 }
 
