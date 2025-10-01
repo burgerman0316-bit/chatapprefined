@@ -8,18 +8,18 @@
 </head>
 <body>
 
-<div id="nameSection">
-  <div class="name-input-area" id="nameInputArea">
-    <input type="text" id="nameInputField" placeholder="Enter your name">
-    <button onclick="setUsername()">Set Name</button>
-  </div>
-  <span id="currentUsername">Not Signed In</span>
-</div>
-
 <div class="chat-container">
   <div class="chat-header">
     <h2>Chat Room</h2>
+    
+    <div class="user-info" id="nameSection">
+      <div id="nameInputArea">
+        <input type="text" id="nameInputField" placeholder="Your Name">
+        <button onclick="setUsername()">Set</button>
+      </div>
+      <span id="currentUsername" style="display: none;"></span>
     </div>
+  </div>
 
   <div class="messages" id="messages"></div>
 
