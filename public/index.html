@@ -4,32 +4,19 @@
   <meta charset="UTF-8">
   <title>8th Grade Chat</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
 
 <div class="chat-container">
   <div class="chat-header">
-    <h2>Chat Room</h2>
+    <h2>Chat Room <span id="currentUsername" style="font-size: 0.7em; margin-left: 10px; color: #555;">(Not Signed In)</span></h2>
   </div>
 
-  <!-- Google Sign-In button -->
-  <div id="g_id_onload"
-       data-client_id="493692831187-r8cjticre9tj30ven2ubrl39tuniofao.apps.googleusercontent.com"
-       data-context="signin"
-       data-ux_mode="popup"
-       data-callback="handleCredentialResponse">
+  <div class="name-input-area" id="nameInputArea">
+    <input type="text" id="nameInputField" placeholder="Enter your name">
+    <button onclick="setUsername()">Set Name</button>
   </div>
-
-  <div class="g_id_signin"
-       data-type="standard"
-       data-shape="rectangular"
-       data-theme="outline"
-       data-text="signin_with"
-       data-size="large">
-  </div>
-
   <div class="messages" id="messages"></div>
 
   <div class="input-area">
@@ -39,12 +26,5 @@
 </div>
 
 <script src="chat.js"></script>
-<script>
-  // Google login callback
-  window.handleCredentialResponse = function(response) {
-    handleCredentialResponse(response);
-  };
-</script>
-
 </body>
 </html>
