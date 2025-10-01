@@ -4,7 +4,7 @@ body {
     background: #000;
     color: #fff;
     margin: 0;
-    /* Removed padding: 20px for better positioning of the chat container */
+    /* Removed padding: 20px and added flex for centering */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -13,30 +13,41 @@ body {
 
 .chat-container {
     max-width: 600px;
-    /* Changed margin: auto to 0, which is necessary when using flex positioning */
+    width: 90%; /* Use a percentage for better responsiveness */
+    /* Changed margin: auto to 0, and increased height */
     background: #111;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.2); /* Enhanced shadow for decoration */
     overflow: hidden;
-    height: 80vh; /* Make it take up more vertical space */
+    height: 90vh; /* Make it take up most of the viewport height */
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* Allows content to stack and stretch */
 }
 
 .chat-header {
     background: #222;
     padding: 15px;
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* Pushes the title and name section to the corners */
     align-items: center;
-    border-bottom: 1px solid #444; /* Added for decoration */
+    border-bottom: 1px solid #444;
 }
 
-/* Updated .user-info to ensure vertical alignment of its contents */
+/* --- Name Input and Display Area Decoration --- */
 .user-info {
     display: flex;
     align-items: center;
-    font-size: 14px; /* Default size for the 'Signed in as' text */
+    font-size: 14px;
+    /* Added decoration for the name section */
+    padding: 5px 10px;
+    border-radius: 5px;
+    background: #333; /* Darker background for distinction */
+}
+/* Style for the displayed name after sign-in */
+#currentUsername {
+    color: #4CAF50; /* Green highlight for the signed-in name */
+    font-weight: bold;
+    /* Ensure only the text shows, no background change needed */
 }
 
 .user-info input {
@@ -57,18 +68,18 @@ body {
     margin-left: 5px;
     border: none;
     border-radius: 4px;
-    background: #555; /* Slightly lighter button */
+    background: #4CAF50; /* Green button for a nice contrast */
     color: #fff;
     cursor: pointer;
     transition: background 0.2s;
 }
 .user-info button:hover {
-    background: #666;
+    background: #3e8e41;
 }
 
 .messages {
-    /* height: 400px; - Removed fixed height, letting flex handle it */
-    flex-grow: 1; /* Allows messages to take available space */
+    /* REMOVED fixed height: 400px; */
+    flex-grow: 1; /* This is key! It makes the message area take all remaining vertical space */
     overflow-y: auto;
     padding: 15px;
     background: #111;
@@ -89,7 +100,6 @@ body {
     border-radius: 18px; /* More rounded corners for bubbles */
     max-width: 80%;
     line-height: 1.4;
-    position: relative;
     word-wrap: break-word;
 }
 
@@ -97,29 +107,29 @@ body {
     background: #007bff; /* Blue for own messages */
     color: #fff;
     margin-left: auto; 
-    border-bottom-right-radius: 5px; /* Pointy edge effect */
+    border-bottom-right-radius: 5px; 
 }
 .msg.other { 
     background: #333; /* Darker for others' messages */
     color: #fff;
     margin-right: auto; 
-    border-bottom-left-radius: 5px; /* Pointy edge effect */
+    border-bottom-left-radius: 5px; 
 }
 
 .msg-header { 
     font-size: 13px; 
-    color: rgba(255, 255, 255, 0.7); /* Lighter color for header */
-    margin-bottom: 2px; /* Reduced margin */
-    display: flex; /* Ensure the time text aligns */
-    justify-content: space-between; /* Push time to the right */
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 2px;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     font-weight: bold;
 }
 .msg.own .msg-header {
-    color: rgba(255, 255, 255, 0.9); /* Brighter white for own messages */
+    color: rgba(255, 255, 255, 0.9);
 }
 
-/* --- New Time Text Style (User Request) --- */
+/* --- Small Time Text --- */
 .msg-time-small { 
     font-size: 0.75em; /* Smaller size */
     font-weight: normal;
@@ -129,6 +139,7 @@ body {
 
 .msg-body { font-size: 15px; }
 
+/* --- Input Area Decoration --- */
 .input-area {
     display: flex;
     padding: 15px;
@@ -140,7 +151,7 @@ body {
     flex: 1;
     padding: 10px;
     border: 1px solid #444;
-    border-radius: 20px; /* Rounded input field */
+    border-radius: 20px;
     background: #333;
     color: #fff;
     font-size: 1em;
@@ -150,11 +161,11 @@ body {
     padding: 10px 20px;
     margin-left: 8px;
     border: none;
-    border-radius: 20px; /* Rounded button */
-    background: #007bff; /* Blue button */
+    border-radius: 20px;
+    background: #4CAF50; /* Green button */
     color: #fff;
     cursor: pointer;
     transition: background 0.2s;
 }
 
-.input-area button:hover { background: #0056b3; }
+.input-area button:hover { background: #3e8e41; }
