@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
-const fs = require('fs'); // Node's built-in file system module
+const fs = require('fs');
 const { Server } = require('socket.io');
 
 const app = express();
@@ -15,12 +15,11 @@ const MESSAGES_FILE = path.join(__dirname, 'messages.json');
 let chatHistory = [];
 
 /**
- * Loads chat history from messages.json
+ * Loads chat history from messages.json (Synchronous for server startup)
  */
 function loadHistory() {
   try {
     const data = fs.readFileSync(MESSAGES_FILE, 'utf8');
-    // Ensure the data is not empty before parsing
     if (data.trim().length > 0) {
       chatHistory = JSON.parse(data);
       console.log(`Loaded ${chatHistory.length} messages from file.`);
@@ -29,7 +28,7 @@ function loadHistory() {
       console.log('messages.json is empty. Starting with no history.');
     }
   } catch (err) {
-    // If the file doesn't exist or is invalid JSON, start with an empty array
+    // If the file doesn't exist, create it.
     if (err.code === 'ENOENT') {
       console.log('messages.json not found. Creating new file.');
       fs.writeFileSync(MESSAGES_FILE, '[]', 'utf8');
@@ -41,13 +40,19 @@ function loadHistory() {
 }
 
 /**
- * Saves the current chat history to messages.json
+ * Saves the current chat history to messages.json (Asynchronous to prevent blocking)
  */
 function saveHistory() {
-  // Only keep the last 200 messages before saving
+  // Keep the last 200 messages before saving
   const historyToSave = chatHistory.slice(-200); 
-  fs.writeFileSync(MESSAGES_FILE, JSON.stringify(historyToSave, null, 2), 'utf8');
-  console.log('History saved to messages.json.');
+  
+  fs.writeFile(MESSAGES_FILE, JSON.stringify(historyToSave, null, 2), 'utf8', (err) => {
+    if (err) {
+      console.error('Error saving chat history:', err.message);
+    } else {
+      console.log('History saved asynchronously to messages.json.');
+    }
+  });
 }
 
 // Load history immediately when the server starts
@@ -66,10 +71,11 @@ io.on('connection', (socket) => {
   socket.on('chat message', (msg) => {
     // 1. Add new message
     chatHistory.push(msg);
-    // 2. Trim history (optional, messages.json will handle keeping the last 200)
-    // 3. Broadcast the message immediately
+    
+    // 2. BROADCAST THE MESSAGE (This makes the message appear immediately for all clients)
     io.emit('chat message', msg);
-    // 4. Save history to disk after every message
+    
+    // 3. Save history to disk after the broadcast (asynchronous)
     saveHistory(); 
   });
 
