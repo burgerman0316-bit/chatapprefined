@@ -1,19 +1,19 @@
-// server.js
 const express = require('express');
 const path = require('path');
-const app = express();
 const http = require('http');
-const server = http.createServer(app);
 const { Server } = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
 const io = new Server(server);
 
-// Serve static files from the 'public' folder
+// Serve static files from 'public' folder
 app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory chat history (keep last 200 messages)
 let chatHistory = [];
 
-// Socket.io connection
+// Socket.IO connection
 io.on('connection', (socket) => {
   console.log('A user connected');
 
@@ -32,8 +32,9 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start server
+// Use Railway-provided port or fallback to 3000 locally
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
+  console.log('🎉 Open your Railway URL to access the app — not localhost!');
 });
