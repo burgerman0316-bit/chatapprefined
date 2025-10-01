@@ -2,10 +2,9 @@
 const socket = io();
 const messagesContainer = document.getElementById("messages");
 
-// Updated DOM element selection based on new HTML structure
+// DOM elements
 const currentUsernameDisplay = document.getElementById("currentUsername");
 const nameInputArea = document.getElementById("nameInputArea");
-const nameSection = document.getElementById("nameSection");
 
 let currentUser = null;
 
@@ -23,12 +22,12 @@ function setUsername() {
     picture: null 
   };
 
-  // 1. Update the display text in the upper right
-  currentUsernameDisplay.textContent = `Signed in as: ${currentUser.name}`;
-
-  // 2. Hide the name input fields, showing only the display text
+  // 1. Hide the input area
   nameInputArea.style.display = 'none';
-  nameSection.classList.add('signed-in'); // Add class for styling
+
+  // 2. Show the display span and set the username
+  currentUsernameDisplay.textContent = `Signed in as: ${currentUser.name}`;
+  currentUsernameDisplay.style.display = 'block';
 
   alert(`Welcome ${currentUser.name}`);
 }
@@ -46,7 +45,6 @@ function sendMessage() {
 
   const messageData = {
     username: currentUser.name,
-    picture: currentUser.picture, 
     content: text,
     timestamp: new Date()
   };
@@ -56,47 +54,46 @@ function sendMessage() {
 }
 
 // Add message to chat - Profile picture logic removed, bubble classes added
-function addMessage(username, content, timestamp, picture) {
+function addMessage(username, content, timestamp) {
   const messageElement = document.createElement("div");
-  messageElement.className = "message"; 
+  // Check if the message is from the current user to apply 'own' or 'other' class
+  if (currentUser && currentUser.name === username) {
+    messageElement.className = "msg own";
+  } else {
+    messageElement.className = "msg other";
+  }
   
-  const contentWrapper = document.createElement("div");
-  contentWrapper.className = "message-bubble"; // Class for bubble styling
-
+  // Header with Name and small Time
   const header = document.createElement("div");
-  header.className = "message-header";
+  header.className = "msg-header";
   
-  const userSpan = document.createElement("span");
-  userSpan.className = "message-username";
-  userSpan.textContent = username;
-
   const time = new Date(timestamp);
-  const timeSpan = document.createElement("span");
-  timeSpan.className = "message-time"; // Class for smaller time text
-  timeSpan.textContent = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  // Format the time (e.g., 9:01 PM)
+  const timeText = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  // Set the header content: Username | Time with the small time class
+  header.innerHTML = `${username} <span class="msg-time-small">${timeText}</span>`;
 
-  // Append username and small time text
-  header.appendChild(userSpan);
-  header.appendChild(timeSpan);
-
+  // Message body
   const body = document.createElement("div");
-  body.className = "message-content";
+  body.className = "msg-body";
   body.textContent = content;
 
-  contentWrapper.appendChild(header);
-  contentWrapper.appendChild(body);
-  messageElement.appendChild(contentWrapper);
+  messageElement.appendChild(header);
+  messageElement.appendChild(body);
 
   messagesContainer.appendChild(messageElement);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
+
 // Listen for chat events
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
-  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.picture));
+  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp));
 });
 
 socket.on("chat message", (msg) => {
-  addMessage(msg.username, msg.content, msg.timestamp, msg.picture);
+  addMessage(msg.username, msg.content, msg.timestamp);
 });
