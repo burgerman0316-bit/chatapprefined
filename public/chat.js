@@ -5,6 +5,10 @@ const messagesContainer = document.getElementById("messages");
 // DOM elements
 const currentUsernameDisplay = document.getElementById("currentUsername");
 const nameInputArea = document.getElementById("nameInputArea");
+const clearChatBtn = document.getElementById("clearChatBtn"); // NEW
+
+// NEW: Secret Name
+const ADMIN_NAME = "OWNER";
 
 let currentUser = null;
 
@@ -29,7 +33,25 @@ function setUsername() {
   currentUsernameDisplay.textContent = `Signed in as: ${currentUser.name}`;
   currentUsernameDisplay.style.display = 'block';
 
+  // NEW: Check for admin name and show the clear button
+  if (currentUser.name === ADMIN_NAME) {
+    clearChatBtn.style.display = 'block';
+  } else {
+    clearChatBtn.style.display = 'none';
+  }
+
   alert(`Welcome ${currentUser.name}`);
+}
+
+// NEW: Function to emit clear chat request
+function clearChat() {
+  if (currentUser && currentUser.name === ADMIN_NAME) {
+    if (confirm("Are you absolutely sure you want to clear ALL chat history for everyone? This cannot be undone.")) {
+      socket.emit("clear history");
+    }
+  } else {
+    alert("You do not have permission to clear the chat.");
+  }
 }
 
 // Send a message
@@ -49,34 +71,27 @@ function sendMessage() {
     timestamp: new Date()
   };
 
-  // Emit the message to the server
   socket.emit("chat message", messageData);
-  
-  // Clear the input field immediately after sending
   input.value = "";
 }
 
 // Add message to chat - Handles rendering the message bubble
 function addMessage(username, content, timestamp) {
   const messageElement = document.createElement("div");
-  // Apply 'own' or 'other' class for bubble styling
   if (currentUser && currentUser.name === username) {
     messageElement.className = "msg own";
   } else {
     messageElement.className = "msg other";
   }
   
-  // Header with Name and small Time
   const header = document.createElement("div");
   header.className = "msg-header";
   
   const time = new Date(timestamp);
   const timeText = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   
-  // Use innerHTML to inject the username and the small time span
   header.innerHTML = `${username} <span class="msg-time-small">${timeText}</span>`;
 
-  // Message body
   const body = document.createElement("div");
   body.className = "msg-body";
   body.textContent = content;
@@ -98,4 +113,11 @@ socket.on("chat history", (msgs) => {
 // Listen for new chat messages from the server
 socket.on("chat message", (msg) => {
   addMessage(msg.username, msg.content, msg.timestamp);
+});
+
+// NEW: Listen for history cleared event from server
+socket.on("history cleared", () => {
+    messagesContainer.innerHTML = "";
+    // Optionally add a system message to the empty chat
+    addMessage("System", "Chat history was cleared by the administrator.", new Date());
 });
