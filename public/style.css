@@ -12,22 +12,22 @@ body {
 }
 
 .chat-container {
-    max-width: 700px; /* Increased max-width for a wider feel */
-    width: 90%; /* Use a percentage for better responsiveness */
+    max-width: 750px; /* INCREASED MAX WIDTH for a wider window */
+    width: 90%; 
     background: #111;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
     overflow: hidden;
-    height: 90vh; 
+    height: 90vh; /* Takes up most of the screen height */
     display: flex;
     flex-direction: column; 
 }
 
 .chat-header {
-    background: #222;
+    background: #222; /* Gray Bar/Header */
     padding: 15px;
     display: flex;
-    /* Pushes the title and the name section to opposite corners of the header */
+    /* FIX: Pushes 'Chat Room' title to the left and 'User Info' to the right corner */
     justify-content: space-between; 
     align-items: center;
     border-bottom: 1px solid #444;
@@ -38,18 +38,17 @@ body {
     display: flex;
     align-items: center;
     font-size: 14px;
-    /* Decoration for the name section */
+    /* Decoration: Minimal styling to fit inside the dark bar */
     padding: 5px 10px;
     border-radius: 5px;
-    background: #333; 
-    margin-left: 20px; /* Ensure space from the title */
+    background: #333; /* Darker background */
+    /* Removed margin-left to ensure it sits flush in the corner */
 }
 
 /* Style for the displayed name after sign-in */
 #currentUsername {
     color: #4CAF50; /* Green highlight for the signed-in name */
     font-weight: bold;
-    /* This text is shown when the user is signed in */
 }
 
 .user-info input {
@@ -94,12 +93,12 @@ body {
     border-radius: 4px;
 }
 
-/* --- Message Bubbles (Wider Bubbles) --- */
+/* --- Message Bubbles --- */
 .msg {
     margin: 10px 0;
     padding: 10px 15px; 
     border-radius: 18px; 
-    max-width: 70%; /* Ensures they don't take up the full width, leaving space for the gap/auto-margin */
+    max-width: 65%; /* Adjusted max-width slightly for better look in a wider container */
     line-height: 1.4;
     word-wrap: break-word;
 }
@@ -122,7 +121,7 @@ body {
     color: rgba(255, 255, 255, 0.7);
     margin-bottom: 2px;
     display: flex;
-    justify-content: space-between; /* Ensures the time text is in the corner of the bubble */
+    justify-content: space-between; 
     align-items: center;
     font-weight: bold;
 }
