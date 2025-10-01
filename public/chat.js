@@ -4,21 +4,22 @@ const messagesContainer = document.getElementById("messages");
 
 // DOM elements
 const currentUsernameDisplay = document.getElementById("currentUsername");
-const nameInputArea = document.getElementById("nameInputArea");
 const clearChatBtn = document.getElementById("clearChatBtn"); 
+const googleSignInContainer = document.getElementById("googleSignInContainer"); // NEW
 
 // Modal elements
 const customModal = document.getElementById("customModal");
 const modalMessage = document.getElementById("modalMessage");
 const modalButtons = document.getElementById("modalButtons");
 
-// NEW DOM element for input field
 const messageInput = document.getElementById("messageInput");
 
-const ADMIN_NAME = "OWNER"; // The secret admin login name
+// NEW: Admin identification is now by email
+const ADMIN_EMAIL = "YOUR_ADMIN_EMAIL@example.com"; // ⬅️ SET YOUR ADMIN EMAIL HERE
+const ADMIN_NAME_DISPLAY = "ADMIN";
 let currentUser = null;
 
-// --- POPUP FUNCTIONS ---
+// --- POPUP FUNCTIONS (Unchanged from last step) ---
 function showCustomAlert(message) {
     modalMessage.textContent = message;
     modalButtons.innerHTML = '';
@@ -61,35 +62,36 @@ function showCustomConfirm(message, callback) {
 // --- END POPUP FUNCTIONS ---
 
 
-function setUsername() {
-  const nameInput = document.getElementById("nameInputField");
-  const name = nameInput.value.trim();
-
-  if (name.length < 2) {
-    showCustomAlert("Please enter a name with at least 2 characters.");
-    return;
-  }
+// NEW: Google login callback function
+window.handleCredentialResponse = function(response) {
+  const base64Url = response.credential.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const payload = JSON.parse(atob(base64));
 
   currentUser = {
-    name: name,
-    picture: null 
+    name: payload.name,
+    email: payload.email,
+    picture: payload.picture
   };
-
-  nameInputArea.style.display = 'none';
+  
+  // Hide Google button, show user info
+  googleSignInContainer.style.display = 'none';
   currentUsernameDisplay.textContent = `Signed in as: ${currentUser.name}`;
   currentUsernameDisplay.style.display = 'block';
 
-  if (currentUser.name === ADMIN_NAME) {
+  // Check for admin status using the user's Google email
+  if (currentUser.email === ADMIN_EMAIL) {
     clearChatBtn.style.display = 'block';
+    showCustomAlert(`Welcome, Administrator ${currentUser.name}!`);
   } else {
     clearChatBtn.style.display = 'none';
+    showCustomAlert(`Welcome ${currentUser.name}`);
   }
-
-  showCustomAlert(`Welcome ${currentUser.name}`);
 }
 
+
 function clearChat() {
-  if (currentUser && currentUser.name === ADMIN_NAME) {
+  if (currentUser && currentUser.email === ADMIN_EMAIL) { // Check against email
     showCustomConfirm("Are you absolutely sure you want to clear ALL chat history for everyone? This cannot be undone.", (result) => {
         if (result) {
             socket.emit("clear history");
@@ -101,37 +103,38 @@ function clearChat() {
 }
 
 function sendMessage() {
-  if (!currentUser || !currentUser.name) {
-    showCustomAlert("Please set your name first.");
+  if (!currentUser) { // Check if signed in
+    showCustomAlert("Please sign in with Google first.");
     return;
   }
 
-  // The input variable is now taken from the global messageInput element
   const text = messageInput.value.trim();
   if (text === "") return;
 
   const messageData = {
     username: currentUser.name,
+    email: currentUser.email, // Include email for server-side checks later if needed
+    picture: currentUser.picture,
     content: text,
     timestamp: new Date()
   };
 
   socket.emit("chat message", messageData);
-  messageInput.value = ""; // Clear input field
+  messageInput.value = "";
 }
 
 // Add message to chat - Handles rendering the message bubble
-function addMessage(username, content, timestamp) {
+function addMessage(username, content, timestamp, email) {
   
-  // Change the displayed name if the user is the OWNER
+  // Change the displayed name if the user is the ADMIN
   let displayName = username;
-  if (username === ADMIN_NAME) {
-      displayName = "ADMIN";
+  if (email === ADMIN_EMAIL) { // Check against email if available
+      displayName = ADMIN_NAME_DISPLAY;
   }
   
   const messageElement = document.createElement("div");
-  // The 'own' class check must still use the original username
-  if (currentUser && currentUser.name === username) {
+  // The 'own' class check uses the original username
+  if (currentUser && currentUser.name === username) { 
     messageElement.className = "msg own";
   } else {
     messageElement.className = "msg other";
@@ -161,12 +164,13 @@ function addMessage(username, content, timestamp) {
 // Listen for chat history on connection
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
-  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp));
+  // Note: history should now include 'email' for the admin check to work correctly
+  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.email)); 
 });
 
 // Listen for new chat messages from the server
 socket.on("chat message", (msg) => {
-  addMessage(msg.username, msg.content, msg.timestamp);
+  addMessage(msg.username, msg.content, msg.timestamp, msg.email);
 });
 
 // Listen for history cleared event from server
@@ -176,13 +180,10 @@ socket.on("history cleared", () => {
 });
 
 
-// --- NEW: EVENT LISTENER FOR ENTER KEY PRESS ---
+// EVENT LISTENER FOR ENTER KEY PRESS (Unchanged)
 messageInput.addEventListener('keypress', function(event) {
-    // Check if the key pressed is the Enter key
     if (event.key === 'Enter') {
-        // Prevent the default action (which might be inserting a newline)
         event.preventDefault(); 
-        // Call the function to send the message
         sendMessage();
     }
 });
