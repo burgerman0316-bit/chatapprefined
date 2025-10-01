@@ -1,89 +1,104 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
-const fs = require('fs');
 const { Server } = require('socket.io');
+const { OAuth2Client } = require('google-auth-library'); // ⬅️ NEW IMPORT
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Define the path to the messages file
-const MESSAGES_FILE = path.join(__dirname, 'messages.json');
-
-// Global chat history array
-let chatHistory = [];
-
-/**
- * Loads chat history from messages.json
- */
-function loadHistory() {
-  try {
-    if (!fs.existsSync(MESSAGES_FILE)) {
-      console.log('messages.json not found. Creating new file with empty array.');
-      fs.writeFileSync(MESSAGES_FILE, '[]', 'utf8');
-      chatHistory = [];
-      return;
-    }
-    
-    const data = fs.readFileSync(MESSAGES_FILE, 'utf8');
-    
-    if (data.trim().length > 0 && data.trim() !== '[]') {
-      chatHistory = JSON.parse(data);
-      console.log(`Loaded ${chatHistory.length} messages from file.`);
-    } else {
-      chatHistory = [];
-      console.log('messages.json is empty or contains no valid history.');
-    }
-  } catch (err) {
-    console.error('CRITICAL ERROR loading chat history:', err.message);
-    chatHistory = [];
-  }
-}
-
-/**
- * Saves the current chat history to messages.json (Asynchronous)
- */
-function saveHistory() {
-  const historyToSave = chatHistory.slice(-200); 
-  
-  fs.writeFile(MESSAGES_FILE, JSON.stringify(historyToSave, null, 2), 'utf8', (err) => {
-    if (err) {
-      console.error('Error saving chat history:', err.message);
-    } else {
-      console.log('History saved asynchronously to messages.json.');
-    }
-  });
-}
-
-// Load history immediately when the server starts
-loadHistory();
+// Configure Google OAuth Client
+// ⚠️ IMPORTANT: REPLACE THIS WITH YOUR ACTUAL CLIENT ID
+const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com'; 
+const client = new OAuth2Client(CLIENT_ID);
+const chatHistory = [];
+const MAX_HISTORY = 200;
 
 // Serve static files from 'public' folder
 app.use(express.static(path.join(__dirname, 'public')));
 
+/**
+ * Verifies a Google ID Token and returns the user payload.
+ * @param {string} token The Google ID Token from the client.
+ * @returns {object|null} The user payload (name, email, picture) or null on failure.
+ */
+async function verifyGoogleToken(token) {
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    return {
+      name: payload.name,
+      email: payload.email,
+      picture: payload.picture,
+    };
+  } catch (error) {
+    console.error("Token verification failed:", error.message);
+    return null;
+  }
+}
+
 io.on('connection', (socket) => {
   console.log('A user connected');
+  
+  // A property to store the user's details after successful login
+  socket.userData = null;
 
-  // Send chat history to new client immediately
+  // Send chat history to new client
   socket.emit('chat history', chatHistory);
 
-  // Listen for incoming messages
-  socket.on('chat message', (msg) => {
-    chatHistory.push(msg);
-    io.emit('chat message', msg);
-    saveHistory(); 
+  // 1. Listen for the Google ID Token from the client
+  socket.on('google login', async (token) => {
+    const user = await verifyGoogleToken(token);
+    
+    if (user) {
+        socket.userData = user;
+        // Send confirmation back to the client
+        socket.emit('login success', user); 
+        console.log(`User logged in: ${user.name} (${user.email})`);
+    } else {
+        socket.emit('login failed', 'Invalid Google token.');
+        socket.disconnect(true); // Disconnect unauthorized user
+    }
   });
-  
-  // NEW: Listen for chat clear request from client
+
+  // 2. Listen for incoming messages (only from authenticated sockets)
+  socket.on('chat message', (content) => {
+    if (!socket.userData) {
+      console.log('Unauthorized message attempt blocked.');
+      return; // Block unauthenticated messages
+    }
+    
+    const msg = {
+      username: socket.userData.name,
+      email: socket.userData.email,
+      picture: socket.userData.picture,
+      content: content, // The client only sends the text now
+      timestamp: new Date().toISOString(),
+    };
+
+    chatHistory.push(msg);
+    if (chatHistory.length > MAX_HISTORY) chatHistory.shift(); 
+    
+    // Broadcast the fully verified message
+    io.emit('chat message', msg);
+  });
+
+  // 3. Listen for clear history request
   socket.on('clear history', () => {
-    console.log('Admin requested to clear chat history.');
-    // 1. Clear server-side memory
-    chatHistory = [];
-    // 2. Save empty history to file
-    saveHistory(); 
-    // 3. Notify ALL clients to clear their screen
-    io.emit('history cleared');
+    // ⚠️ IMPORTANT: REPLACE WITH YOUR ADMIN EMAIL
+    const ADMIN_EMAIL = "burgerman0316@gmail.com"; 
+    
+    if (socket.userData && socket.userData.email === ADMIN_EMAIL) {
+        chatHistory.length = 0;
+        io.emit('history cleared');
+        console.log('Chat history cleared by admin.');
+    } else {
+        console.log(`Unauthorized clear attempt from: ${socket.userData ? socket.userData.email : 'Unauthenticated'}`);
+    }
   });
 
   socket.on('disconnect', () => {
@@ -95,5 +110,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log('🎉 Deploying to Railway will ensure persistence!');
+  console.log('🎉 Use your Railway URL to access the app!');
 });
