@@ -4,16 +4,23 @@ body {
     background: #000;
     color: #fff;
     margin: 0;
-    padding: 20px;
+    /* Removed padding: 20px for better positioning of the chat container */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
 }
 
 .chat-container {
     max-width: 600px;
-    margin: auto;
+    /* Changed margin: auto to 0, which is necessary when using flex positioning */
     background: #111;
     border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(255,255,255,0.1);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.2); /* Enhanced shadow for decoration */
     overflow: hidden;
+    height: 80vh; /* Make it take up more vertical space */
+    display: flex;
+    flex-direction: column;
 }
 
 .chat-header {
@@ -22,6 +29,14 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid #444; /* Added for decoration */
+}
+
+/* Updated .user-info to ensure vertical alignment of its contents */
+.user-info {
+    display: flex;
+    align-items: center;
+    font-size: 14px; /* Default size for the 'Signed in as' text */
 }
 
 .user-info input {
@@ -30,6 +45,11 @@ body {
     border: 1px solid #444;
     background: #222;
     color: #fff;
+    transition: border-color 0.2s;
+}
+.user-info input:focus {
+    border-color: #555;
+    outline: none;
 }
 
 .user-info button {
@@ -37,29 +57,76 @@ body {
     margin-left: 5px;
     border: none;
     border-radius: 4px;
-    background: #333;
+    background: #555; /* Slightly lighter button */
     color: #fff;
     cursor: pointer;
+    transition: background 0.2s;
+}
+.user-info button:hover {
+    background: #666;
 }
 
 .messages {
-    height: 400px;
+    /* height: 400px; - Removed fixed height, letting flex handle it */
+    flex-grow: 1; /* Allows messages to take available space */
     overflow-y: auto;
     padding: 15px;
     background: #111;
 }
-
-.msg {
-    margin: 10px 0;
-    padding: 8px 12px;
-    border-radius: 8px;
-    max-width: 80%;
+/* Style the scrollbar for decoration */
+.messages::-webkit-scrollbar {
+    width: 8px;
+}
+.messages::-webkit-scrollbar-thumb {
+    background-color: #333;
+    border-radius: 4px;
 }
 
-.msg.own { background: #333; margin-left: auto; }
-.msg.other { background: #222; margin-right: auto; }
+/* --- Message Bubbles (using .msg from your original CSS) --- */
+.msg {
+    margin: 10px 0;
+    padding: 10px 15px; /* Slightly larger padding for bubble feel */
+    border-radius: 18px; /* More rounded corners for bubbles */
+    max-width: 80%;
+    line-height: 1.4;
+    position: relative;
+    word-wrap: break-word;
+}
 
-.msg-header { font-size: 13px; color: #aaa; margin-bottom: 4px; }
+.msg.own { 
+    background: #007bff; /* Blue for own messages */
+    color: #fff;
+    margin-left: auto; 
+    border-bottom-right-radius: 5px; /* Pointy edge effect */
+}
+.msg.other { 
+    background: #333; /* Darker for others' messages */
+    color: #fff;
+    margin-right: auto; 
+    border-bottom-left-radius: 5px; /* Pointy edge effect */
+}
+
+.msg-header { 
+    font-size: 13px; 
+    color: rgba(255, 255, 255, 0.7); /* Lighter color for header */
+    margin-bottom: 2px; /* Reduced margin */
+    display: flex; /* Ensure the time text aligns */
+    justify-content: space-between; /* Push time to the right */
+    align-items: center;
+    font-weight: bold;
+}
+.msg.own .msg-header {
+    color: rgba(255, 255, 255, 0.9); /* Brighter white for own messages */
+}
+
+/* --- New Time Text Style (User Request) --- */
+.msg-time-small { 
+    font-size: 0.75em; /* Smaller size */
+    font-weight: normal;
+    opacity: 0.8;
+    margin-left: 8px;
+}
+
 .msg-body { font-size: 15px; }
 
 .input-area {
@@ -73,19 +140,21 @@ body {
     flex: 1;
     padding: 10px;
     border: 1px solid #444;
-    border-radius: 4px;
+    border-radius: 20px; /* Rounded input field */
     background: #333;
     color: #fff;
+    font-size: 1em;
 }
 
 .input-area button {
     padding: 10px 20px;
     margin-left: 8px;
     border: none;
-    border-radius: 4px;
-    background: #333;
+    border-radius: 20px; /* Rounded button */
+    background: #007bff; /* Blue button */
     color: #fff;
     cursor: pointer;
+    transition: background 0.2s;
 }
 
-.input-area button:hover { background: #444; }
+.input-area button:hover { background: #0056b3; }
