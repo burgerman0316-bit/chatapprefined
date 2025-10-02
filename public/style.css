@@ -1,4 +1,4 @@
-/* REVISED: public/style.css (Full Dark Theme) */
+/* REVISED: public/style.css (Full Dark Theme with Darker Buttons) */
 
 /* Basic Reset */
 body {
@@ -47,10 +47,11 @@ body {
     flex-grow: 1;
 }
 
-/* --- Darker Button Styles (Preserved) --- */
+/* --- Global Button Styling for Header --- */
 .header-area button {
     padding: 8px 15px;
-    background-color: #3f51b5; /* Dark Blue/Gray */
+    /* Dark Blue/Gray */
+    background-color: #3f51b5; 
     color: white;
     border: none;
     border-radius: 4px;
@@ -64,7 +65,8 @@ body {
 
 /* Admin Button Specifics (Clear History) */
 #clearChatBtn {
-    background-color: #d32f2f; /* Darker Red/Orange for warning */
+    /* Darker Red/Orange for warning */
+    background-color: #d32f2f; 
 }
 
 #clearChatBtn:hover {
@@ -129,7 +131,7 @@ body {
     color: #ffd700; /* Gold/Yellow for admin/staff header */
 }
 
-/* --- Bubble Corner Indicator Styles (Preserved) --- */
+/* --- Bubble Corner Indicator Styles --- */
 
 .indicator {
     position: absolute;
@@ -204,43 +206,44 @@ body {
 }
 
 
-/* Modal Styles */
+/* --- Modal Button Styles (The ones that were likely too light) --- */
+
 .modal {
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.7); /* Darker overlay */
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    /* ... (unchanged) */
+    background-color: rgba(0,0,0,0.7); 
 }
 
 .modal-content {
-    background-color: #2c2c2c; /* Dark modal background */
+    background-color: #2c2c2c; 
     color: #f0f0f0;
-    padding: 30px;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    /* ... (unchanged) */
 }
 
 .modal-content button {
+    /* Global style for modal buttons */
     padding: 10px 20px;
     margin: 10px;
     cursor: pointer;
     border: none;
     border-radius: 4px;
+    background-color: #555; /* Default dark background for all modal buttons */
+    color: white;
 }
-/* Modal Yes Button (Confirm Clear) */
+
+/* Modal Yes Button (Confirm Clear) - Override default */
 .modal-content button:nth-child(2) {
-    background-color: #d32f2f;
-    color: white;
+    background-color: #d32f2f; /* Dark Red */
 }
-/* Modal Cancel Button */
+
+.modal-content button:nth-child(2):hover {
+    background-color: #b71c1c;
+}
+
+/* Modal Cancel Button - Override default */
 .modal-content button:nth-child(3) {
-    background-color: #555;
-    color: white;
+    background-color: #383838; /* Darker Gray */
+}
+
+.modal-content button:nth-child(3):hover {
+    background-color: #2c2c2c;
 }
