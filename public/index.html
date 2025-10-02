@@ -2,41 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>8th Grade Chat App</title>
-    <link rel="stylesheet" href="style.css"> 
+    <title>Clear Chat Confirmation Modal</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="chat-container">
-        <div class="header-area">
-            <input type="text" id="usernameInput" placeholder="Enter your name">
-            <button onclick="changeName()">Join Chat</button>
 
-            <div id="staffControls" class="staff-controls" style="display: none;">
-                <button id="clearChatBtn" onclick="showAdminModal()">Clear History</button>
+    <div id="main-content">
+        <h1>Chat Application</h1>
+        <p>This is the content behind the confirmation window.</p>
+        <button id="clear-chat-button">Clear Chat History</button>
+        <div class="chat-message-example">Admin • 7:46:34 PM: An admin has joined the chat.</div>
+    </div>
+
+    <div id="confirmation-modal" class="modal-hidden">
+        
+        <div class="modal-backdrop"></div>
+        
+        <div class="modal-dialog">
+            <p>Are you sure you want to clear the entire chat history?</p>
+            <div class="modal-actions">
+                <button class="button-yes-clear">Yes, Clear</button>
+                <button class="button-cancel">Cancel</button>
             </div>
         </div>
-
-        <div class="messages-area">
-            <div id="messages">
-                </div>
-        </div>
-
-        <form id="messageForm" onsubmit="sendMessage(); return false;">
-            <input id="messageInput" autocomplete="off" placeholder="Type a message..." />
-            <button>Send</button>
-        </form>
     </div>
 
-    <div id="adminModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <p>Are you sure you want to clear the entire chat history?</p>
-            <button onclick="confirmClear()">Yes, Clear</button>
-            <button onclick="hideAdminModal()">Cancel</button>
-        </div>
-    </div>
+    <script>
+        // Simple JavaScript to show/hide the modal
+        const modal = document.getElementById('confirmation-modal');
+        const openButton = document.getElementById('clear-chat-button');
+        const closeButtons = document.querySelectorAll('.button-cancel, .button-yes-clear, .modal-backdrop');
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="chat.js"></script>
+        openButton.onclick = () => {
+            modal.classList.remove('modal-hidden');
+            modal.classList.add('modal-visible');
+        };
+
+        closeButtons.forEach(button => {
+            button.onclick = () => {
+                modal.classList.remove('modal-visible');
+                modal.classList.add('modal-hidden');
+            };
+        });
+        
+        // This stops clicks on the backdrop from immediately closing the modal
+        document.querySelector('.modal-dialog').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    </script>
+
 </body>
 </html>
