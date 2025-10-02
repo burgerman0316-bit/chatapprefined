@@ -1,9 +1,8 @@
 const socket = io();
 const messagesContainer = document.getElementById("messages");
-const clearChatBtn = document.getElementById("clearChatBtn");
-const usernameInput = document.getElementById("usernameInput"); 
+const usernameInput = document.getElementById("usernameInput");
+const staffControlsDiv = document.getElementById("staffControls"); // NEW
 
-// currentUser now stores the SECURE name the staff entered 
 let currentUser = {
     name: null, 
     isAdmin: false 
@@ -19,36 +18,57 @@ function changeName() {
         return;
     }
     
-    // Store the raw input as the current user's name (could be secure login or regular name)
-    currentUser.name = newName;
+    // Temporarily store the raw input
+    currentUser.name = newName; 
     
-    // We emit the entered name to the server for validation
+    // Ask the server to validate the name and check for staff status
     socket.emit("check_staff_status", newName); 
-
-    // Announce the connection (the server will correct the name if it's staff)
-    addMessage("System", `${newName} is connecting...`, new Date(), false);
-    
-    // A regular user is just assumed to be logged in
-    currentUser.isAdmin = false;
-    clearChatBtn.style.display = 'none';
 }
 
-// NEW: Server tells the client if they are staff
+// NEW: Server accepted the name (regular user)
+socket.on('name_accepted', (displayName) => {
+    currentUser.isAdmin = false;
+    // Hide staff controls for regular users
+    staffControlsDiv.style.display = 'none'; 
+    addMessage("System", `${displayName} has joined the chat.`, new Date());
+    
+    // Disable the name input after successful join
+    usernameInput.disabled = true; 
+    document.querySelector('.header-area button').disabled = true;
+});
+
+// NEW: Server accepted the name (staff user)
 socket.on("staff_status_update", (data) => {
     // Only update if the received status is for the current user
     if (data.secureName === currentUser.name) {
-        currentUser.isAdmin = data.isAdmin;
+        currentUser.isAdmin = true;
         
-        // Update the clear chat button visibility based on the server's response
-        clearChatBtn.style.display = currentUser.isAdmin ? 'inline-block' : 'none';
+        // Show staff controls
+        staffControlsDiv.style.display = 'flex'; 
         
-        // Announce the final connection with the public display name from the server
-        addMessage("System", `${data.displayName} (Staff) has joined the chat.`, new Date(), true); 
+        // The server sends the public display name, but we still use the secureName
+        // for internal validation on message send.
+        
+        addMessage("System", `${data.displayName} has logged in.`, new Date(), true); 
+        
+        // Disable the name input after successful join
+        usernameInput.disabled = true;
+        document.querySelector('.header-area button').disabled = true;
     }
 });
 
+// NEW: Server rejected the name (reserved by staff)
+socket.on('name_rejected', (reason) => {
+    alert(reason);
+    // Clear the name input so the user has to try again
+    usernameInput.value = ''; 
+    currentUser.name = null;
+    currentUser.isAdmin = false;
+    staffControlsDiv.style.display = 'none';
+});
 
-// --- MODAL CONTROL FUNCTIONS ---
+
+// --- MODAL & CONTROLS FUNCTIONS ---
 
 function showAdminModal() {
     if (!currentUser.isAdmin) {
@@ -67,7 +87,7 @@ function confirmClear() {
 
     // Emit the SECURE username for the server to validate
     socket.emit("admin:clear_history", {
-        username: currentUser.name, // Sends the secure username
+        username: currentUser.name, // Sends the secure login name
         timestamp: new Date()
     });
 }
@@ -88,7 +108,7 @@ function sendMessage() {
 
   // The client always sends the raw entered name (secure or public)
   const messageData = {
-    username: currentUser.name, // Sends the secure username or public username
+    username: currentUser.name, 
     content: text,
     timestamp: new Date(),
   };
@@ -97,12 +117,10 @@ function sendMessage() {
   input.value = "";
 }
 
-// CRITICAL CHANGE: The server sends the FINAL name to display
 function addMessage(username, content, timestamp, isAdmin = false) {
-  // NOTE: 'username' here is already the CORRECT display name (secure login name is hidden)
-  const isOwn = username === currentUser.name;
-
   const div = document.createElement('div');
+  const isOwn = (username === currentUser.name) || (isAdmin && currentUser.isAdmin); // Simple logic for 'own'
+
   div.className = `msg ${isOwn ? 'own' : 'other'}`;
   
   if (isAdmin) {
@@ -120,16 +138,7 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   const header = document.createElement('div');
   header.className = 'msg-header';
   
-  // *** NEW DISPLAY NAME LOGIC (Simplified) ***
-  let displayName;
-  
-  if (isAdmin && username !== "System") {
-      // If it's a staff member's chat message, display their actual name and the (Staff) tag
-      displayName = `${username} (Staff)`; 
-  } else {
-      // All other users or system messages display the name as received
-      displayName = username;
-  }
+  let displayName = username; // Display the name as sent by the server
   
   const time = new Date(timestamp);
   header.textContent = `${displayName} • ${time.toLocaleTimeString()}`;
@@ -150,8 +159,7 @@ function addMessage(username, content, timestamp, isAdmin = false) {
 
 socket.on("history_cleared", (data) => {
     messagesContainer.innerHTML = "";
-    // The server sends the public staff name who cleared it
-    addMessage("System", `Chat history cleared by ${data.username} (Staff).`, new Date(), true);
+    addMessage("System", `Chat history cleared by ${data.username}.`, new Date(), true);
 });
 
 socket.on("chat history", (msgs) => {
@@ -160,6 +168,5 @@ socket.on("chat history", (msgs) => {
 });
 
 socket.on("chat message", (msg) => {
-  // The server sends the correct public name here
   addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin);
 });
