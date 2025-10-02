@@ -1,14 +1,16 @@
 const socket = io();
 const messagesContainer = document.getElementById("messages");
 const usernameInput = document.getElementById("usernameInput");
-const staffControlsDiv = document.getElementById("staffControls"); // NEW
+const staffControlsDiv = document.getElementById("staffControls"); // The div that holds the Clear History button
 
 let currentUser = {
-    name: null, 
+    name: null, // Stores the secure login name or regular username
     isAdmin: false 
 };
 
-// --- AUTHENTICATION & LOGIN ---
+// ======================================================
+// NAME VALIDATION AND LOGIN
+// ======================================================
 
 function changeName() {
     const newName = usernameInput.value.trim();
@@ -25,7 +27,7 @@ function changeName() {
     socket.emit("check_staff_status", newName); 
 }
 
-// NEW: Server accepted the name (regular user)
+// Server accepted the name (regular user)
 socket.on('name_accepted', (displayName) => {
     currentUser.isAdmin = false;
     // Hide staff controls for regular users
@@ -37,17 +39,14 @@ socket.on('name_accepted', (displayName) => {
     document.querySelector('.header-area button').disabled = true;
 });
 
-// NEW: Server accepted the name (staff user)
+// Server accepted the name (staff user)
 socket.on("staff_status_update", (data) => {
-    // Only update if the received status is for the current user
+    // Check if the secure login name matches
     if (data.secureName === currentUser.name) {
         currentUser.isAdmin = true;
         
-        // Show staff controls
-        staffControlsDiv.style.display = 'flex'; 
-        
-        // The server sends the public display name, but we still use the secureName
-        // for internal validation on message send.
+        // Show staff controls (the Clear History button)
+        staffControlsDiv.style.display = 'inline-block'; // Use inline-block or flex to keep it in line
         
         addMessage("System", `${data.displayName} has logged in.`, new Date(), true); 
         
@@ -57,7 +56,7 @@ socket.on("staff_status_update", (data) => {
     }
 });
 
-// NEW: Server rejected the name (reserved by staff)
+// Server rejected the name (reserved by staff)
 socket.on('name_rejected', (reason) => {
     alert(reason);
     // Clear the name input so the user has to try again
@@ -68,7 +67,9 @@ socket.on('name_rejected', (reason) => {
 });
 
 
-// --- MODAL & CONTROLS FUNCTIONS ---
+// ======================================================
+// MODAL & CONTROLS FUNCTIONS
+// ======================================================
 
 function showAdminModal() {
     if (!currentUser.isAdmin) {
@@ -93,7 +94,9 @@ function confirmClear() {
 }
 
 
-// --- MESSAGING FUNCTIONS ---
+// ======================================================
+// MESSAGING FUNCTIONS
+// ======================================================
 
 function sendMessage() {
   const input = document.getElementById("messageInput");
@@ -106,7 +109,7 @@ function sendMessage() {
   
   if (text === "") return;
 
-  // The client always sends the raw entered name (secure or public)
+  // The client sends the raw entered name (secure or public)
   const messageData = {
     username: currentUser.name, 
     content: text,
@@ -119,7 +122,9 @@ function sendMessage() {
 
 function addMessage(username, content, timestamp, isAdmin = false) {
   const div = document.createElement('div');
-  const isOwn = (username === currentUser.name) || (isAdmin && currentUser.isAdmin); // Simple logic for 'own'
+  
+  // Simple check to determine if the message is 'yours' for styling
+  const isOwn = (username === currentUser.name) || (isAdmin && currentUser.isAdmin); 
 
   div.className = `msg ${isOwn ? 'own' : 'other'}`;
   
@@ -151,11 +156,14 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   div.appendChild(body);
   messagesContainer.appendChild(div);
   
+  // Scroll to the latest message
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 
-// --- Socket.IO Listeners ---
+// ======================================================
+// Socket.IO Listeners
+// ======================================================
 
 socket.on("history_cleared", (data) => {
     messagesContainer.innerHTML = "";
