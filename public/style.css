@@ -1,227 +1,191 @@
-/* --- Global Styles --- */
+/* Basic Reset */
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: #000;
-    color: #fff;
     margin: 0;
-    padding: 20px;
-}
-
-/* --- Chat Container --- */
-.chat-container {
-    max-width: 600px;
-    margin: auto;
-    background: #111;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
-    overflow: hidden;
-}
-
-/* --- Header Section --- */
-.chat-header {
-    background: #222;
-    padding: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* --- Name Input in Header (User Info) --- */
-.user-info input {
-    padding: 5px;
-    border-radius: 4px;
-    border: 1px solid #444;
-    background: #222;
-    color: #fff;
-}
-
-/* Rounded Green Button for "Set Name" & "Clear Chat" */
-.user-info button {
-    padding: 5px 10px;
-    margin-left: 5px;
-    border: none;
-    border-radius: 1000px; /* Highly rounded corners */
-    background: #28a745;
-    color: #fff;
-    cursor: pointer;
-}
-
-.user-info button:hover {
-    background: #218838;
-}
-
-/* --- Message Area --- */
-.messages {
-    display: flex;
-    flex-direction: column; 
-    height: 400px;
-    overflow-y: auto;
-    padding: 15px;
-    background: #111;
-}
-
-/* Base message bubble */
-.msg {
-    margin: 5px 0; 
-    padding: 8px 12px;
-    max-width: 80%;
-    border-radius: 18px; /* Default rounding for iMessage style */
-}
-
-/* Messages sent by the current user (BLUE BUBBLE) */
-.msg.own {
-    background: #007bff; /* Blue bubble */
-    color: #fff;
-    margin-left: auto; /* Aligns to the right */
-    margin-right: 0;
-    border-bottom-right-radius: 4px; 
-}
-
-/* Messages sent by other users (GRAY BUBBLE) */
-.msg.other {
-    background: #333; /* Dark gray for others */
-    margin-right: auto; /* Aligns to the left */
-    margin-left: 0;
-    border-bottom-left-radius: 4px; 
-}
-
-/* --- ADMIN AND SYSTEM MESSAGE STYLES --- */
-
-/* Style for chat bubbles sent by an Admin (Dark Gold Infill) */
-.msg.admin-msg {
-    background: #4a3e2a; /* Dark Gold/Brown Infill */
-    border: 2px solid gold; 
-}
-
-/* Default (Non-Admin) System Message Style (Blue) */
-.msg.system-msg {
-    background: #1e3a8a; /* Dark Blue */
-    color: #fff;
-    font-style: italic;
-    border-left: 5px solid #3b82f6;
-    text-align: center; 
-    max-width: 100%;
-    margin-left: 0;
-    margin-right: 0;
-    border-radius: 4px; 
-}
-
-/* *** Yellow Admin System Messages (Dark Gold Infill, Yellow Border) *** */
-.msg.admin-system-msg {
-    background: #4a3e2a; /* MATCHES .admin-msg INFILL */
-    color: #ffc107; /* Yellow/Gold text */
-    border: 2px solid #ffc107; /* Yellow border */
-    font-weight: bold;
-    text-align: center;
-    font-style: normal;
-    max-width: 100%;
-    margin-left: 0;
-    margin-right: 0;
-    border-radius: 4px;
-}
-
-/* Message metadata (Username and Time) */
-.msg-header {
-    font-size: 13px;
-    color: #aaa;
-    margin-bottom: 4px;
-    text-align: left; 
-}
-
-.msg.own .msg-header {
-    color: #cce5ff;
-}
-
-/* Message body text */
-.msg-body {
-    font-size: 15px;
-}
-
-/* --- Input Area --- */
-.input-area {
-    display: flex;
-    padding: 15px;
-    background: #222;
-    border-top: 1px solid #333;
-}
-
-.input-area input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #444;
-    border-radius: 4px;
-    background: #333;
-    color: #fff;
-}
-
-/* Rounded Green Button for "Send" */
-.input-area button {
-    padding: 10px 20px;
-    margin-left: 8px;
-    border: none;
-    border-radius: 1000px;
-    background: #28a745;
-    color: #fff;
-    cursor: pointer;
-}
-
-.input-area button:hover {
-    background: #218838;
-}
-
-/* --- Custom Modal Styles --- */
-
-.modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000; 
+    height: 100vh;
 }
 
-.modal-content {
-    background: #222;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
-    max-width: 400px;
-    width: 90%;
-    text-align: center;
+/* Chat Container */
+.chat-container {
+    width: 100%;
+    max-width: 600px;
+    height: 90vh;
+    background: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
-.modal-content h3 {
-    color: #f0ad4e;
-    margin-top: 0;
+/* Header/Controls Area */
+.header-area {
+    padding: 10px;
+    background-color: #e0e0e0;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
-.modal-content p {
-    margin-bottom: 20px;
+#usernameInput {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    flex-grow: 1;
 }
 
-.modal-actions button {
-    padding: 10px 20px;
-    margin: 5px;
+.header-area button {
+    padding: 8px 15px;
+    background-color: #4CAF50;
+    color: white;
     border: none;
-    border-radius: 1000px;
+    border-radius: 4px;
     cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.header-area button:hover {
+    background-color: #45a049;
+}
+
+/* Admin Button Specifics (Clear History) */
+#clearChatBtn {
+    background-color: #f44336;
+}
+
+#clearChatBtn:hover {
+    background-color: #d32f2f;
+}
+
+/* Messages Display Area */
+.messages-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+#messages {
+    display: flex;
+    flex-direction: column;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.msg {
+    margin-bottom: 10px;
+    max-width: 80%;
+    border-radius: 10px;
+    padding: 8px 12px;
+    word-wrap: break-word;
+}
+
+.msg-header {
+    font-size: 0.8em;
+    margin-bottom: 3px;
     font-weight: bold;
 }
 
-.modal-confirm-btn {
-    background: #dc3545;
-    color: #fff;
-}
-.modal-confirm-btn:hover {
-    background: #c82333;
+.msg-body {
+    font-size: 1em;
 }
 
-.modal-cancel-btn {
-    background: #6c757d;
-    color: #fff;
+/* Message Alignment and Colors */
+.other {
+    align-self: flex-start;
+    background-color: #f0f0f0;
+    color: #333;
 }
-.modal-cancel-btn:hover
+
+.own {
+    align-self: flex-end;
+    background-color: #DCF8C6;
+    color: #333;
+}
+
+/* Staff/Admin Messages */
+.admin-msg .msg-header {
+    color: #f44336; /* Red for admin/staff header */
+}
+
+/* System Messages */
+.system-msg, .admin-system-msg {
+    align-self: center;
+    background: none;
+    font-style: italic;
+    color: #666;
+    text-align: center;
+    padding: 5px;
+    border-radius: 0;
+    margin: 5px 0;
+}
+
+.admin-system-msg {
+    color: #f44336;
+    font-weight: bold;
+}
+
+
+/* Message Input Form */
+#messageForm {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ccc;
+}
+
+#messageInput {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px 0 0 4px;
+    margin-right: 0;
+}
+
+#messageForm button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+}
+
+#messageForm button:hover {
+    background-color: #0056b3;
+}
+
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+.modal-content button {
+    padding: 10px 20px;
+    margin: 5px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+}
