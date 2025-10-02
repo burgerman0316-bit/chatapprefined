@@ -2,83 +2,41 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Classic Chat Room UI</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8th Grade Chat App</title>
+    <link rel="stylesheet" href="style.css"> 
 </head>
 <body>
+    <div class="chat-container">
+        <div class="header-area">
+            <input type="text" id="usernameInput" placeholder="Enter your name">
+            <button onclick="changeName()">Join Chat</button>
 
-    <div id="chat-window">
-        
-        <div class="chat-header">
-            <h2>Classic Chat Room</h2>
-            <button id="clear-chat-button" class="header-button">Clear History</button>
+            <div id="staffControls" class="staff-controls" style="display: none;">
+                <button id="clearChatBtn" onclick="showAdminModal()">Clear History</button>
+            </div>
         </div>
 
-        <div class="chat-history">
-            
-            <div class="chat-message user-message">
-                <span class="user-name">User1</span> 7:45:00 PM
-                <p>Hello everyone, is this room active?</p>
-            </div>
-            
-            <div class="chat-message admin-notification">
-                <div class="admin-bar">
-                    <span class="admin-info">Admin • 7:46:34 PM</span>
-                    <span class="admin-text">An admin has joined the chat.</span>
+        <div class="messages-area">
+            <div id="messages">
                 </div>
-            </div>
-            
-            <div class="chat-message user-message">
-                <span class="user-name">User2</span> 7:47:15 PM
-                <p>Glad the admin is here!</p>
-            </div>
-
         </div>
 
-        <div class="chat-input-area">
-            <input type="text" placeholder="Type your message here..." />
+        <form id="messageForm" onsubmit="sendMessage(); return false;">
+            <input id="messageInput" autocomplete="off" placeholder="Type a message..." />
             <button>Send</button>
-        </div>
+        </form>
     </div>
 
-    <div id="confirmation-modal" class="modal-hidden">
-        
-        <div class="modal-backdrop"></div>
-        
-        <div class="modal-dialog">
+    <div id="adminModal" class="modal" style="display: none;">
+        <div class="modal-content">
             <p>Are you sure you want to clear the entire chat history?</p>
-            <div class="modal-actions">
-                <button class="button-yes-clear">Yes, Clear</button>
-                <button class="button-cancel">Cancel</button>
-            </div>
+            <button onclick="confirmClear()">Yes, Clear</button>
+            <button onclick="hideAdminModal()">Cancel</button>
         </div>
     </div>
 
-    <script>
-        // Simple JavaScript to show/hide the modal
-        const modal = document.getElementById('confirmation-modal');
-        const openButton = document.getElementById('clear-chat-button');
-        const closeButtons = document.querySelectorAll('.button-cancel, .button-yes-clear, .modal-backdrop');
-
-        openButton.onclick = () => {
-            modal.classList.remove('modal-hidden');
-            modal.classList.add('modal-visible');
-        };
-
-        // Note: Clicks on the backdrop, Cancel, and Yes, Clear buttons all close the modal
-        closeButtons.forEach(button => {
-            button.onclick = () => {
-                modal.classList.remove('modal-visible');
-                modal.classList.add('modal-hidden');
-            };
-        });
-        
-        // This prevents clicks inside the modal content from bubbling up and closing the modal via the backdrop
-        document.querySelector('.modal-dialog').addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-    </script>
-
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="chat.js"></script>
 </body>
 </html>
-
