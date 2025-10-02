@@ -45,7 +45,6 @@ function changeName() {
         let systemMessage = `${currentUser.name} has set their name.`;
         addMessage("System", systemMessage, new Date(), false);
     }
-    // Note: If an admin changes their name while logged in, no announcement is made.
 }
 
 
@@ -102,6 +101,7 @@ function sendMessage() {
   input.value = "";
 }
 
+// FIX IS HERE: The logic to display the message header
 function addMessage(username, content, timestamp, isAdmin = false) {
   const isOwn = username === currentUser.name;
 
@@ -118,7 +118,21 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   const header = document.createElement('div');
   header.className = 'msg-header';
   
-  const displayName = isAdmin ? `${username} (ADMIN)` : username;
+  // *** CRITICAL SECURITY FIX ***
+  let displayName;
+  
+  if (isAdmin) {
+      if (isOwn) {
+          // If I am the admin sending the message, I see my secret name
+          displayName = `${username} (ADMIN)`;
+      } else {
+          // If someone else sees the message, they only see "Admin"
+          displayName = "Admin"; 
+      }
+  } else {
+      // Regular user message
+      displayName = username;
+  }
   
   const time = new Date(timestamp);
   header.textContent = `${displayName} • ${time.toLocaleTimeString()}`;
@@ -140,6 +154,8 @@ function addMessage(username, content, timestamp, isAdmin = false) {
 socket.on("history_cleared", (data) => {
     messagesContainer.innerHTML = "";
     // Display the custom system message confirming the action
+    // We display the full name here because this is an administrative action log, 
+    // and the name is needed for accountability.
     addMessage("System", `Chat history cleared by ${data.username}.`, new Date(), true);
 });
 
