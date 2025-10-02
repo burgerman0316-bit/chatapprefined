@@ -2,16 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Clear Chat Confirmation Modal</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Classic Chat Room UI</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <div id="main-content">
-        <h1>Chat Application</h1>
-        <p>This is the content behind the confirmation window.</p>
-        <button id="clear-chat-button">Clear Chat History</button>
-        <div class="chat-message-example">Admin • 7:46:34 PM: An admin has joined the chat.</div>
+    <div id="chat-window">
+        
+        <div class="chat-header">
+            <h2>Classic Chat Room</h2>
+            <button id="clear-chat-button" class="header-button">Clear History</button>
+        </div>
+
+        <div class="chat-history">
+            
+            <div class="chat-message user-message">
+                <span class="user-name">User1</span> 7:45:00 PM
+                <p>Hello everyone, is this room active?</p>
+            </div>
+            
+            <div class="chat-message admin-notification">
+                <div class="admin-bar">
+                    <span class="admin-info">Admin • 7:46:34 PM</span>
+                    <span class="admin-text">An admin has joined the chat.</span>
+                </div>
+            </div>
+            
+            <div class="chat-message user-message">
+                <span class="user-name">User2</span> 7:47:15 PM
+                <p>Glad the admin is here!</p>
+            </div>
+
+        </div>
+
+        <div class="chat-input-area">
+            <input type="text" placeholder="Type your message here..." />
+            <button>Send</button>
+        </div>
     </div>
 
     <div id="confirmation-modal" class="modal-hidden">
@@ -38,6 +65,7 @@
             modal.classList.add('modal-visible');
         };
 
+        // Note: Clicks on the backdrop, Cancel, and Yes, Clear buttons all close the modal
         closeButtons.forEach(button => {
             button.onclick = () => {
                 modal.classList.remove('modal-visible');
@@ -45,7 +73,7 @@
             };
         });
         
-        // This stops clicks on the backdrop from immediately closing the modal
+        // This prevents clicks inside the modal content from bubbling up and closing the modal via the backdrop
         document.querySelector('.modal-dialog').addEventListener('click', (e) => {
             e.stopPropagation();
         });
@@ -53,4 +81,3 @@
 
 </body>
 </html>
-
