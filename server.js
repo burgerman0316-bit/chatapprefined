@@ -10,16 +10,16 @@ const io = new Server(server);
 // --- 1. STAFF CONFIGURATION (Array of Objects Format) ---
 const STAFF_LIST = [
     { 
-        loginName: "SECRET_ALICE_LOGIN",  // <--- Secure username
-        displayName: "Alice C. (Admin)"   // <--- Public name
+        loginName: "STAFF_CONTROLS-LIAM",  // <--- Secure username
+        displayName: "Liam Stern"   // <--- Public name
     },
     { 
-        loginName: "CODE_BOB_99",
-        displayName: "Coach Bob (Mod)"
+        loginName: "STAFF_CONTROLS-DIESEL",
+        displayName: "Diesel Carter"
     },
     { 
-        loginName: "ADMIN_SMITH",
-        displayName: "Mr. Smith (Owner)"
+        loginName: "STAFF_CONTROLS-DONOVAN",
+        displayName: "Donovan Powell"
     }
     // Add all your staff members here. Ensure loginName is unique.
 ];
@@ -146,3 +146,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
