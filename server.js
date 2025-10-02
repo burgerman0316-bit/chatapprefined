@@ -7,21 +7,24 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// --- 1. STAFF CONFIGURATION (Array of Objects Format) ---
+// ======================================================
+// 1. STAFF CONFIGURATION (The field for Usernames and Names)
+// ======================================================
 const STAFF_LIST = [
     { 
-        loginName: "STAFF_CONTROLS-LIAM",  // <--- Secure username
-        displayName: "Liam Stern"   // <--- Public name
+        loginName: "SECRET_ALICE_LOGIN",  // <--- The secure username they MUST enter
+        displayName: "Alice C. (Admin)"   // <--- The name everyone sees in chat
     },
     { 
-        loginName: "STAFF_CONTROLS-DIESEL",
-        displayName: "Diesel Carter"
+        loginName: "CODE_BOB_99",
+        displayName: "Coach Bob (Mod)"
     },
     { 
-        loginName: "STAFF_CONTROLS-DONOVAN",
-        displayName: "Donovan Powell"
+        loginName: "ADMIN_SMITH",
+        displayName: "Mr. Smith (Owner)"
     }
-    // Add all your staff members here. Ensure loginName is unique.
+    // ADD ALL YOUR STAFF MEMBERS HERE
+    // Ensure the 'loginName' is unique and used only by staff.
 ];
 
 // Simple in-memory storage for chat history
@@ -35,14 +38,15 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Function to check if a name is reserved by staff
-function isStaffNameReserved(enteredUsername) {
-    const checkName = enteredUsername.trim().toUpperCase(); // Case-insensitive check
 
-    // Check if the entered username (secure or public) is reserved
+// Function to check if a name (loginName or displayName) is reserved by staff
+function isStaffNameReserved(enteredUsername) {
+    const checkName = enteredUsername.trim();
+
+    // Check against both loginName (secure) and displayName (public)
     return STAFF_LIST.some(staff => 
-        staff.loginName.toUpperCase() === checkName || 
-        staff.displayName.toUpperCase() === checkName
+        staff.loginName === checkName || 
+        staff.displayName === checkName
     );
 }
 
@@ -76,7 +80,9 @@ io.on('connection', (socket) => {
     // Send chat history to the newly connected user
     socket.emit('chat history', chatHistory);
 
-    // NEW: Handle the client checking their staff status (used for initial name check)
+    // ======================================================
+    // 2. NAME VALIDATION AND STAFF CHECK
+    // ======================================================
     socket.on('check_staff_status', (enteredName) => {
         // 1. Check if the name is reserved (secure or public)
         if (isStaffNameReserved(enteredName)) {
@@ -100,38 +106,49 @@ io.on('connection', (socket) => {
         }
     });
 
+    // ======================================================
+    // 3. MESSAGE HANDLING
+    // ======================================================
     socket.on('chat message', (msg) => {
         const staffInfo = getStaffDisplayInfo(msg.username);
         
-        // Final server-side security check: If a regular user tries to send a message
+        // Server-side security check: If a regular user somehow sends a message
         // using a reserved name, reject it.
         if (!staffInfo.isAdmin && isStaffNameReserved(msg.username)) {
-            console.log(`REJECTED: Non-staff user tried to send message as reserved name: ${msg.username}`);
+            console.log(`SECURITY REJECTION: Non-staff user tried to send message as reserved name: ${msg.username}`);
             return; 
         }
 
         const messageData = {
-            username: staffInfo.username, 
+            username: staffInfo.username, // Public display name (or regular username)
             content: msg.content,
             timestamp: new Date(),
             isAdmin: staffInfo.isAdmin
         };
-        // ... (rest of message handling)
+        
+        // Add to history and enforce limit
         chatHistory.push(messageData);
         while (chatHistory.length > MAX_HISTORY) {
             chatHistory.shift();
         }
 
+        // Broadcast the message with the correct display name and isAdmin flag
         io.emit('chat message', messageData);
     });
 
+    // ======================================================
+    // 4. ADMIN CONTROL HANDLING
+    // ======================================================
     socket.on('admin:clear_history', (data) => {
+        // The client sends the secure login name, so we validate it
         const staffInfo = getStaffDisplayInfo(data.username);
         
         if (staffInfo.isAdmin) {
-            chatHistory.length = 0;
+            chatHistory.length = 0; // Clear the array
+            
+            // Broadcast the clear event with the public staff name
             io.emit('history_cleared', {
-                username: staffInfo.username,
+                username: staffInfo.username, // Use the public display name
                 timestamp: new Date()
             });
         }
@@ -146,4 +163,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-
