@@ -1,188 +1,137 @@
 // Connects automatically to the same host as the page
 const socket = io();
 const messagesContainer = document.getElementById("messages");
-
-// DOM elements
-const currentUsernameDisplay = document.getElementById("currentUsername");
-const nameInputArea = document.getElementById("nameInputArea");
-const clearChatBtn = document.getElementById("clearChatBtn"); 
-
-// Modal elements
-const customModal = document.getElementById("customModal");
-const modalMessage = document.getElementById("modalMessage");
-const modalButtons = document.getElementById("modalButtons");
-
-// NEW DOM element for input field
-const messageInput = document.getElementById("messageInput");
-
-const ADMIN_NAME = "OWNER"; // The secret admin login name
 let currentUser = null;
 
-// --- POPUP FUNCTIONS ---
-function showCustomAlert(message) {
-    modalMessage.textContent = message;
-    modalButtons.innerHTML = '';
-    
-    const okBtn = document.createElement('button');
-    okBtn.textContent = 'OK';
-    okBtn.className = 'ok-btn';
-    okBtn.onclick = () => {
-        customModal.style.display = 'none';
+// New login logic to replace Google Sign-In
+function loginUser() {
+    const nameInput = document.getElementById("usernameInput").value.trim();
+    const adminPassInput = document.getElementById("adminPasswordInput").value.trim();
+
+    // *** IMPORTANT: SET YOUR ADMIN PASSWORD HERE ***
+    const adminPassword = "your-secret-admin-pass"; 
+
+    if (nameInput === "") {
+        alert("Please enter your name.");
+        return;
+    }
+
+    // Determine if the user is an admin
+    let isAdmin = false;
+    if (adminPassInput === adminPassword) {
+        isAdmin = true;
+        alert("Admin access granted!");
+    } else if (adminPassInput !== "") {
+        // Only alert if they tried to enter a password, but it was wrong
+        alert("Incorrect Admin Password. Joining as a regular user.");
+    }
+
+    // --- Successful Login ---
+    currentUser = {
+        name: nameInput,
+        picture: null, // No Google picture now
+        isAdmin: isAdmin // New property to track admin status
     };
+
+    // 1. Hide the login area
+    document.getElementById("loginArea").style.display = "none";
+
+    // 2. Show the chat and input area
+    messagesContainer.style.display = 'block';
+    document.getElementById("inputArea").style.display = 'flex';
+
+    // Optional: Send a welcome message to the user
+    const welcomeMsg = isAdmin 
+        ? `Welcome, ${currentUser.name}! (Admin)`
+        : `Welcome, ${currentUser.name}!`;
+        
+    addMessage("System", welcomeMsg, new Date(), null, isAdmin);
     
-    modalButtons.appendChild(okBtn);
-    customModal.style.display = 'flex';
+    // Clear the password input for security
+    document.getElementById("adminPasswordInput").value = "";
+    document.getElementById("messageInput").focus();
 }
 
-function showCustomConfirm(message, callback) {
-    modalMessage.textContent = message;
-    modalButtons.innerHTML = '';
-    
-    const yesBtn = document.createElement('button');
-    yesBtn.textContent = 'Yes, Clear Chat';
-    yesBtn.className = 'yes-btn';
-    yesBtn.onclick = () => {
-        customModal.style.display = 'none';
-        callback(true);
-    };
-
-    const noBtn = document.createElement('button');
-    noBtn.textContent = 'Cancel';
-    noBtn.className = 'no-btn';
-    noBtn.onclick = () => {
-        customModal.style.display = 'none';
-        callback(false);
-    };
-    
-    modalButtons.appendChild(yesBtn);
-    modalButtons.appendChild(noBtn);
-    customModal.style.display = 'flex';
-}
-// --- END POPUP FUNCTIONS ---
-
-
-function setUsername() {
-  const nameInput = document.getElementById("nameInputField");
-  const name = nameInput.value.trim();
-
-  if (name.length < 2) {
-    showCustomAlert("Please enter a name with at least 2 characters.");
-    return;
-  }
-
-  currentUser = {
-    name: name,
-    picture: null 
-  };
-
-  nameInputArea.style.display = 'none';
-  currentUsernameDisplay.textContent = `Signed in as: ${currentUser.name}`;
-  currentUsernameDisplay.style.display = 'block';
-
-  if (currentUser.name === ADMIN_NAME) {
-    clearChatBtn.style.display = 'block';
-  } else {
-    clearChatBtn.style.display = 'none';
-  }
-
-  showCustomAlert(`Welcome ${currentUser.name}`);
-}
-
-function clearChat() {
-  if (currentUser && currentUser.name === ADMIN_NAME) {
-    showCustomConfirm("Are you absolutely sure you want to clear ALL chat history for everyone? This cannot be undone.", (result) => {
-        if (result) {
-            socket.emit("clear history");
-        }
-    });
-  } else {
-    showCustomAlert("You do not have permission to clear the chat.");
-  }
-}
-
+// Send a message
 function sendMessage() {
-  if (!currentUser || !currentUser.name) {
-    showCustomAlert("Please set your name first.");
+  if (!currentUser) {
+    alert("Please join the chat first.");
     return;
   }
 
-  // The input variable is now taken from the global messageInput element
-  const text = messageInput.value.trim();
+  const input = document.getElementById("messageInput");
+  const text = input.value.trim();
   if (text === "") return;
 
   const messageData = {
     username: currentUser.name,
+    picture: currentUser.picture,
     content: text,
-    timestamp: new Date()
+    timestamp: new Date(),
+    isAdmin: currentUser.isAdmin // Include admin status in message data
   };
 
   socket.emit("chat message", messageData);
-  messageInput.value = ""; // Clear input field
+  input.value = "";
 }
 
-// Add message to chat - Handles rendering the message bubble
-function addMessage(username, content, timestamp) {
-  
-  // Change the displayed name if the user is the OWNER
-  let displayName = username;
-  if (username === ADMIN_NAME) {
-      displayName = "ADMIN";
-  }
-  
+// Add message to chat
+function addMessage(username, content, timestamp, picture, isAdmin) {
   const messageElement = document.createElement("div");
-  // The 'own' class check must still use the original username
-  if (currentUser && currentUser.name === username) {
-    messageElement.className = "msg own";
-  } else {
-    messageElement.className = "msg other";
+  // The original message class from your provided style.css was "message"
+  messageElement.className = "message";
+
+  // Add a class for admin messages for custom styling
+  if (isAdmin) {
+      messageElement.classList.add("admin-msg");
   }
-  
+
+  if (picture) {
+    const img = document.createElement("img");
+    img.src = picture;
+    img.alt = username;
+    img.style.width = "32px";
+    img.style.height = "32px";
+    img.style.borderRadius = "50%";
+    img.style.marginRight = "8px";
+    messageElement.appendChild(img);
+  }
+
+  const contentWrapper = document.createElement("div");
+
   const header = document.createElement("div");
-  header.className = "msg-header";
-  
+  header.className = "message-header";
   const time = new Date(timestamp);
-  const timeText = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   
-  // Use the determined displayName
-  header.innerHTML = `${displayName} <span class="msg-time-small">${timeText}</span>`;
+  // Display (ADMIN) next to the name if they are an admin
+  const displayName = isAdmin ? `${username} (ADMIN)` : username;
+
+  header.textContent = `${displayName} - ${time.toLocaleTimeString()}`;
 
   const body = document.createElement("div");
-  body.className = "msg-body";
+  body.className = "message-content";
   body.textContent = content;
 
-  messageElement.appendChild(header);
-  messageElement.appendChild(body);
+  contentWrapper.appendChild(header);
+  contentWrapper.appendChild(body);
+  messageElement.appendChild(contentWrapper);
 
   messagesContainer.appendChild(messageElement);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-
-// Listen for chat history on connection
+// Listen for chat events
 socket.on("chat history", (msgs) => {
-  messagesContainer.innerHTML = "";
-  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp));
-});
-
-// Listen for new chat messages from the server
-socket.on("chat message", (msg) => {
-  addMessage(msg.username, msg.content, msg.timestamp);
-});
-
-// Listen for history cleared event from server
-socket.on("history cleared", () => {
+  if (currentUser) {
     messagesContainer.innerHTML = "";
-    addMessage("System", "Chat history was cleared by the administrator.", new Date());
+    // Pass isAdmin to addMessage for proper display
+    msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.picture, m.isAdmin));
+  }
 });
 
-
-// --- NEW: EVENT LISTENER FOR ENTER KEY PRESS ---
-messageInput.addEventListener('keypress', function(event) {
-    // Check if the key pressed is the Enter key
-    if (event.key === 'Enter') {
-        // Prevent the default action (which might be inserting a newline)
-        event.preventDefault(); 
-        // Call the function to send the message
-        sendMessage();
-    }
+socket.on("chat message", (msg) => {
+  if (currentUser) {
+    // Pass isAdmin to addMessage for proper display
+    addMessage(msg.username, msg.content, msg.timestamp, msg.picture, msg.isAdmin);
+  }
 });
