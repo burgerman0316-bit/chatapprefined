@@ -5,7 +5,7 @@ const messagesContainer = document.getElementById("messages");
 // Simple user object for tracking the name
 let currentUser = {
     name: "Guest", 
-    picture: null 
+    picture: null // Not used in this version, but good practice to keep
 };
 
 // Function to update the current user's name when the button is clicked.
@@ -14,9 +14,7 @@ function changeName() {
     const newName = nameInput.value.trim();
 
     if (newName === "") {
-        alert("Name cannot be empty. Using 'Anonymous'.");
-        currentUser.name = "Anonymous";
-        nameInput.value = "Anonymous";
+        alert("Name cannot be empty. Please enter something.");
         return;
     }
 
@@ -31,62 +29,52 @@ function sendMessage() {
   const text = input.value.trim();
   if (text === "") return;
 
-  // ALWAYS read the name from the input box just before sending
+  // Read the name from the input box just before sending
   const nameInput = document.getElementById("usernameInput");
   currentUser.name = nameInput.value.trim() || "Anonymous";
 
   const messageData = {
     username: currentUser.name,
-    picture: currentUser.picture,
     content: text,
     timestamp: new Date()
+    // Note: No 'picture' or 'isAdmin' in this simple version
   };
 
   socket.emit("chat message", messageData);
   input.value = "";
 }
 
-// Add message to chat (using the original logic)
-function addMessage(username, content, timestamp, picture) {
-  const messageElement = document.createElement("div");
-  messageElement.className = "message"; 
+// Add message to chat, using the new CSS classes (.msg, .msg-header, .msg-body)
+function addMessage(username, content, timestamp) {
+  const isOwn = username === currentUser.name;
 
-  if (picture) {
-    const img = document.createElement("img");
-    img.src = picture;
-    img.alt = username;
-    img.style.width = "32px";
-    img.style.height = "32px";
-    img.style.borderRadius = "50%";
-    img.style.marginRight = "8px";
-    messageElement.appendChild(img);
-  }
+  const div = document.createElement('div');
+  // Use the CSS classes for styling
+  div.className = `msg ${isOwn ? 'own' : 'other'}`;
 
-  const contentWrapper = document.createElement("div");
-
-  const header = document.createElement("div");
-  header.className = "message-header";
+  const header = document.createElement('div');
+  header.className = 'msg-header';
+  // Format the time using the structure from the Firebase script
   const time = new Date(timestamp);
-  header.textContent = `${username} - ${time.toLocaleTimeString()}`;
+  header.textContent = `${username} • ${time.toLocaleTimeString()}`;
 
-  const body = document.createElement("div");
-  body.className = "message-content";
+  const body = document.createElement('div');
+  body.className = 'msg-body';
   body.textContent = content;
 
-  contentWrapper.appendChild(header);
-  contentWrapper.appendChild(body);
-  messageElement.appendChild(contentWrapper);
-
-  messagesContainer.appendChild(messageElement);
+  div.appendChild(header);
+  div.appendChild(body);
+  messagesContainer.appendChild(div);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 // Listen for chat events
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
-  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.picture));
+  // The history messages only contain username, content, and timestamp
+  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp));
 });
 
 socket.on("chat message", (msg) => {
-  addMessage(msg.username, msg.content, msg.timestamp, msg.picture);
+  addMessage(msg.username, msg.content, msg.timestamp);
 });
