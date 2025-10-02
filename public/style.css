@@ -87,13 +87,13 @@ body {
 
 /* --- ADMIN AND SYSTEM MESSAGE STYLES --- */
 
-/* Style for chat bubbles sent by an Admin (Always visible on all messages) */
+/* Style for chat bubbles sent by an Admin (Dark Gold Infill) */
 .msg.admin-msg {
+    background: #4a3e2a; /* Dark Gold/Brown Infill */
     border: 2px solid gold; 
-    background: #4a3e2a; 
 }
 
-/* Default (Non-Admin) System Message Style (e.g., name change) */
+/* Default (Non-Admin) System Message Style (Blue) */
 .msg.system-msg {
     background: #1e3a8a; /* Dark Blue */
     color: #fff;
@@ -106,9 +106,9 @@ body {
     border-radius: 4px; 
 }
 
-/* *** Yellow Admin System Messages (e.g., chat cleared, admin joined) *** */
+/* *** Yellow Admin System Messages (Dark Gold Infill, Yellow Border) *** */
 .msg.admin-system-msg {
-    background: #8b6d19; /* Darker Gold/Brown background */
+    background: #4a3e2a; /* MATCHES .admin-msg INFILL */
     color: #ffc107; /* Yellow/Gold text */
     border: 2px solid #ffc107; /* Yellow border */
     font-weight: bold;
@@ -224,6 +224,4 @@ body {
     background: #6c757d;
     color: #fff;
 }
-.modal-cancel-btn:hover {
-    background: #5a6268;
-}
+.modal-cancel-btn:hover
