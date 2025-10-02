@@ -1,158 +1,62 @@
-/* --- Global Styles --- */
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: #000;
-    color: #fff;
-    margin: 0;
-    padding: 20px;
-}
+/* --- Custom Modal Styles --- */
 
-/* --- Chat Container --- */
-.chat-container {
-    max-width: 600px;
-    margin: auto;
-    background: #111;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
-    overflow: hidden;
-}
-
-/* --- Header Section --- */
-.chat-header {
-    background: #222;
-    padding: 15px;
+/* The dark background overlay */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+    z-index: 1000; /* Ensure it is on top of everything */
 }
 
-/* --- Name Input in Header (User Info) --- */
-.user-info input {
-    padding: 5px;
-    border-radius: 4px;
-    border: 1px solid #444;
+/* The popup box itself */
+.modal-content {
     background: #222;
-    color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
 }
 
-/* Rounded Green Button for "Set Name" & "Clear Chat" */
-.user-info button {
-    padding: 5px 10px;
-    margin-left: 5px;
-    border: none;
-    border-radius: 1000px; /* Highly rounded corners */
-    background: #28a745;
-    color: #fff;
-    cursor: pointer;
+.modal-content h3 {
+    color: #f0ad4e; /* Use a warning color (orange/gold) */
+    margin-top: 0;
 }
 
-.user-info button:hover {
-    background: #218838;
+.modal-content p {
+    margin-bottom: 20px;
 }
 
-/* --- Message Area --- */
-.messages {
-    display: flex;
-    flex-direction: column; 
-    height: 400px;
-    overflow-y: auto;
-    padding: 15px;
-    background: #111;
-}
-
-/* Base message bubble */
-.msg {
-    margin: 5px 0; 
-    padding: 8px 12px;
-    max-width: 80%;
-    border-radius: 18px; /* Default rounding for iMessage style */
-}
-
-/* Messages sent by the current user (BLUE BUBBLE) */
-.msg.own {
-    background: #007bff; /* Blue bubble */
-    color: #fff;
-    margin-left: auto; /* Aligns to the right */
-    margin-right: 0;
-    /* iMessage-style rounding: bottom right is flatter */
-    border-bottom-right-radius: 4px;
-}
-
-/* Messages sent by other users (GRAY BUBBLE) */
-.msg.other {
-    background: #333; /* Dark gray for others */
-    margin-right: auto; /* Aligns to the left */
-    margin-left: 0;
-    /* iMessage-style rounding: bottom left is flatter */
-    border-bottom-left-radius: 4px;
-}
-
-/* --- ADMIN AND SYSTEM MESSAGE STYLES --- */
-
-/* Style for messages sent by an Admin */
-.msg.admin-msg {
-    border: 2px solid gold; 
-    background: #4a3e2a; 
-}
-
-/* Style for custom-coded system messages (Banner look, centered) */
-.msg.system-msg {
-    background: #1e3a8a; 
-    color: #fff;
-    font-style: italic;
-    border-left: 5px solid #3b82f6;
-    text-align: center; 
-    max-width: 100%;
-    margin-left: 0;
-    margin-right: 0;
-    border-radius: 4px; /* Overwrite bubble rounding for a banner look */
-}
-
-/* Message metadata (Username and Time) */
-.msg-header {
-    font-size: 13px;
-    color: #aaa;
-    margin-bottom: 4px;
-    text-align: left; /* Ensures the header text is NOT centered */
-}
-
-.msg.own .msg-header {
-    color: #cce5ff;
-}
-
-/* Message body text */
-.msg-body {
-    font-size: 15px;
-}
-
-/* --- Input Area --- */
-.input-area {
-    display: flex;
-    padding: 15px;
-    background: #222;
-    border-top: 1px solid #333;
-}
-
-.input-area input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #444;
-    border-radius: 4px;
-    background: #333;
-    color: #fff;
-}
-
-/* Rounded Green Button for "Send" */
-.input-area button {
+.modal-actions button {
     padding: 10px 20px;
-    margin-left: 8px;
+    margin: 5px;
     border: none;
-    border-radius: 1000px; /* Highly rounded corners */
-    background: #28a745;
-    color: #fff;
+    border-radius: 1000px; /* Use your rounded style */
     cursor: pointer;
+    font-weight: bold;
 }
 
-.input-area button:hover {
-    background: #218838;
+/* Red button for confirmation */
+.modal-confirm-btn {
+    background: #dc3545; /* Red */
+    color: #fff;
+}
+.modal-confirm-btn:hover {
+    background: #c82333;
+}
+
+/* Neutral button for cancel */
+.modal-cancel-btn {
+    background: #6c757d; /* Gray */
+    color: #fff;
+}
+.modal-cancel-btn:hover {
+    background: #5a6268;
 }
