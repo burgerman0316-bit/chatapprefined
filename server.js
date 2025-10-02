@@ -11,9 +11,11 @@ const io = new Server(server);
 // Key: The secure login username (Staff member must enter this exact name)
 // Value: The public display name (What everyone sees in the chat)
 const STAFF_MAP = {
-    "SECRET_ALICE_LOGIN": "Alice C.",
-    "CODE_BOB_99": "Coach Bob",
-    "ADMIN_SMITH": "Mr. Smith"
+    "STAFF_CONTROLS-LIAM": "Liam Stern",
+    "STAFF_COBTROLS-DIESEL": "Diesel Carter",
+    "STAFF_CONTROLS-DONOVAN": "Donovan Powell",
+    "STAFF_CONTROLS-AARON": "Aaron Ortega",
+    "STAFF_CONTROLS-RICKY": "Ricky Martinez"
     // Add all your staff members here. Keys must be unique.
 };
 
@@ -101,3 +103,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
