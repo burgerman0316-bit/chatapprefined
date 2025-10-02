@@ -5,7 +5,7 @@ const messagesContainer = document.getElementById("messages");
 // Simple user object for tracking the name
 let currentUser = {
     name: "Guest", 
-    picture: null // Not used in this version, but good practice to keep
+    picture: null 
 };
 
 // Function to update the current user's name when the button is clicked.
@@ -20,7 +20,12 @@ function changeName() {
 
     // Update the local currentUser object
     currentUser.name = newName;
-    alert("Name set to: " + currentUser.name);
+    
+    // CUSTOM CODED POP-UP: Add a system message to the chat log
+    addMessage("System", `${currentUser.name} has entered the chat.`, new Date());
+
+    // Optional: Visually confirm the name change
+    nameInput.placeholder = currentUser.name;
 }
 
 // Send a message
@@ -37,24 +42,29 @@ function sendMessage() {
     username: currentUser.name,
     content: text,
     timestamp: new Date()
-    // Note: No 'picture' or 'isAdmin' in this simple version
   };
 
   socket.emit("chat message", messageData);
   input.value = "";
 }
 
-// Add message to chat, using the new CSS classes (.msg, .msg-header, .msg-body)
+// Add message to chat, adapted to use the CSS classes you provided (.msg, .msg-header, .msg-body)
 function addMessage(username, content, timestamp) {
+  // Check if the message is from the current user
   const isOwn = username === currentUser.name;
 
   const div = document.createElement('div');
   // Use the CSS classes for styling
   div.className = `msg ${isOwn ? 'own' : 'other'}`;
+  
+  // Add a special class for System messages
+  if (username === "System") {
+      div.classList.add("system-msg");
+  }
 
   const header = document.createElement('div');
   header.className = 'msg-header';
-  // Format the time using the structure from the Firebase script
+  // Format the time
   const time = new Date(timestamp);
   header.textContent = `${username} • ${time.toLocaleTimeString()}`;
 
@@ -71,7 +81,7 @@ function addMessage(username, content, timestamp) {
 // Listen for chat events
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
-  // The history messages only contain username, content, and timestamp
+  // Replay history
   msgs.forEach(m => addMessage(m.username, m.content, m.timestamp));
 });
 
