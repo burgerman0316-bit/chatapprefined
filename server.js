@@ -12,16 +12,24 @@ const io = new Server(server);
 // ======================================================
 const STAFF_LIST = [
     { 
-        loginName: "SECRET_ALICE_LOGIN",  // <--- The secure username they MUST enter
-        displayName: "Alice C. (Admin)"   // <--- The name everyone sees in chat
+        loginName: "STAFF_CONTROLS-LIAM",  // <--- The secure username they MUST enter
+        displayName: "Liam Stern"   // <--- The name everyone sees in chat
     },
     { 
-        loginName: "CODE_BOB_99",
-        displayName: "Coach Bob (Mod)"
+        loginName: "STAFF_CONTROLS-DIESEL",
+        displayName: "Diesel Carter"
     },
     { 
-        loginName: "ADMIN_SMITH",
-        displayName: "Mr. Smith (Owner)"
+        loginName: "STAFF_CONTROLS-RICKY",
+        displayName: "Ricky Martinez"
+    },
+    { 
+        loginName: "STAFF_CONTROLS-AARON",
+        displayName: "Aaron Ortega"
+    },
+    { 
+        loginName: "STAFF_CONTROLS-DONOVAN",
+        displayName: "Donovan Powell"
     }
     // ADD ALL YOUR STAFF MEMBERS HERE
     // Ensure the 'loginName' is unique and used only by staff.
@@ -29,7 +37,7 @@ const STAFF_LIST = [
 
 // Simple in-memory storage for chat history
 const chatHistory = [];
-const MAX_HISTORY = 100;
+const MAX_HISTORY = 200;
 
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -163,3 +171,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
