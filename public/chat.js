@@ -2,30 +2,51 @@
 const socket = io();
 const messagesContainer = document.getElementById("messages");
 
-// Simple user object for tracking the name
+// Simple user object for tracking the name and admin status
 let currentUser = {
     name: "Guest", 
-    picture: null 
+    picture: null,
+    isAdmin: false 
 };
 
-// Function to update the current user's name when the button is clicked.
+// Function to update the current user's name AND check for admin access
 function changeName() {
     const nameInput = document.getElementById("usernameInput");
+    const passInput = document.getElementById("adminPasswordInput");
+    
     const newName = nameInput.value.trim();
+    const adminPassAttempt = passInput.value.trim();
+
+    // *** ADMIN PASSWORD DEFINITION ***
+    const ADMIN_PASSWORD = "your-secret-admin-pass"; 
 
     if (newName === "") {
         alert("Name cannot be empty. Please enter something.");
         return;
     }
 
-    // Update the local currentUser object
-    currentUser.name = newName;
+    // 1. Check for Admin Access
+    let previousAdminStatus = currentUser.isAdmin;
+    currentUser.isAdmin = (adminPassAttempt === ADMIN_PASSWORD);
     
-    // CUSTOM CODED POP-UP: Add a system message to the chat log
-    addMessage("System", `${currentUser.name} has entered the chat.`, new Date());
+    if (adminPassAttempt !== "" && !currentUser.isAdmin) {
+        alert("Incorrect Admin Password. Joining as a regular user.");
+    }
+    
+    // 2. Set the Name
+    currentUser.name = newName;
 
-    // Optional: Visually confirm the name change
-    nameInput.placeholder = currentUser.name;
+    // 3. Provide Custom Feedback
+    let systemMessage = `${currentUser.name} has set their name.`;
+    
+    if (currentUser.isAdmin && !previousAdminStatus) {
+        systemMessage = `${currentUser.name} has joined the chat (ADMIN).`;
+    }
+
+    addMessage("System", systemMessage, new Date(), currentUser.isAdmin);
+
+    // Clean up password field for security
+    passInput.value = "";
 }
 
 // Send a message
@@ -34,39 +55,45 @@ function sendMessage() {
   const text = input.value.trim();
   if (text === "") return;
 
-  // Read the name from the input box just before sending
+  // Read the name from the input box just before sending (in case they typed in it)
   const nameInput = document.getElementById("usernameInput");
   currentUser.name = nameInput.value.trim() || "Anonymous";
 
   const messageData = {
     username: currentUser.name,
     content: text,
-    timestamp: new Date()
+    timestamp: new Date(),
+    isAdmin: currentUser.isAdmin // Send admin status with the message
   };
 
   socket.emit("chat message", messageData);
   input.value = "";
 }
 
-// Add message to chat, adapted to use the CSS classes you provided (.msg, .msg-header, .msg-body)
-function addMessage(username, content, timestamp) {
-  // Check if the message is from the current user
+// Add message to chat, now accepting the isAdmin flag
+function addMessage(username, content, timestamp, isAdmin = false) {
   const isOwn = username === currentUser.name;
 
   const div = document.createElement('div');
-  // Use the CSS classes for styling
   div.className = `msg ${isOwn ? 'own' : 'other'}`;
   
-  // Add a special class for System messages
+  // Add Admin styling class if applicable
+  if (isAdmin) {
+      div.classList.add("admin-msg");
+  }
+  // Add System message class if applicable
   if (username === "System") {
       div.classList.add("system-msg");
   }
 
   const header = document.createElement('div');
   header.className = 'msg-header';
-  // Format the time
+  
+  // Display (ADMIN) next to the name if the flag is true
+  const displayName = isAdmin ? `${username} (ADMIN)` : username;
+  
   const time = new Date(timestamp);
-  header.textContent = `${username} • ${time.toLocaleTimeString()}`;
+  header.textContent = `${displayName} • ${time.toLocaleTimeString()}`;
 
   const body = document.createElement('div');
   body.className = 'msg-body';
@@ -81,10 +108,12 @@ function addMessage(username, content, timestamp) {
 // Listen for chat events
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
-  // Replay history
-  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp));
+  // Ensure we pass the isAdmin flag from history if the server is saving it
+  // (Assuming server will save the isAdmin property on the message object)
+  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.isAdmin));
 });
 
 socket.on("chat message", (msg) => {
-  addMessage(msg.username, msg.content, msg.timestamp);
+  // Ensure we receive the isAdmin flag from the server
+  addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin);
 });
