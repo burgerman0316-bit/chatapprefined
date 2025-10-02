@@ -44,20 +44,21 @@ body {
     flex-grow: 1;
 }
 
-/* --- Muted Button Styles --- */
+/* --- Global Rounded Gray Button Styles --- */
 .header-area button {
     padding: 8px 15px;
-    /* Muted Indigo/Gray */
-    background-color: #4a4e69; 
+    /* Medium Gray */
+    background-color: #585858; 
     color: white;
     border: none;
-    border-radius: 4px;
+    /* Rounded corners */
+    border-radius: 20px; 
     cursor: pointer;
     transition: background-color 0.3s;
 }
 
 .header-area button:hover {
-    background-color: #3c4055;
+    background-color: #4a4a4a;
 }
 
 /* Admin Button Specifics (Clear History) */
@@ -93,7 +94,6 @@ body {
     word-wrap: break-word;
     /* Set a base radius for the corners */
     border-radius: 10px; 
-    transition: all 0.1s; /* Smooth visual changes */
 }
 
 .msg-header {
@@ -103,38 +103,24 @@ body {
     color: #b0b0b0; 
 }
 
-.msg-body {
-    font-size: 1em;
-}
-
 /* Message Alignment and Colors */
 .other {
     align-self: flex-start;
     background-color: #2c2c2c; 
-    color: #f0f0f0;
     /* Indicator: Less radius on bottom-left corner */
     border-bottom-left-radius: 2px; 
 }
 
 .own {
     align-self: flex-end;
-    background-color: #4a4e69; /* Muted Indigo (matches join button) */
+    background-color: #4a4a4a; /* Darker Gray bubble for own messages */
     color: white;
     /* Indicator: Less radius on bottom-right corner */
     border-bottom-right-radius: 2px; 
 }
 
-.own .msg-header {
-    color: #e0e0e0;
-}
 
-/* Staff/Admin Messages */
-.admin-msg .msg-header {
-    color: #ffd700; 
-}
-
-
-/* System Messages */
+/* System Messages (unchanged) */
 .system-msg, .admin-system-msg {
     align-self: center;
     background: none;
@@ -145,11 +131,11 @@ body {
     border-radius: 0;
     margin: 5px 0;
 }
-
 .admin-system-msg {
     color: #ff6347; 
     font-weight: bold;
 }
+
 
 /* Message Input Form */
 #messageForm {
@@ -169,57 +155,34 @@ body {
     margin-right: 8px;
 }
 
-/* --- Darker Send Button --- */
+/* --- Send Button Styling --- */
 #messageForm button {
     padding: 10px 15px;
-    /* Muted Green/Gray */
-    background-color: #6b8e23; 
+    background-color: #585858; /* Medium Gray */
     color: white;
     border: none;
-    border-radius: 4px;
+    /* Rounded corners */
+    border-radius: 20px; 
     cursor: pointer;
 }
 
 #messageForm button:hover {
-    background-color: #58791c;
+    background-color: #4a4a4a;
 }
 
 
-/* Modal Styles */
-.modal {
-    background-color: rgba(0,0,0,0.7); 
-}
-
-.modal-content {
-    background-color: #2c2c2c; 
-    color: #f0f0f0;
-}
-
-/* --- Modal Button Styles --- */
+/* Modal Styles (buttons are already dark and rounded) */
 .modal-content button {
-    padding: 10px 20px;
-    margin: 10px;
-    cursor: pointer;
-    border: none;
-    border-radius: 4px;
-    background-color: #555; /* Default dark background for all modal buttons */
-    color: white;
+    /* inherit dark gray color */
+    background-color: #585858; 
+    border-radius: 20px; /* Make modal buttons rounded */
 }
 
 /* Modal Yes Button (Confirm Clear) */
 .modal-content button:nth-child(2) {
-    background-color: #8d0801; /* Dark Red */
+    background-color: #8d0801; 
 }
 
-.modal-content button:nth-child(2):hover {
-    background-color: #6d0600;
-}
-
-/* Modal Cancel Button */
 .modal-content button:nth-child(3) {
-    background-color: #383838; /* Darker Gray */
-}
-
-.modal-content button:nth-child(3):hover {
-    background-color: #2c2c2c;
+    background-color: #383838; 
 }
