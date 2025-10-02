@@ -36,14 +36,19 @@ body {
     color: #fff;
 }
 
+/* GREEN BUTTONS for "Set Name" */
 .user-info button {
     padding: 5px 10px;
     margin-left: 5px;
     border: none;
     border-radius: 4px;
-    background: #333;
+    background: #28a745; /* Green button color */
     color: #fff;
     cursor: pointer;
+}
+
+.user-info button:hover {
+    background: #218838; /* Darker green on hover */
 }
 
 /* --- Message Area --- */
@@ -58,19 +63,21 @@ body {
 .msg {
     margin: 10px 0;
     padding: 8px 12px;
-    border-radius: 8px;
+    border-radius: 15px; /* More rounded bubbles */
     max-width: 80%;
 }
 
+/* BLUE BUBBLES for messages */
 /* Messages sent by the current user */
 .msg.own {
-    background: #333;
+    background: #007bff; /* Blue bubble */
+    color: #fff;
     margin-left: auto;
 }
 
 /* Messages sent by other users */
 .msg.other {
-    background: #222;
+    background: #333; /* Dark gray for others */
     margin-right: auto;
 }
 
@@ -78,13 +85,13 @@ body {
 
 /* Style for messages sent by an Admin */
 .msg.admin-msg {
-    border: 1px solid gold; /* Highlight the border */
-    background: #4a3e2a; /* A darker gold/brown background */
+    border: 2px solid gold; /* Highlight the border */
+    background: #4a3e2a; 
 }
 
 /* Style for custom-coded system messages (like join/name change) */
 .msg.system-msg {
-    background: #1e3a8a; /* A blue background */
+    background: #1e3a8a; 
     color: #fff;
     font-style: italic;
     border-left: 5px solid #3b82f6;
@@ -99,6 +106,10 @@ body {
     font-size: 13px;
     color: #aaa;
     margin-bottom: 4px;
+}
+
+.msg.own .msg-header {
+    color: #cce5ff; /* Lighter color for headers in blue bubbles */
 }
 
 /* Message body text */
@@ -123,16 +134,17 @@ body {
     color: #fff;
 }
 
+/* GREEN BUTTON for "Send" */
 .input-area button {
     padding: 10px 20px;
     margin-left: 8px;
     border: none;
     border-radius: 4px;
-    background: #333;
+    background: #28a745; /* Green button color */
     color: #fff;
     cursor: pointer;
 }
 
 .input-area button:hover {
-    background: #444;
+    background: #218838; /* Darker green on hover */
 }
