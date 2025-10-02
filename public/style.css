@@ -1,4 +1,4 @@
-/* REVISED: public/style.css (Staff Messages Yellow) */
+/* REVISED: public/style.css (Final Dark Theme) */
 
 /* Basic Reset */
 body {
@@ -47,7 +47,7 @@ body {
 /* --- Global Rounded Gray Button Styles --- */
 .header-area button {
     padding: 8px 15px;
-    background-color: #585858; 
+    background-color: #585858; /* Medium Gray */
     color: white;
     border: none;
     border-radius: 20px; 
@@ -99,44 +99,46 @@ body {
     color: #b0b0b0; 
 }
 
-/* Message Alignment and Colors (Regular Users) */
+/* --- NON-ADMIN MESSAGE ALIGNMENT AND COLORS --- */
 .other {
     align-self: flex-start;
     background-color: #2c2c2c; 
-    border-bottom-left-radius: 2px; 
+    border-bottom-left-radius: 2px; /* Indicator on left */
 }
 
 .own {
     align-self: flex-end;
     background-color: #4a4a4a; 
     color: white;
-    border-bottom-right-radius: 2px; 
+    border-bottom-right-radius: 2px; /* Indicator on right */
 }
 
-/* --- STAFF MESSAGE STYLES (NEW/UPDATED) --- */
+/* --- STAFF MESSAGE STYLES (YELLOW) --- */
 .admin-msg {
-    /* Staff messages align to the left side */
-    align-self: flex-start;
-    
-    /* Yellow/Gold Bubble Background */
     background-color: #ffc400; 
     color: #333; /* Dark text for contrast */
 }
 
 .admin-msg .msg-header {
-    /* Header (Username) Text Color */
     color: #806200; 
 }
 
-/* Adjust the indicator for the yellow staff bubble */
-.admin-msg.other, .admin-msg.own {
-    /* Admin staff messages always appear on the left, regardless of whether the current user is the admin */
-    border-bottom-left-radius: 2px;
-    border-bottom-right-radius: 10px; /* Reset own indicator */
-    align-self: flex-start;
+/* 1. Admin messages from YOU (Own staff message) */
+.own.admin-msg {
+    /* Aligned right by .own */
+    border-bottom-right-radius: 2px; 
+    border-bottom-left-radius: 10px; /* Reset left corner */
 }
 
-/* System Messages (unchanged) */
+/* 2. Admin messages from OTHERS (Other staff member) */
+.other.admin-msg {
+    /* Aligned left by .other */
+    border-bottom-left-radius: 2px; 
+    border-bottom-right-radius: 10px; /* Reset right corner */
+}
+
+
+/* System Messages */
 .system-msg, .admin-system-msg {
     align-self: center;
     background: none;
@@ -186,7 +188,7 @@ body {
 }
 
 
-/* Modal Styles (unchanged from last step) */
+/* Modal Styles */
 .modal-content button {
     background-color: #585858; 
     border-radius: 20px; 
