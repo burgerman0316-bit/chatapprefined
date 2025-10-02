@@ -12,30 +12,19 @@ let currentUser = {
 // Function to update the current user's name AND check for admin access
 function changeName() {
     const nameInput = document.getElementById("usernameInput");
-    const passInput = document.getElementById("adminPasswordInput");
-    
     const newName = nameInput.value.trim();
-    const adminPassAttempt = passInput.value.trim();
 
-    // *** ADMIN CONFIGURATION ***
+    // *** NAME-BASED ADMIN CONFIGURATION ***
     const ADMIN_NAMES = ["Admin", "Moderator", "Coach"]; 
-    const ADMIN_PASSWORD = "your-secret-admin-pass"; 
 
     if (newName === "") {
         alert("Name cannot be empty. Please enter something.");
         return;
     }
 
-    // 1. Check Admin Access (Name-based OR Password-based)
-    let isNameAdmin = ADMIN_NAMES.includes(newName);
-    let isPassAdmin = (adminPassAttempt === ADMIN_PASSWORD);
-
+    // 1. Check Admin Access (only by name)
     let previousAdminStatus = currentUser.isAdmin;
-    currentUser.isAdmin = isNameAdmin || isPassAdmin;
-    
-    if (adminPassAttempt !== "" && !isPassAdmin) {
-        alert("Incorrect Admin Password.");
-    }
+    currentUser.isAdmin = ADMIN_NAMES.includes(newName);
     
     // 2. Set the Name
     currentUser.name = newName;
@@ -49,9 +38,6 @@ function changeName() {
 
     // Use a custom system message instead of a browser alert
     addMessage("System", systemMessage, new Date(), currentUser.isAdmin);
-
-    // Clean up password field for security
-    passInput.value = "";
 }
 
 // Send a message
@@ -80,7 +66,6 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   const isOwn = username === currentUser.name;
 
   const div = document.createElement('div');
-  // Use the CSS classes for styling
   div.className = `msg ${isOwn ? 'own' : 'other'}`;
   
   // Add Admin styling class if applicable
