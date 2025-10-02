@@ -27,7 +27,7 @@ body {
     align-items: center;
 }
 
-/* --- Name Input in Header (User Info) --- */
+/* --- Name/Admin Input in Header (User Info) --- */
 .user-info input {
     padding: 5px;
     border-radius: 4px;
@@ -74,7 +74,15 @@ body {
     margin-right: auto;
 }
 
-/* Custom style for system-generated messages */
+/* --- ADMIN AND SYSTEM MESSAGE STYLES --- */
+
+/* Style for messages sent by an Admin */
+.msg.admin-msg {
+    border: 1px solid gold; /* Highlight the border */
+    background: #4a3e2a; /* A darker gold/brown background */
+}
+
+/* Style for custom-coded system messages (like join/name change) */
 .msg.system-msg {
     background: #1e3a8a; /* A blue background */
     color: #fff;
