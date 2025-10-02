@@ -2,7 +2,7 @@
 const socket = io();
 const messagesContainer = document.getElementById("messages");
 const clearChatBtn = document.getElementById("clearChatBtn");
-// NEW: Get the modal element
+// Get the modal element
 const adminModal = document.getElementById("adminModal"); 
 
 let currentUser = {
@@ -16,6 +16,7 @@ function changeName() {
     const nameInput = document.getElementById("usernameInput");
     const newName = nameInput.value.trim();
 
+    // *** NAME-BASED ADMIN CONFIGURATION (Case-insensitive, includes OWNER) ***
     const ADMIN_NAMES = ["ADMIN", "MODERATOR", "COACH", "OWNER"]; 
 
     if (newName === "") {
@@ -31,19 +32,21 @@ function changeName() {
     // Show/Hide Clear Chat Button based on status
     clearChatBtn.style.display = currentUser.isAdmin ? 'inline-block' : 'none';
 
-    let systemMessage = `${currentUser.name} has set their name.`;
-    
-    if (currentUser.isAdmin && !previousAdminStatus) {
-        systemMessage = `${currentUser.name} has joined the chat (ADMIN).`;
+    // --- SECURITY FIX: DO NOT ANNOUNCE ADMIN LOGIN TO THE CHAT ---
+    if (currentUser.isAdmin) {
+        // Log to the console for the admin's eyes only (if they open the console)
+        console.log(`[Admin Login]: Logged in as ${currentUser.name}`);
+        return; 
     }
-
-    addMessage("System", systemMessage, new Date(), currentUser.isAdmin);
+    
+    // 4. Provide Custom System Message for NON-ADMIN users
+    let systemMessage = `${currentUser.name} has set their name.`;
+    addMessage("System", systemMessage, new Date(), false); // Ensure it's not marked as admin message
 }
 
 
 // --- MODAL CONTROL FUNCTIONS ---
 
-// Function to show the custom confirmation modal
 function showAdminModal() {
     if (!currentUser.isAdmin) {
         alert("You must be an admin to clear the chat.");
@@ -52,12 +55,10 @@ function showAdminModal() {
     adminModal.style.display = 'flex'; // Display the pop-up
 }
 
-// Function to hide the custom confirmation modal (Cancel button)
 function hideAdminModal() {
     adminModal.style.display = 'none';
 }
 
-// Function to confirm the clear (Yes button)
 function confirmClear() {
     // 1. Hide the modal immediately
     hideAdminModal();
