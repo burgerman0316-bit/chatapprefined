@@ -10,31 +10,23 @@
 
 <div class="chat-container">
   <div class="chat-header">
-    <h2>8th Grade Chat Room</h2>
+    <h2>Chat Room</h2>
+    
+    <div class="user-info">
+      <input type="text" id="usernameInput" placeholder="Your Name (required)" value="Guest">
+      <button onclick="changeName()">Set Name</button>
+    </div>
   </div>
 
-  <div class="login-area" id="loginArea">
-    <h3>Join the Chat</h3>
-    <input type="text" id="usernameInput" placeholder="Enter Your Name">
-    <input type="password" id="adminPasswordInput" placeholder="Optional Admin Password">
-    <button onclick="loginUser()">Join Chat</button>
-  </div>
   <div class="messages" id="messages"></div>
 
-  <div class="input-area" id="inputArea">
+  <div class="input-area">
     <input type="text" id="messageInput" placeholder="Type a message...">
     <button onclick="sendMessage()">Send</button>
   </div>
 </div>
 
 <script src="chat.js"></script>
-<script>
-  // Hide chat elements initially
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('messages').style.display = 'none';
-    document.getElementById('inputArea').style.display = 'none';
-    document.getElementById('usernameInput').focus();
-  });
-</script>
+
 </body>
 </html>
