@@ -10,37 +10,31 @@
 
 <div class="chat-container">
   <div class="chat-header">
-    <h2>Chat Room</h2>
-    
-    <div class="header-controls">
-        <button id="clearChatBtn" style="display: none;" onclick="clearChat()">Clear Chat</button>
-
-        <div class="user-info" id="nameSection">
-          <div id="nameInputArea">
-            <input type="text" id="nameInputField" placeholder="Your Name">
-            <button onclick="setUsername()">Set</button>
-          </div>
-          <span id="currentUsername" style="display: none;"></span>
-        </div>
-    </div>
+    <h2>8th Grade Chat Room</h2>
   </div>
 
+  <div class="login-area" id="loginArea">
+    <h3>Join the Chat</h3>
+    <input type="text" id="usernameInput" placeholder="Enter Your Name">
+    <input type="password" id="adminPasswordInput" placeholder="Optional Admin Password">
+    <button onclick="loginUser()">Join Chat</button>
+  </div>
   <div class="messages" id="messages"></div>
 
-  <div class="input-area">
+  <div class="input-area" id="inputArea">
     <input type="text" id="messageInput" placeholder="Type a message...">
     <button onclick="sendMessage()">Send</button>
   </div>
 </div>
 
-<div id="customModal" class="custom-modal" style="display: none;">
-    <div class="modal-content">
-        <p id="modalMessage"></p>
-        <div class="modal-buttons" id="modalButtons">
-            </div>
-    </div>
-</div>
-
 <script src="chat.js"></script>
+<script>
+  // Hide chat elements initially
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('messages').style.display = 'none';
+    document.getElementById('inputArea').style.display = 'none';
+    document.getElementById('usernameInput').focus();
+  });
+</script>
 </body>
 </html>
