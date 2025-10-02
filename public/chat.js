@@ -155,7 +155,7 @@ function addMessage(username, content, timestamp, isAdmin = false) {
 socket.on("history_cleared", (data) => {
     messagesContainer.innerHTML = "";
     // This is an admin action, so isAdmin=true flags the yellow system message style
-    addMessage("System", `Chat history cleared by ${data.username}.`, new Date(), true);
+    addMessage("System", `Chat history cleared by a staff member`, new Date(), true);
 });
 
 socket.on("chat history", (msgs) => {
@@ -166,4 +166,5 @@ socket.on("chat history", (msgs) => {
 socket.on("chat message", (msg) => {
   addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin);
 });
+
 
