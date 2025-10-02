@@ -1,44 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>8th Grade Chat</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="/socket.io/socket.io.js"></script>
-</head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8th Grade Chat App</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="chat.css"> </head>
 <body>
+    <div class="chat-container">
+        <div class="header-area">
+            <input type="text" id="usernameInput" placeholder="Enter your name">
+            <button onclick="changeName()">Join Chat</button>
 
-<div class="chat-container">
-  <div class="chat-header">
-    <h2>Chat Room</h2>
-    
-    <div class="user-info">
-      <input type="text" id="usernameInput" placeholder="Your Name">
-      <button onclick="changeName()">Set Name</button>
-      
-      <button id="clearChatBtn" onclick="showAdminModal()" style="display:none;">Clear Chat</button>
+            <div id="staffControls" class="staff-controls" style="display: none;">
+                <span class="staff-indicator">STAFF CONTROLS</span>
+                <button id="clearChatBtn" onclick="showAdminModal()">Clear History</button>
+                </div>
+        </div>
+
+        <div class="messages-area">
+            <div id="messages">
+                </div>
+        </div>
+
+        <form id="messageForm" onsubmit="sendMessage(); return false;">
+            <input id="messageInput" autocomplete="off" placeholder="Type a message..." />
+            <button>Send</button>
+        </form>
     </div>
-  </div>
 
-  <div class="messages" id="messages"></div>
-
-  <div class="input-area">
-    <input type="text" id="messageInput" placeholder="Type a message...">
-    <button onclick="sendMessage()">Send</button>
-  </div>
-</div>
-
-<div id="adminModal" class="modal-backdrop" style="display:none;">
-    <div class="modal-content">
-        <h3>Admin Confirmation</h3>
-        <p>Are you sure you want to clear the entire chat history? This action cannot be undone!</p>
-        <div class="modal-actions">
-            <button class="modal-confirm-btn" onclick="confirmClear()">Yes, Clear It</button>
-            <button class="modal-cancel-btn" onclick="hideAdminModal()">Cancel</button>
+    <div id="adminModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <p>Are you sure you want to clear the entire chat history?</p>
+            <button onclick="confirmClear()">Yes, Clear</button>
+            <button onclick="hideAdminModal()">Cancel</button>
         </div>
     </div>
-</div>
 
-<script src="chat.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="chat.js"></script>
 </body>
 </html>
