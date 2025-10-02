@@ -1,10 +1,10 @@
 // Connects automatically to the same host as the page
 const socket = io();
 const messagesContainer = document.getElementById("messages");
+const clearChatBtn = document.getElementById("clearChatBtn");
 
-// Simple user object for tracking the name and admin status
 let currentUser = {
-    name: null, // Initialized to null (no default name)
+    name: null, 
     picture: null,
     isAdmin: false 
 };
@@ -14,7 +14,6 @@ function changeName() {
     const nameInput = document.getElementById("usernameInput");
     const newName = nameInput.value.trim();
 
-    // *** NAME-BASED ADMIN CONFIGURATION (Case-insensitive, includes OWNER) ***
     const ADMIN_NAMES = ["ADMIN", "MODERATOR", "COACH", "OWNER"]; 
 
     if (newName === "") {
@@ -29,23 +28,24 @@ function changeName() {
     // 2. Set the Name
     currentUser.name = newName;
 
-    // 3. Provide Custom System Message
+    // 3. Show/Hide Clear Chat Button based on status
+    clearChatBtn.style.display = currentUser.isAdmin ? 'inline-block' : 'none';
+
+    // 4. Provide Custom System Message
     let systemMessage = `${currentUser.name} has set their name.`;
     
     if (currentUser.isAdmin && !previousAdminStatus) {
         systemMessage = `${currentUser.name} has joined the chat (ADMIN).`;
     }
 
-    // Use a custom system message instead of a browser alert
     addMessage("System", systemMessage, new Date(), currentUser.isAdmin);
 }
 
-// Send a message - FIX for messages not sending
+// FIX: Send a message
 function sendMessage() {
   const input = document.getElementById("messageInput");
   const text = input.value.trim();
   
-  // FIX: Check if a name has been set before sending
   if (!currentUser.name) {
     alert("Please enter and set your name first.");
     return;
@@ -53,7 +53,6 @@ function sendMessage() {
   
   if (text === "") return;
 
-  // Read the name from the input box just before sending (safety)
   const nameInput = document.getElementById("usernameInput");
   currentUser.name = nameInput.value.trim() || "Anonymous";
 
@@ -64,9 +63,28 @@ function sendMessage() {
     isAdmin: currentUser.isAdmin
   };
 
+  // FIX: This line sends the message data to the server (server.js must listen for 'chat message')
   socket.emit("chat message", messageData);
   input.value = "";
 }
+
+
+// NEW: Function to clear messages (Admin only)
+function clearMessages() {
+    if (!currentUser.isAdmin) {
+        alert("You must be an admin to clear the chat.");
+        return;
+    }
+
+    if (confirm("Are you sure you want to clear the entire chat history? This cannot be undone.")) {
+        // This emits a new event the server needs to listen for
+        socket.emit("admin:clear_history", {
+            username: currentUser.name,
+            timestamp: new Date()
+        });
+    }
+}
+
 
 // Add message to chat, now accepting the isAdmin flag
 function addMessage(username, content, timestamp, isAdmin = false) {
@@ -75,11 +93,9 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   const div = document.createElement('div');
   div.className = `msg ${isOwn ? 'own' : 'other'}`;
   
-  // Add Admin styling class if applicable
   if (isAdmin) {
       div.classList.add("admin-msg");
   }
-  // Add System message class if applicable
   if (username === "System") {
       div.classList.add("system-msg");
   }
@@ -87,7 +103,6 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   const header = document.createElement('div');
   header.className = 'msg-header';
   
-  // Display (ADMIN) next to the name if the flag is true
   const displayName = isAdmin ? `${username} (ADMIN)` : username;
   
   const time = new Date(timestamp);
@@ -103,7 +118,15 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
+
 // Listen for chat events
+
+// Listen for the specific event sent by the server after history is cleared
+socket.on("history_cleared", (data) => {
+    messagesContainer.innerHTML = "";
+    addMessage("System", `Chat history cleared by ${data.username}.`, new Date(), true);
+});
+
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
   msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.isAdmin));
