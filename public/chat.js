@@ -1,11 +1,12 @@
 const socket = io();
 const messagesContainer = document.getElementById("messages");
 const usernameInput = document.getElementById("usernameInput");
-const staffControlsDiv = document.getElementById("staffControls"); // The div that holds the Clear History button
+const staffControlsDiv = document.getElementById("staffControls");
 
 let currentUser = {
-    name: null, // Stores the secure login name or regular username
-    isAdmin: false 
+    name: null,       // Stores the secure login name or regular username
+    isAdmin: false,
+    displayName: null // Stores the final name seen in chat (essential for alignment checks)
 };
 
 // ======================================================
@@ -20,37 +21,32 @@ function changeName() {
         return;
     }
     
-    // Temporarily store the raw input
     currentUser.name = newName; 
-    
-    // Ask the server to validate the name and check for staff status
     socket.emit("check_staff_status", newName); 
 }
 
 // Server accepted the name (regular user)
 socket.on('name_accepted', (displayName) => {
     currentUser.isAdmin = false;
-    // Hide staff controls for regular users
+    currentUser.displayName = displayName;
+    
     staffControlsDiv.style.display = 'none'; 
     addMessage("System", `${displayName} has joined the chat.`, new Date());
     
-    // Disable the name input after successful join
     usernameInput.disabled = true; 
     document.querySelector('.header-area button').disabled = true;
 });
 
 // Server accepted the name (staff user)
 socket.on("staff_status_update", (data) => {
-    // Check if the secure login name matches
     if (data.secureName === currentUser.name) {
         currentUser.isAdmin = true;
+        currentUser.displayName = data.displayName;
         
-        // Show staff controls (the Clear History button)
-        staffControlsDiv.style.display = 'inline-block'; // Use inline-block or flex to keep it in line
+        staffControlsDiv.style.display = 'inline-block'; 
         
         addMessage("System", `${data.displayName} has logged in.`, new Date(), true); 
         
-        // Disable the name input after successful join
         usernameInput.disabled = true;
         document.querySelector('.header-area button').disabled = true;
     }
@@ -59,16 +55,16 @@ socket.on("staff_status_update", (data) => {
 // Server rejected the name (reserved by staff)
 socket.on('name_rejected', (reason) => {
     alert(reason);
-    // Clear the name input so the user has to try again
     usernameInput.value = ''; 
     currentUser.name = null;
     currentUser.isAdmin = false;
+    currentUser.displayName = null;
     staffControlsDiv.style.display = 'none';
 });
 
 
 // ======================================================
-// MODAL & CONTROLS FUNCTIONS
+// CONTROLS AND MESSAGING FUNCTIONS
 // ======================================================
 
 function showAdminModal() {
@@ -85,18 +81,11 @@ function hideAdminModal() {
 
 function confirmClear() {
     hideAdminModal();
-
-    // Emit the SECURE username for the server to validate
     socket.emit("admin:clear_history", {
         username: currentUser.name, // Sends the secure login name
         timestamp: new Date()
     });
 }
-
-
-// ======================================================
-// MESSAGING FUNCTIONS
-// ======================================================
 
 function sendMessage() {
   const input = document.getElementById("messageInput");
@@ -109,7 +98,6 @@ function sendMessage() {
   
   if (text === "") return;
 
-  // The client sends the raw entered name (secure or public)
   const messageData = {
     username: currentUser.name, 
     content: text,
@@ -123,47 +111,40 @@ function sendMessage() {
 function addMessage(username, content, timestamp, isAdmin = false) {
   const div = document.createElement('div');
   
-  // Simple check to determine if the message is 'yours' for styling
-  const isOwn = (username === currentUser.name) || (isAdmin && currentUser.isAdmin); 
-
-  div.className = `msg ${isOwn ? 'own' : 'other'}`;
+  // FIXED ALIGNMENT LOGIC: Check if the message's display name matches the current user's display name
+  const isOwn = (username === currentUser.displayName); 
   
-  if (isAdmin) {
-      div.classList.add("admin-msg");
-  }
-  
+  // Determine CSS classes for styling and alignment
   if (username === "System") {
-      if (isAdmin) {
-          div.classList.add("admin-system-msg");
-      } else {
-          div.classList.add("system-msg");
-      }
+      // System messages are centered
+      div.className = isAdmin ? 'msg admin-system-msg' : 'msg system-msg';
+  } else if (isOwn) {
+      // All messages from the current user (staff or regular) align RIGHT
+      div.className = `msg own ${isAdmin ? 'admin-msg' : ''}`;
+  } else {
+      // All messages from others (staff or regular) align LEFT
+      div.className = `msg other ${isAdmin ? 'admin-msg' : ''}`;
   }
-
+  
   const header = document.createElement('div');
   header.className = 'msg-header';
   
-  let displayName = username; // Display the name as sent by the server
-  
   const time = new Date(timestamp);
-  header.textContent = `${displayName} • ${time.toLocaleTimeString()}`;
+  header.textContent = `${username} • ${time.toLocaleTimeString()}`;
 
   const body = document.createElement('div');
   body.className = 'msg-body';
   body.textContent = content;
-
+  
   div.appendChild(header);
   div.appendChild(body);
   messagesContainer.appendChild(div);
   
-  // Scroll to the latest message
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 
-// ======================================================
-// Socket.IO Listeners
-// ======================================================
+// --- Socket.IO Listeners ---
 
 socket.on("history_cleared", (data) => {
     messagesContainer.innerHTML = "";
