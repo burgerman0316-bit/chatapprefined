@@ -106,7 +106,7 @@ body {
     border-radius: 4px; 
 }
 
-/* *** NEW: Yellow Admin System Messages (e.g., chat cleared, admin joined) *** */
+/* *** Yellow Admin System Messages (e.g., chat cleared, admin joined) *** */
 .msg.admin-system-msg {
     background: #8b6d19; /* Darker Gold/Brown background */
     color: #ffc107; /* Yellow/Gold text */
