@@ -118,17 +118,13 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   const header = document.createElement('div');
   header.className = 'msg-header';
   
-  // *** CRITICAL SECURITY FIX ***
+  // *** FINAL SECURITY FIX ***
   let displayName;
   
   if (isAdmin) {
-      if (isOwn) {
-          // If I am the admin sending the message, I see my secret name
-          displayName = `${username} (ADMIN)`;
-      } else {
-          // If someone else sees the message, they only see "Admin"
-          displayName = "Admin"; 
-      }
+      // Always show "Admin" regardless of who sent the message,
+      // which protects the secret name for both other users and the admin themselves.
+      displayName = "Admin";
   } else {
       // Regular user message
       displayName = username;
@@ -154,8 +150,6 @@ function addMessage(username, content, timestamp, isAdmin = false) {
 socket.on("history_cleared", (data) => {
     messagesContainer.innerHTML = "";
     // Display the custom system message confirming the action
-    // We display the full name here because this is an administrative action log, 
-    // and the name is needed for accountability.
     addMessage("System", `Chat history cleared by ${data.username}.`, new Date(), true);
 });
 
