@@ -1,59 +1,103 @@
 const express = require('express');
 const http = require('http');
-const socketIo = require('socket.io');
+const { Server } = require("socket.io");
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
+const io = new Server(server);
 
-// Use the PORT environment variable provided by Railway, or default to 3000
-const port = process.env.PORT || 3000;
+// --- 1. SECURE STAFF CONFIGURATION (New) ---
+// Key: The secure login username (Staff member must enter this exact name)
+// Value: The public display name (What everyone sees in the chat)
+const STAFF_MAP = {
+    "SECRET_ALICE_LOGIN": "Alice C.",
+    "CODE_BOB_99": "Coach Bob",
+    "ADMIN_SMITH": "Mr. Smith"
+    // Add all your staff members here. Keys must be unique.
+};
 
-// Set up Socket.IO
-const io = socketIo(server);
+// Simple in-memory storage for chat history
+const chatHistory = [];
+const MAX_HISTORY = 100; // Limit messages for performance
 
-// Middleware to serve static files (your HTML, CSS, JS) from the 'public' directory
-app.use(express.static('public'));
+// Serve static files from the 'public' directory
+app.use(express.static(path.join(__dirname, 'public')));
 
-// CRITICAL: Array to store all chat messages (your server's "database")
-let messages = []; 
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
-// Handle incoming client connections
+// Function to check staff credentials and get the display name
+function getStaffDisplayInfo(username) {
+    const secureUsername = username.trim();
+    const displayName = STAFF_MAP[secureUsername];
+
+    if (displayName) {
+        return {
+            isAdmin: true,
+            username: displayName // Return the public display name
+        };
+    }
+    
+    // Not a staff member
+    return {
+        isAdmin: false,
+        username: secureUsername // Use the entered name as is
+    };
+}
+
+
 io.on('connection', (socket) => {
     console.log('A user connected');
 
-    // Send the existing history to the newly connected client
-    socket.emit('chat history', messages);
+    // Send chat history to the newly connected user
+    socket.emit('chat history', chatHistory);
 
-    // 1. Handle Incoming Chat Messages
     socket.on('chat message', (msg) => {
-        // Store the new message
-        messages.push(msg);
+        // --- 2. AUTHENTICATION AND NAME MAPPING (New) ---
+        // Get the secure info and public name from the server map
+        const staffInfo = getStaffDisplayInfo(msg.username);
         
-        // Broadcast the message to all connected clients
-        io.emit('chat message', msg); 
+        const messageData = {
+            // Use the secure username for internal logs (optional) but the display name for chat
+            username: staffInfo.username, 
+            content: msg.content,
+            timestamp: new Date(),
+            isAdmin: staffInfo.isAdmin
+        };
+
+        // Add to history and enforce limit
+        chatHistory.push(messageData);
+        while (chatHistory.length > MAX_HISTORY) {
+            chatHistory.shift();
+        }
+
+        // Broadcast the message with the correct display name and isAdmin flag
+        io.emit('chat message', messageData);
     });
-    
-    // 2. Handle Admin Clear Chat Request
+
     socket.on('admin:clear_history', (data) => {
-        if (!data.username) return; 
-
-        // CRITICAL: CLEAR THE SERVER-SIDE ARRAY
-        messages = []; 
-
-        // Announce the action to everyone and trigger the client-side clear
-        io.emit('history_cleared', {
-            username: data.username
-        });
-        console.log(`Chat history cleared by ADMIN: ${data.username}`);
+        // The client only sends the secure name, so we check and get the display name again
+        const staffInfo = getStaffDisplayInfo(data.username);
+        
+        if (staffInfo.isAdmin) {
+            chatHistory.length = 0; // Clear the array
+            
+            // Broadcast the clear event with the public staff name
+            io.emit('history_cleared', {
+                username: staffInfo.username, // Use the public display name
+                timestamp: new Date()
+            });
+        }
     });
 
-    // Handle client disconnect
     socket.on('disconnect', () => {
-        console.log('A user disconnected');
+        console.log('User disconnected');
     });
 });
 
-// Start the server
-server.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
