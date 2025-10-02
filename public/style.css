@@ -209,6 +209,8 @@ body {
     display: flex; 
     justify-content: center;
     align-items: center;
+    backdrop-filter: blur(5px); /* Adjust the pixel value for more or less blur */
+    -webkit-backdrop-filter: blur(5px);
 }
 
 .modal-content {
@@ -255,4 +257,5 @@ body {
 .modal-content button:nth-child(3):hover {
     background-color: #555;
 }
+
 
