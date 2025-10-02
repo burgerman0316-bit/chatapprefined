@@ -7,21 +7,26 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// --- 1. SECURE STAFF CONFIGURATION (New) ---
-// Key: The secure login username (Staff member must enter this exact name)
-// Value: The public display name (What everyone sees in the chat)
-const STAFF_MAP = {
-    "STAFF_CONTROLS-LIAM": "Liam Stern",
-    "STAFF_COBTROLS-DIESEL": "Diesel Carter",
-    "STAFF_CONTROLS-DONOVAN": "Donovan Powell",
-    "STAFF_CONTROLS-AARON": "Aaron Ortega",
-    "STAFF_CONTROLS-RICKY": "Ricky Martinez"
-    // Add all your staff members here. Keys must be unique.
-};
+// --- 1. STAFF CONFIGURATION (Array of Objects Format) ---
+const STAFF_LIST = [
+    { 
+        loginName: "SECRET_ALICE_LOGIN",  // <--- Secure username
+        displayName: "Alice C. (Admin)"   // <--- Public name
+    },
+    { 
+        loginName: "CODE_BOB_99",
+        displayName: "Coach Bob (Mod)"
+    },
+    { 
+        loginName: "ADMIN_SMITH",
+        displayName: "Mr. Smith (Owner)"
+    }
+    // Add all your staff members here. Ensure loginName is unique.
+];
 
 // Simple in-memory storage for chat history
 const chatHistory = [];
-const MAX_HISTORY = 100; // Limit messages for performance
+const MAX_HISTORY = 100;
 
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -30,15 +35,30 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Function to check staff credentials and get the display name
-function getStaffDisplayInfo(username) {
-    const secureUsername = username.trim();
-    const displayName = STAFF_MAP[secureUsername];
+// Function to check if a name is reserved by staff
+function isStaffNameReserved(enteredUsername) {
+    const checkName = enteredUsername.trim().toUpperCase(); // Case-insensitive check
 
-    if (displayName) {
+    // Check if the entered username (secure or public) is reserved
+    return STAFF_LIST.some(staff => 
+        staff.loginName.toUpperCase() === checkName || 
+        staff.displayName.toUpperCase() === checkName
+    );
+}
+
+// Function to check staff credentials and get the display name
+function getStaffDisplayInfo(enteredUsername) {
+    const secureUsername = enteredUsername.trim();
+    
+    // Find a matching loginName in the STAFF_LIST
+    const staffMember = STAFF_LIST.find(staff => 
+        staff.loginName === secureUsername
+    );
+
+    if (staffMember) {
         return {
             isAdmin: true,
-            username: displayName // Return the public display name
+            username: staffMember.displayName // Return the public display name
         };
     }
     
@@ -56,39 +76,62 @@ io.on('connection', (socket) => {
     // Send chat history to the newly connected user
     socket.emit('chat history', chatHistory);
 
+    // NEW: Handle the client checking their staff status (used for initial name check)
+    socket.on('check_staff_status', (enteredName) => {
+        // 1. Check if the name is reserved (secure or public)
+        if (isStaffNameReserved(enteredName)) {
+            // 2. Check if the name is a valid secure login name
+            const staffInfo = getStaffDisplayInfo(enteredName);
+            
+            if (!staffInfo.isAdmin) {
+                // Name is reserved (e.g., 'Alice C. (Admin)'), but they didn't enter the secure key
+                socket.emit('name_rejected', 'That name is reserved by staff. Please choose another name.');
+                return;
+            }
+            // If it IS a staff login, send success
+            socket.emit('staff_status_update', {
+                isAdmin: true,
+                displayName: staffInfo.username,
+                secureName: enteredName
+            });
+        } else {
+            // Name is not reserved, allow it.
+            socket.emit('name_accepted', enteredName);
+        }
+    });
+
     socket.on('chat message', (msg) => {
-        // --- 2. AUTHENTICATION AND NAME MAPPING (New) ---
-        // Get the secure info and public name from the server map
         const staffInfo = getStaffDisplayInfo(msg.username);
         
+        // Final server-side security check: If a regular user tries to send a message
+        // using a reserved name, reject it.
+        if (!staffInfo.isAdmin && isStaffNameReserved(msg.username)) {
+            console.log(`REJECTED: Non-staff user tried to send message as reserved name: ${msg.username}`);
+            return; 
+        }
+
         const messageData = {
-            // Use the secure username for internal logs (optional) but the display name for chat
             username: staffInfo.username, 
             content: msg.content,
             timestamp: new Date(),
             isAdmin: staffInfo.isAdmin
         };
-
-        // Add to history and enforce limit
+        // ... (rest of message handling)
         chatHistory.push(messageData);
         while (chatHistory.length > MAX_HISTORY) {
             chatHistory.shift();
         }
 
-        // Broadcast the message with the correct display name and isAdmin flag
         io.emit('chat message', messageData);
     });
 
     socket.on('admin:clear_history', (data) => {
-        // The client only sends the secure name, so we check and get the display name again
         const staffInfo = getStaffDisplayInfo(data.username);
         
         if (staffInfo.isAdmin) {
-            chatHistory.length = 0; // Clear the array
-            
-            // Broadcast the clear event with the public staff name
+            chatHistory.length = 0;
             io.emit('history_cleared', {
-                username: staffInfo.username, // Use the public display name
+                username: staffInfo.username,
                 timestamp: new Date()
             });
         }
@@ -103,4 +146,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-
