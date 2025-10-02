@@ -14,6 +14,7 @@ function changeName() {
     const nameInput = document.getElementById("usernameInput");
     const newName = nameInput.value.trim();
 
+    // *** NAME-BASED ADMIN CONFIGURATION (Case-insensitive, includes OWNER) ***
     const ADMIN_NAMES = ["ADMIN", "MODERATOR", "COACH", "OWNER"]; 
 
     if (newName === "") {
@@ -63,7 +64,7 @@ function sendMessage() {
     isAdmin: currentUser.isAdmin
   };
 
-  // FIX: This line sends the message data to the server (server.js must listen for 'chat message')
+  // This line sends the message data to the server
   socket.emit("chat message", messageData);
   input.value = "";
 }
@@ -77,7 +78,7 @@ function clearMessages() {
     }
 
     if (confirm("Are you sure you want to clear the entire chat history? This cannot be undone.")) {
-        // This emits a new event the server needs to listen for
+        // This emits the admin event for the server to clear history
         socket.emit("admin:clear_history", {
             username: currentUser.name,
             timestamp: new Date()
@@ -86,7 +87,7 @@ function clearMessages() {
 }
 
 
-// Add message to chat, now accepting the isAdmin flag
+// Add message to chat
 function addMessage(username, content, timestamp, isAdmin = false) {
   const isOwn = username === currentUser.name;
 
