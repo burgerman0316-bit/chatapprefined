@@ -220,6 +220,7 @@ body {
     border-radius: 8px;
     text-align: center;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    color: white;
 }
 
 .modal-content p {
@@ -254,3 +255,4 @@ body {
 .modal-content button:nth-child(3):hover {
     background-color: #555;
 }
+
