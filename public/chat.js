@@ -2,12 +2,33 @@ const socket = io();
 const messagesContainer = document.getElementById("messages");
 const usernameInput = document.getElementById("usernameInput");
 const staffControlsDiv = document.getElementById("staffControls");
+const messageInput = document.getElementById("messageInput"); // Added to easily target input
 
 let currentUser = {
-    name: null,       // Stores the secure login name or regular username
+    name: null,       
     isAdmin: false,
-    displayName: null // Stores the final name seen in chat (essential for alignment checks)
+    displayName: null
 };
+
+// ======================================================
+// NEW: LISTEN FOR ENTER KEY PRESS
+// ======================================================
+
+// The messageForm has an 'onsubmit' which handles the enter key when the
+// input is focused. This block is primarily for robust browser support,
+// but the core fix is usually ensuring the <form> wraps the input, which it does.
+// We'll keep the basic setup here and ensure the submit is robust.
+
+messageInput.addEventListener('keypress', (e) => {
+    // Check if the pressed key is the 'Enter' key
+    if (e.key === 'Enter') {
+        // Prevent the default action (which is usually adding a newline or a full page reload)
+        e.preventDefault(); 
+        // Manually trigger the sendMessage function
+        sendMessage();
+    }
+});
+
 
 // ======================================================
 // NAME VALIDATION AND LOGIN
@@ -35,6 +56,7 @@ socket.on('name_accepted', (displayName) => {
     
     usernameInput.disabled = true; 
     document.querySelector('.header-area button').disabled = true;
+    messageInput.focus(); // Set focus to the message input immediately
 });
 
 // Server accepted the name (staff user)
@@ -49,6 +71,7 @@ socket.on("staff_status_update", (data) => {
         
         usernameInput.disabled = true;
         document.querySelector('.header-area button').disabled = true;
+        messageInput.focus(); // Set focus to the message input immediately
     }
 });
 
@@ -82,14 +105,13 @@ function hideAdminModal() {
 function confirmClear() {
     hideAdminModal();
     socket.emit("admin:clear_history", {
-        username: currentUser.name, // Sends the secure login name
+        username: currentUser.name, 
         timestamp: new Date()
     });
 }
 
 function sendMessage() {
-  const input = document.getElementById("messageInput");
-  const text = input.value.trim();
+  const text = messageInput.value.trim(); // Use the global variable
   
   if (!currentUser.name) {
     alert("Please enter and set your username first.");
@@ -105,24 +127,20 @@ function sendMessage() {
   };
 
   socket.emit("chat message", messageData);
-  input.value = "";
+  messageInput.value = ""; // Clear input after send
+  messageInput.focus(); // Keep focus on the input field
 }
 
 function addMessage(username, content, timestamp, isAdmin = false) {
   const div = document.createElement('div');
   
-  // FIXED ALIGNMENT LOGIC: Check if the message's display name matches the current user's display name
   const isOwn = (username === currentUser.displayName); 
   
-  // Determine CSS classes for styling and alignment
   if (username === "System") {
-      // System messages are centered
       div.className = isAdmin ? 'msg admin-system-msg' : 'msg system-msg';
   } else if (isOwn) {
-      // All messages from the current user (staff or regular) align RIGHT
       div.className = `msg own ${isAdmin ? 'admin-msg' : ''}`;
   } else {
-      // All messages from others (staff or regular) align LEFT
       div.className = `msg other ${isAdmin ? 'admin-msg' : ''}`;
   }
   
