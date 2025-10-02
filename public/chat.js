@@ -32,16 +32,16 @@ function changeName() {
     // Show/Hide Clear Chat Button based on status
     clearChatBtn.style.display = currentUser.isAdmin ? 'inline-block' : 'none';
 
-    // --- Announce a generic admin join message ---
+    // --- Announce a generic staff join message ---
     
-    // 1. If user just became an admin, announce it generally.
+    // 1. If user just became a staff member, announce it generally.
     if (currentUser.isAdmin && !previousAdminStatus) {
         // isAdmin is TRUE, triggering the yellow 'admin-system-msg' style
-        addMessage("System", "An admin has joined the chat.", new Date(), true); 
+        addMessage("System", "A staff member has joined the chat.", new Date(), true); 
         return; 
     }
     
-    // 2. If user is changing name but NOT an admin, announce the name change.
+    // 2. If user is changing name but NOT staff, announce the name change.
     if (!currentUser.isAdmin) {
         let systemMessage = `${currentUser.name} has set their name.`;
         // isAdmin is FALSE, triggering the standard blue 'system-msg' style
@@ -54,7 +54,7 @@ function changeName() {
 
 function showAdminModal() {
     if (!currentUser.isAdmin) {
-        alert("You must be an admin to clear the chat.");
+        alert("You must be staff to clear the chat.");
         return;
     }
     adminModal.style.display = 'flex'; // Display the pop-up
@@ -110,7 +110,6 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   const div = document.createElement('div');
   div.className = `msg ${isOwn ? 'own' : 'other'}`;
   
-  // This class is applied to regular user chat bubbles sent by an admin
   if (isAdmin) {
       div.classList.add("admin-msg");
   }
@@ -127,11 +126,11 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   const header = document.createElement('div');
   header.className = 'msg-header';
   
-  // Admin names are generalized to "Admin" for display
+  // *** ROLE NAME FIX: Admin names are generalized to "Staff" for display ***
   let displayName;
   
   if (isAdmin) {
-      displayName = "Admin";
+      displayName = "Staff";
   } else {
       displayName = username;
   }
