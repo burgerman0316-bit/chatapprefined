@@ -1,10 +1,9 @@
-/* REVISED: public/style.css (Full Dark Theme with Darker Buttons) */
+/* REVISED: public/style.css (Final Dark Theme) */
 
 /* Basic Reset */
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    /* Dark background for the outside area */
     background-color: #121212; 
     display: flex;
     justify-content: center;
@@ -17,20 +16,18 @@ body {
     width: 100%;
     max-width: 600px;
     height: 90vh;
-    /* Main chat background */
     background: #1e1e1e; 
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     display: flex;
     flex-direction: column;
     border-radius: 8px;
     overflow: hidden;
-    color: #f0f0f0; /* Default text color */
+    color: #f0f0f0; 
 }
 
 /* Header/Controls Area */
 .header-area {
     padding: 10px;
-    /* Header background */
     background-color: #2c2c2c; 
     border-bottom: 1px solid #444;
     display: flex;
@@ -40,18 +37,18 @@ body {
 
 #usernameInput {
     padding: 8px;
-    background-color: #383838; /* Darker input background */
+    background-color: #383838; 
     color: #f0f0f0;
     border: 1px solid #555;
     border-radius: 4px;
     flex-grow: 1;
 }
 
-/* --- Global Button Styling for Header --- */
+/* --- Muted Button Styles --- */
 .header-area button {
     padding: 8px 15px;
-    /* Dark Blue/Gray */
-    background-color: #3f51b5; 
+    /* Muted Indigo/Gray */
+    background-color: #4a4e69; 
     color: white;
     border: none;
     border-radius: 4px;
@@ -60,17 +57,17 @@ body {
 }
 
 .header-area button:hover {
-    background-color: #303f9f;
+    background-color: #3c4055;
 }
 
 /* Admin Button Specifics (Clear History) */
 #clearChatBtn {
-    /* Darker Red/Orange for warning */
-    background-color: #d32f2f; 
+    /* Muted Red for warning */
+    background-color: #8d0801; 
 }
 
 #clearChatBtn:hover {
-    background-color: #b71c1c;
+    background-color: #6d0600;
 }
 
 /* Messages Display Area */
@@ -88,21 +85,22 @@ body {
     margin: 0;
 }
 
-/* --- Message Bubble Styles --- */
+/* --- Message Bubble Styles & Simple Indicator --- */
 .msg {
-    position: relative; 
-    margin-bottom: 12px; 
+    margin-bottom: 10px; 
     max-width: 80%;
-    border-radius: 10px;
     padding: 8px 12px;
     word-wrap: break-word;
+    /* Set a base radius for the corners */
+    border-radius: 10px; 
+    transition: all 0.1s; /* Smooth visual changes */
 }
 
 .msg-header {
     font-size: 0.8em;
     margin-bottom: 3px;
     font-weight: bold;
-    color: #b0b0b0; /* Lighter gray for header text */
+    color: #b0b0b0; 
 }
 
 .msg-body {
@@ -112,14 +110,18 @@ body {
 /* Message Alignment and Colors */
 .other {
     align-self: flex-start;
-    background-color: #2c2c2c; /* Message from others */
+    background-color: #2c2c2c; 
     color: #f0f0f0;
+    /* Indicator: Less radius on bottom-left corner */
+    border-bottom-left-radius: 2px; 
 }
 
 .own {
     align-self: flex-end;
-    background-color: #3f51b5; /* User's own messages (Darker Blue) */
+    background-color: #4a4e69; /* Muted Indigo (matches join button) */
     color: white;
+    /* Indicator: Less radius on bottom-right corner */
+    border-bottom-right-radius: 2px; 
 }
 
 .own .msg-header {
@@ -128,33 +130,9 @@ body {
 
 /* Staff/Admin Messages */
 .admin-msg .msg-header {
-    color: #ffd700; /* Gold/Yellow for admin/staff header */
+    color: #ffd700; 
 }
 
-/* --- Bubble Corner Indicator Styles --- */
-
-.indicator {
-    position: absolute;
-    width: 0;
-    height: 0;
-    border-style: solid;
-    border-width: 0 0 10px 10px; 
-    bottom: -2px; 
-}
-
-/* Indicator for messages from others (left side) */
-.other .indicator {
-    border-color: transparent transparent transparent #2c2c2c; /* Matches bubble color */
-    left: -10px; 
-    transform: rotate(90deg); 
-}
-
-/* Indicator for messages from the user (right side) */
-.own .indicator {
-    border-color: transparent transparent transparent #3f51b5; /* Matches bubble color */
-    right: -10px;
-    transform: rotate(180deg) scaleX(-1); 
-}
 
 /* System Messages */
 .system-msg, .admin-system-msg {
@@ -169,7 +147,7 @@ body {
 }
 
 .admin-system-msg {
-    color: #ff6347; /* Tomato red for important admin system messages */
+    color: #ff6347; 
     font-weight: bold;
 }
 
@@ -177,7 +155,7 @@ body {
 #messageForm {
     display: flex;
     padding: 10px;
-    background-color: #2c2c2c; /* Same as header background */
+    background-color: #2c2c2c; 
     border-top: 1px solid #444;
 }
 
@@ -194,7 +172,8 @@ body {
 /* --- Darker Send Button --- */
 #messageForm button {
     padding: 10px 15px;
-    background-color: #388e3c; /* Dark Green Send button */
+    /* Muted Green/Gray */
+    background-color: #6b8e23; 
     color: white;
     border: none;
     border-radius: 4px;
@@ -202,25 +181,22 @@ body {
 }
 
 #messageForm button:hover {
-    background-color: #2e7d32;
+    background-color: #58791c;
 }
 
 
-/* --- Modal Button Styles (The ones that were likely too light) --- */
-
+/* Modal Styles */
 .modal {
-    /* ... (unchanged) */
     background-color: rgba(0,0,0,0.7); 
 }
 
 .modal-content {
     background-color: #2c2c2c; 
     color: #f0f0f0;
-    /* ... (unchanged) */
 }
 
+/* --- Modal Button Styles --- */
 .modal-content button {
-    /* Global style for modal buttons */
     padding: 10px 20px;
     margin: 10px;
     cursor: pointer;
@@ -230,16 +206,16 @@ body {
     color: white;
 }
 
-/* Modal Yes Button (Confirm Clear) - Override default */
+/* Modal Yes Button (Confirm Clear) */
 .modal-content button:nth-child(2) {
-    background-color: #d32f2f; /* Dark Red */
+    background-color: #8d0801; /* Dark Red */
 }
 
 .modal-content button:nth-child(2):hover {
-    background-color: #b71c1c;
+    background-color: #6d0600;
 }
 
-/* Modal Cancel Button - Override default */
+/* Modal Cancel Button */
 .modal-content button:nth-child(3) {
     background-color: #383838; /* Darker Gray */
 }
