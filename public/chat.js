@@ -32,16 +32,20 @@ function changeName() {
     // Show/Hide Clear Chat Button based on status
     clearChatBtn.style.display = currentUser.isAdmin ? 'inline-block' : 'none';
 
-    // --- SECURITY FIX: DO NOT ANNOUNCE ADMIN LOGIN TO THE CHAT ---
-    if (currentUser.isAdmin) {
-        // Log to the console for the admin's eyes only (if they open the console)
-        console.log(`[Admin Login]: Logged in as ${currentUser.name}`);
+    // --- SECURITY FIX: Announce a generic admin join message ---
+    
+    // 1. If user just became an admin, announce it generally.
+    if (currentUser.isAdmin && !previousAdminStatus) {
+        addMessage("System", "An admin has joined the chat.", new Date(), true); 
         return; 
     }
     
-    // 4. Provide Custom System Message for NON-ADMIN users
-    let systemMessage = `${currentUser.name} has set their name.`;
-    addMessage("System", systemMessage, new Date(), false); // Ensure it's not marked as admin message
+    // 2. If user is changing name but NOT an admin, announce the name change.
+    if (!currentUser.isAdmin) {
+        let systemMessage = `${currentUser.name} has set their name.`;
+        addMessage("System", systemMessage, new Date(), false);
+    }
+    // Note: If an admin changes their name while logged in, no announcement is made.
 }
 
 
