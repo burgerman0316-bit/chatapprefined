@@ -2,8 +2,7 @@
 const socket = io();
 const messagesContainer = document.getElementById("messages");
 const clearChatBtn = document.getElementById("clearChatBtn");
-// Get the modal element
-const adminModal = document.getElementById("adminModal"); 
+const usernameInput = document.getElementById("usernameInput"); 
 
 let currentUser = {
     name: null, 
@@ -11,13 +10,13 @@ let currentUser = {
     isAdmin: false 
 };
 
-// Function to update the current user's name AND check for admin access
+// Function to update the current user's name AND check for staff access
 function changeName() {
-    const nameInput = document.getElementById("usernameInput");
-    const newName = nameInput.value.trim();
+    const newName = usernameInput.value.trim();
 
-    // *** NAME-BASED ADMIN CONFIGURATION (Case-insensitive, includes OWNER) ***
-    const ADMIN_NAMES = ["STAFF_CONTROLS1029384756"]; 
+    // *** STAFF CONFIGURATION (Case-insensitive) ***
+    // Note: The system will display the full name for a Staff member.
+    const STAFF_NAMES = ["ADMIN", "MODERATOR", "COACH", "OWNER"]; 
 
     if (newName === "") {
         alert("Please enter a name to join the chat.");
@@ -25,28 +24,28 @@ function changeName() {
     }
 
     let previousAdminStatus = currentUser.isAdmin;
-    currentUser.isAdmin = ADMIN_NAMES.includes(newName.toUpperCase());
+    
+    // Check if the entered name matches a staff keyword
+    currentUser.isAdmin = STAFF_NAMES.includes(newName.toUpperCase());
     
     currentUser.name = newName;
 
     // Show/Hide Clear Chat Button based on status
     clearChatBtn.style.display = currentUser.isAdmin ? 'inline-block' : 'none';
 
-    // --- Announce a generic staff join message ---
+    // --- Announce Staff/User join or name change ---
     
-    // 1. If user just became a staff member, announce it generally.
+    // 1. If user just became staff, announce it generally.
     if (currentUser.isAdmin && !previousAdminStatus) {
         // isAdmin is TRUE, triggering the yellow 'admin-system-msg' style
-        addMessage("System", "A staff member has joined the chat.", new Date(), true); 
+        addMessage("System", `${currentUser.name} (Staff) has joined the chat.`, new Date(), true); 
         return; 
     }
     
-    // 2. If user is changing name but NOT staff, announce the name change.
-    if (!currentUser.isAdmin) {
-        let systemMessage = `${currentUser.name} has set their name.`;
-        // isAdmin is FALSE, triggering the standard blue 'system-msg' style
-        addMessage("System", systemMessage, new Date(), false);
-    }
+    // 2. If user is changing name, announce the change.
+    let systemMessage = `${currentUser.name} has set their name.`;
+    // If they were already staff and changed the name, the system message remains staff styled.
+    addMessage("System", systemMessage, new Date(), currentUser.isAdmin);
 }
 
 
@@ -57,18 +56,17 @@ function showAdminModal() {
         alert("You must be staff to clear the chat.");
         return;
     }
-    adminModal.style.display = 'flex'; // Display the pop-up
+    document.getElementById("adminModal").style.display = 'flex'; 
 }
 
 function hideAdminModal() {
-    adminModal.style.display = 'none';
+    document.getElementById("adminModal").style.display = 'none';
 }
 
 function confirmClear() {
-    // 1. Hide the modal immediately
     hideAdminModal();
 
-    // 2. Emit the command to the server
+    // Emit the command with the staff member's real name
     socket.emit("admin:clear_history", {
         username: currentUser.name,
         timestamp: new Date()
@@ -89,9 +87,7 @@ function sendMessage() {
   
   if (text === "") return;
 
-  const nameInput = document.getElementById("usernameInput");
-  currentUser.name = nameInput.value.trim() || "Anonymous";
-
+  // The client always sends its *actual* username
   const messageData = {
     username: currentUser.name,
     content: text,
@@ -103,7 +99,7 @@ function sendMessage() {
   input.value = "";
 }
 
-// FINAL LOGIC: The logic to display the message header and apply system classes
+// CRITICAL CHANGE: Logic to display the message header
 function addMessage(username, content, timestamp, isAdmin = false) {
   const isOwn = username === currentUser.name;
 
@@ -115,7 +111,6 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   }
   
   if (username === "System") {
-      // Apply yellow class if it's an admin-related system message
       if (isAdmin) {
           div.classList.add("admin-system-msg");
       } else {
@@ -126,12 +121,17 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   const header = document.createElement('div');
   header.className = 'msg-header';
   
-  // *** ROLE NAME FIX: Admin names are generalized to "Staff" for display ***
+  // *** NEW DISPLAY NAME LOGIC ***
   let displayName;
   
-  if (isAdmin) {
-      displayName = "Staff";
+  if (isAdmin && username !== "System") {
+      // If it's a staff member's chat message, display their actual name and the (Staff) tag
+      displayName = `${username} (Staff)`; 
+  } else if (username === "System") {
+      // System messages use "System" as the display name
+      displayName = "System";
   } else {
+      // All regular users display their chosen name
       displayName = username;
   }
   
@@ -154,8 +154,8 @@ function addMessage(username, content, timestamp, isAdmin = false) {
 
 socket.on("history_cleared", (data) => {
     messagesContainer.innerHTML = "";
-    // This is an admin action, so isAdmin=true flags the yellow system message style
-    addMessage("System", `Chat history cleared by a staff member`, new Date(), true);
+    // Display the full name of the staff member who cleared it
+    addMessage("System", `Chat history cleared by ${data.username} (Staff).`, new Date(), true);
 });
 
 socket.on("chat history", (msgs) => {
@@ -166,5 +166,3 @@ socket.on("chat history", (msgs) => {
 socket.on("chat message", (msg) => {
   addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin);
 });
-
-
