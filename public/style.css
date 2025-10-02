@@ -1,4 +1,4 @@
-/* REVISED: public/style.css (Final Dark Theme) */
+/* REVISED: public/style.css (Staff Messages Yellow) */
 
 /* Basic Reset */
 body {
@@ -47,11 +47,9 @@ body {
 /* --- Global Rounded Gray Button Styles --- */
 .header-area button {
     padding: 8px 15px;
-    /* Medium Gray */
     background-color: #585858; 
     color: white;
     border: none;
-    /* Rounded corners */
     border-radius: 20px; 
     cursor: pointer;
     transition: background-color 0.3s;
@@ -63,7 +61,6 @@ body {
 
 /* Admin Button Specifics (Clear History) */
 #clearChatBtn {
-    /* Muted Red for warning */
     background-color: #8d0801; 
 }
 
@@ -92,7 +89,6 @@ body {
     max-width: 80%;
     padding: 8px 12px;
     word-wrap: break-word;
-    /* Set a base radius for the corners */
     border-radius: 10px; 
 }
 
@@ -103,22 +99,42 @@ body {
     color: #b0b0b0; 
 }
 
-/* Message Alignment and Colors */
+/* Message Alignment and Colors (Regular Users) */
 .other {
     align-self: flex-start;
     background-color: #2c2c2c; 
-    /* Indicator: Less radius on bottom-left corner */
     border-bottom-left-radius: 2px; 
 }
 
 .own {
     align-self: flex-end;
-    background-color: #4a4a4a; /* Darker Gray bubble for own messages */
+    background-color: #4a4a4a; 
     color: white;
-    /* Indicator: Less radius on bottom-right corner */
     border-bottom-right-radius: 2px; 
 }
 
+/* --- STAFF MESSAGE STYLES (NEW/UPDATED) --- */
+.admin-msg {
+    /* Staff messages align to the left side */
+    align-self: flex-start;
+    
+    /* Yellow/Gold Bubble Background */
+    background-color: #ffc400; 
+    color: #333; /* Dark text for contrast */
+}
+
+.admin-msg .msg-header {
+    /* Header (Username) Text Color */
+    color: #806200; 
+}
+
+/* Adjust the indicator for the yellow staff bubble */
+.admin-msg.other, .admin-msg.own {
+    /* Admin staff messages always appear on the left, regardless of whether the current user is the admin */
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 10px; /* Reset own indicator */
+    align-self: flex-start;
+}
 
 /* System Messages (unchanged) */
 .system-msg, .admin-system-msg {
@@ -158,10 +174,9 @@ body {
 /* --- Send Button Styling --- */
 #messageForm button {
     padding: 10px 15px;
-    background-color: #585858; /* Medium Gray */
+    background-color: #585858; 
     color: white;
     border: none;
-    /* Rounded corners */
     border-radius: 20px; 
     cursor: pointer;
 }
@@ -171,18 +186,14 @@ body {
 }
 
 
-/* Modal Styles (buttons are already dark and rounded) */
+/* Modal Styles (unchanged from last step) */
 .modal-content button {
-    /* inherit dark gray color */
     background-color: #585858; 
-    border-radius: 20px; /* Make modal buttons rounded */
+    border-radius: 20px; 
 }
-
-/* Modal Yes Button (Confirm Clear) */
 .modal-content button:nth-child(2) {
     background-color: #8d0801; 
 }
-
 .modal-content button:nth-child(3) {
     background-color: #383838; 
 }
