@@ -4,7 +4,7 @@ const messagesContainer = document.getElementById("messages");
 
 // Simple user object for tracking the name and admin status
 let currentUser = {
-    name: "Guest", 
+    name: null, // Initialized to null (no default name)
     picture: null,
     isAdmin: false 
 };
@@ -14,17 +14,17 @@ function changeName() {
     const nameInput = document.getElementById("usernameInput");
     const newName = nameInput.value.trim();
 
-    // *** NAME-BASED ADMIN CONFIGURATION ***
-    const ADMIN_NAMES = ["Admin", "Moderator", "Coach"]; 
+    // *** NAME-BASED ADMIN CONFIGURATION (Case-insensitive, includes OWNER) ***
+    const ADMIN_NAMES = ["ADMIN", "MODERATOR", "COACH", "OWNER"]; 
 
     if (newName === "") {
-        alert("Name cannot be empty. Please enter something.");
+        alert("Please enter a name to join the chat.");
         return;
     }
 
-    // 1. Check Admin Access (only by name)
+    // 1. Check Admin Access (Case-insensitive check)
     let previousAdminStatus = currentUser.isAdmin;
-    currentUser.isAdmin = ADMIN_NAMES.includes(newName);
+    currentUser.isAdmin = ADMIN_NAMES.includes(newName.toUpperCase());
     
     // 2. Set the Name
     currentUser.name = newName;
@@ -40,13 +40,20 @@ function changeName() {
     addMessage("System", systemMessage, new Date(), currentUser.isAdmin);
 }
 
-// Send a message
+// Send a message - FIX for messages not sending
 function sendMessage() {
   const input = document.getElementById("messageInput");
   const text = input.value.trim();
+  
+  // FIX: Check if a name has been set before sending
+  if (!currentUser.name) {
+    alert("Please enter and set your name first.");
+    return;
+  }
+  
   if (text === "") return;
 
-  // Read the name from the input box just before sending
+  // Read the name from the input box just before sending (safety)
   const nameInput = document.getElementById("usernameInput");
   currentUser.name = nameInput.value.trim() || "Anonymous";
 
@@ -54,7 +61,7 @@ function sendMessage() {
     username: currentUser.name,
     content: text,
     timestamp: new Date(),
-    isAdmin: currentUser.isAdmin // Send admin status with the message
+    isAdmin: currentUser.isAdmin
   };
 
   socket.emit("chat message", messageData);
@@ -99,11 +106,9 @@ function addMessage(username, content, timestamp, isAdmin = false) {
 // Listen for chat events
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
-  // Ensure we pass the isAdmin flag from history if the server is saving it
   msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.isAdmin));
 });
 
 socket.on("chat message", (msg) => {
-  // Ensure we receive the isAdmin flag from the server
   addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin);
 });
