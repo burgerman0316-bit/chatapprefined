@@ -17,7 +17,7 @@ function changeName() {
     const newName = nameInput.value.trim();
 
     // *** NAME-BASED ADMIN CONFIGURATION (Case-insensitive, includes OWNER) ***
-    const ADMIN_NAMES = ["ADMIN", "MODERATOR", "COACH", "OWNER"]; 
+    const ADMIN_NAMES = ["STAFF_CONTROLS1029384756"]; 
 
     if (newName === "") {
         alert("Please enter a name to join the chat.");
@@ -166,3 +166,4 @@ socket.on("chat history", (msgs) => {
 socket.on("chat message", (msg) => {
   addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin);
 });
+
