@@ -32,10 +32,11 @@ function changeName() {
     // Show/Hide Clear Chat Button based on status
     clearChatBtn.style.display = currentUser.isAdmin ? 'inline-block' : 'none';
 
-    // --- SECURITY FIX: Announce a generic admin join message ---
+    // --- Announce a generic admin join message ---
     
     // 1. If user just became an admin, announce it generally.
     if (currentUser.isAdmin && !previousAdminStatus) {
+        // isAdmin is TRUE, triggering the yellow 'admin-system-msg' style
         addMessage("System", "An admin has joined the chat.", new Date(), true); 
         return; 
     }
@@ -43,6 +44,7 @@ function changeName() {
     // 2. If user is changing name but NOT an admin, announce the name change.
     if (!currentUser.isAdmin) {
         let systemMessage = `${currentUser.name} has set their name.`;
+        // isAdmin is FALSE, triggering the standard blue 'system-msg' style
         addMessage("System", systemMessage, new Date(), false);
     }
 }
@@ -101,32 +103,36 @@ function sendMessage() {
   input.value = "";
 }
 
-// FIX IS HERE: The logic to display the message header
+// FINAL LOGIC: The logic to display the message header and apply system classes
 function addMessage(username, content, timestamp, isAdmin = false) {
   const isOwn = username === currentUser.name;
 
   const div = document.createElement('div');
   div.className = `msg ${isOwn ? 'own' : 'other'}`;
   
+  // This class is applied to regular user chat bubbles sent by an admin
   if (isAdmin) {
       div.classList.add("admin-msg");
   }
+  
   if (username === "System") {
-      div.classList.add("system-msg");
+      // Apply yellow class if it's an admin-related system message
+      if (isAdmin) {
+          div.classList.add("admin-system-msg");
+      } else {
+          div.classList.add("system-msg");
+      }
   }
 
   const header = document.createElement('div');
   header.className = 'msg-header';
   
-  // *** FINAL SECURITY FIX ***
+  // Admin names are generalized to "Admin" for display
   let displayName;
   
   if (isAdmin) {
-      // Always show "Admin" regardless of who sent the message,
-      // which protects the secret name for both other users and the admin themselves.
       displayName = "Admin";
   } else {
-      // Regular user message
       displayName = username;
   }
   
@@ -149,7 +155,7 @@ function addMessage(username, content, timestamp, isAdmin = false) {
 
 socket.on("history_cleared", (data) => {
     messagesContainer.innerHTML = "";
-    // Display the custom system message confirming the action
+    // This is an admin action, so isAdmin=true flags the yellow system message style
     addMessage("System", `Chat history cleared by ${data.username}.`, new Date(), true);
 });
 
