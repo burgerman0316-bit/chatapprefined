@@ -3,6 +3,7 @@ const socket = io();
 const messagesContainer = document.getElementById("messages");
 const clearChatBtn = document.getElementById("clearChatBtn");
 
+// User state initialized with no default name
 let currentUser = {
     name: null, 
     picture: null,
@@ -39,14 +40,16 @@ function changeName() {
         systemMessage = `${currentUser.name} has joined the chat (ADMIN).`;
     }
 
+    // Displays the custom message in the chat log
     addMessage("System", systemMessage, new Date(), currentUser.isAdmin);
 }
 
-// FIX: Send a message
+// Function to send a message
 function sendMessage() {
   const input = document.getElementById("messageInput");
   const text = input.value.trim();
   
+  // Prevent sending if name hasn't been set
   if (!currentUser.name) {
     alert("Please enter and set your name first.");
     return;
@@ -54,6 +57,7 @@ function sendMessage() {
   
   if (text === "") return;
 
+  // Final check to ensure current name is used
   const nameInput = document.getElementById("usernameInput");
   currentUser.name = nameInput.value.trim() || "Anonymous";
 
@@ -61,24 +65,25 @@ function sendMessage() {
     username: currentUser.name,
     content: text,
     timestamp: new Date(),
-    isAdmin: currentUser.isAdmin
+    isAdmin: currentUser.isAdmin // Send admin status
   };
 
-  // This line sends the message data to the server
+  // Emit the message to the server
   socket.emit("chat message", messageData);
   input.value = "";
 }
 
 
-// NEW: Function to clear messages (Admin only)
+// Function for Admin to clear messages (uses browser confirm dialog)
 function clearMessages() {
     if (!currentUser.isAdmin) {
         alert("You must be an admin to clear the chat.");
         return;
     }
 
+    // Uses the standard browser confirmation pop-up
     if (confirm("Are you sure you want to clear the entire chat history? This cannot be undone.")) {
-        // This emits the admin event for the server to clear history
+        // Emit the admin event for the server to clear history
         socket.emit("admin:clear_history", {
             username: currentUser.name,
             timestamp: new Date()
@@ -87,11 +92,12 @@ function clearMessages() {
 }
 
 
-// Add message to chat
+// Function to append a message to the chat container
 function addMessage(username, content, timestamp, isAdmin = false) {
   const isOwn = username === currentUser.name;
 
   const div = document.createElement('div');
+  // Assign .own or .other classes for alignment/color
   div.className = `msg ${isOwn ? 'own' : 'other'}`;
   
   if (isAdmin) {
@@ -116,23 +122,28 @@ function addMessage(username, content, timestamp, isAdmin = false) {
   div.appendChild(header);
   div.appendChild(body);
   messagesContainer.appendChild(div);
+  
+  // Auto-scroll to the latest message
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 
-// Listen for chat events
+// --- Socket.IO Listeners ---
 
-// Listen for the specific event sent by the server after history is cleared
+// Server confirms history has been cleared
 socket.on("history_cleared", (data) => {
     messagesContainer.innerHTML = "";
+    // Display the custom system message confirming the action
     addMessage("System", `Chat history cleared by ${data.username}.`, new Date(), true);
 });
 
+// Load initial chat history upon connection
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
   msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.isAdmin));
 });
 
+// Receive a new chat message broadcast
 socket.on("chat message", (msg) => {
   addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin);
 });
