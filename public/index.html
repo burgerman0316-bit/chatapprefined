@@ -16,7 +16,7 @@
       <input type="text" id="usernameInput" placeholder="Your Name">
       <button onclick="changeName()">Set Name</button>
       
-      <button id="clearChatBtn" onclick="clearMessages()" style="display:none;">Clear Chat</button>
+      <button id="clearChatBtn" onclick="showAdminModal()" style="display:none;">Clear Chat</button>
     </div>
   </div>
 
@@ -26,6 +26,17 @@
     <input type="text" id="messageInput" placeholder="Type a message...">
     <button onclick="sendMessage()">Send</button>
   </div>
+</div>
+
+<div id="adminModal" class="modal-backdrop" style="display:none;">
+    <div class="modal-content">
+        <h3>Admin Confirmation</h3>
+        <p>Are you sure you want to clear the entire chat history? This action cannot be undone!</p>
+        <div class="modal-actions">
+            <button class="modal-confirm-btn" onclick="confirmClear()">Yes, Clear It</button>
+            <button class="modal-cancel-btn" onclick="hideAdminModal()">Cancel</button>
+        </div>
+    </div>
 </div>
 
 <script src="chat.js"></script>
