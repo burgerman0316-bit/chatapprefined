@@ -35,7 +35,7 @@ body {
     color: #fff;
 }
 
-/* Rounded Green Button for "Set Name" */
+/* Rounded Green Button for "Set Name" & "Clear Chat" */
 .user-info button {
     padding: 5px 10px;
     margin-left: 5px;
@@ -50,10 +50,10 @@ body {
     background: #218838;
 }
 
-/* --- Message Area (FIX: Sets up column for proper alignment) --- */
+/* --- Message Area --- */
 .messages {
     display: flex;
-    flex-direction: column; /* Key to make margin: auto work for message alignment */
+    flex-direction: column; 
     height: 400px;
     overflow-y: auto;
     padding: 15px;
@@ -62,11 +62,10 @@ body {
 
 /* Base message bubble */
 .msg {
-    margin: 5px 0; /* Tighten vertical margin slightly */
+    margin: 5px 0; 
     padding: 8px 12px;
     max-width: 80%;
-    /* Default rounding for iMessage style */
-    border-radius: 18px; 
+    border-radius: 18px; /* Default rounding for iMessage style */
 }
 
 /* Messages sent by the current user (BLUE BUBBLE) */
@@ -92,11 +91,11 @@ body {
 
 /* Style for messages sent by an Admin */
 .msg.admin-msg {
-    border: 2px solid gold; /* Highlight the border */
+    border: 2px solid gold; 
     background: #4a3e2a; 
 }
 
-/* Style for custom-coded system messages (FIX: Forced to be centered and look like a banner) */
+/* Style for custom-coded system messages (Banner look, centered) */
 .msg.system-msg {
     background: #1e3a8a; 
     color: #fff;
@@ -114,8 +113,7 @@ body {
     font-size: 13px;
     color: #aaa;
     margin-bottom: 4px;
-    /* Ensures the header text is NOT centered */
-    text-align: left; 
+    text-align: left; /* Ensures the header text is NOT centered */
 }
 
 .msg.own .msg-header {
