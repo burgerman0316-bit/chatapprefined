@@ -1,64 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>8th Grade Chat App</title>
-    <link rel="stylesheet" href="style.css"> 
+    <title>Fixed Socket.IO Chat</title>
+    <style>
+        body { margin: 0; padding-bottom: 3rem; font-family: sans-serif; }
+        #messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages li { padding: 0.5rem 1rem; }
+        #messages li:nth-child(odd) { background: #eee; }
+        #staffMessages { list-style-type: none; margin-top: 20px; padding: 10px; border: 1px solid red; background-color: #fdd; }
+        #staffMessages li { padding: 0.25rem 0.5rem; color: darkred; }
+        #form { padding: 0.5rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; }
+        #input, #staffInput { flex-grow: 1; padding: 0.5rem; margin-right: 0.5rem; }
+    </style>
 </head>
 <body>
-    <div class="chat-container">
-        <div class="header-area">
-            <div id="chatModeIndicator" class="chat-mode-indicator">
-                Public Chat
-            </div>
-            
-            <input type="text" id="usernameInput" placeholder="Enter your name">
-            <button onclick="changeName()">Join Chat</button>
 
-            <div id="staffControls" class="staff-controls" style="display: none;">
-                <button id="chatModeToggle" onclick="toggleChatMode('private')">Staff Chat</button>
-                <button id="clearChatBtn" onclick="showAdminModal()">Clear History</button>
-            </div>
-        </div>
-        
-        <div class="messages-area">
-            <div id="messages">
-                </div>
-            <div id="staffMessages" style="display: none;">
-                </div>
-        </div>
+    <h2>General Chat</h2>
+    <ul id="messages"></ul>
 
-        <form id="messageForm" onsubmit="sendMessage(); return false;">
-            <input id="messageInput" autocomplete="off" placeholder="Type a message or /? to DM" />
-            <button>Send</button>
-        </form>
-        
-        <div id="dmUserList" class="dm-user-list">
-            </div>
+    <h2>Staff Chat (Admin-only view)</h2>
+    <ul id="staffMessages"></ul>
 
-        <form id="staffMessageForm" onsubmit="sendStaffMessage(); return false;" style="display: none;">
-            <input id="staffMessageInput" autocomplete="off" placeholder="Type a PRIVATE message..." />
-            <button>Send</button>
-        </form>
-    </div>
-
-    <div id="adminModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <p>Are you sure you want to clear the entire chat history?</p>
-            <button onclick="confirmClear()">Yes, Clear</button>
-            <button onclick="hideAdminModal()">Cancel</button>
-        </div>
-    </div>
-
-    <div id="customAlertModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <p id="customAlertMessage"></p>
-            <button onclick="hideCustomAlert()">OK</button>
-        </div>
-    </div>
+    <form id="form">
+        <input id="input" autocomplete="off" placeholder="General Message" />
+        <input id="staffInput" autocomplete="off" placeholder="Staff Message (if connected)" />
+        <button>Send</button>
+    </form>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="chat.js"></script>
+    <script>
+        // 1. Connect to the main (default) namespace
+        var socket = io();
+
+        // 2. Connect to the separate staff namespace
+        // A staff user would have this connection, a regular user would not.
+        var staffSocket = io('/staff');
+        
+        var form = document.getElementById('form');
+        var input = document.getElementById('input');
+        var staffInput = document.getElementById('staffInput');
+        var messages = document.getElementById('messages');
+        var staffMessages = document.getElementById('staffMessages');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // --- General Chat Send Logic ---
+            if (input.value) {
+                // Emit the general message event
+                socket.emit('chat message', input.value);
+                input.value = '';
+            }
+            
+            // --- Staff Chat Send Logic ---
+            if (staffInput.value) {
+                // Emit the staff message event to the /staff namespace
+                staffSocket.emit('staff message', staffInput.value);
+                staffInput.value = '';
+            }
+            
+            return false;
+        });
+
+        // --- General Chat Receive Logic ---
+        socket.on('chat message', function(msg) {
+            var item = document.createElement('li');
+            item.textContent = 'General: ' + msg;
+            messages.appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+
+        // --- Staff Chat Receive Logic ---
+        // This handler only fires if the client is connected to the /staff namespace
+        staffSocket.on('staff message', function(msg) {
+            var item = document.createElement('li');
+            item.textContent = 'STAFF: ' + msg;
+            staffMessages.appendChild(item);
+            window.scrollTo(0, document.body.scrollHeight);
+        });
+        
+        staffSocket.on('connect', () => {
+             console.log('Successfully connected to /staff namespace');
+             // You could change the UI here to indicate staff access
+        });
+
+    </script>
 </body>
 </html>
