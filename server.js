@@ -1,61 +1,36 @@
+// server.js (or index.js)
 const express = require('express');
+const { createServer } = require('http'); // 1. Use Node's standard HTTP server
+const { Server } = require('socket.io'); // 2. Import the Socket.IO server
+const { join } = require('path');
+
 const app = express();
-const http = require('http');
-const server = http.createServer(app);
-const { Server } = require('socket.io');
-
-// Create the main Socket.IO server
-const io = new Server(server);
-
-// Create a separate namespace for staff
-const staffIo = io.of('/staff');
+const httpServer = createServer(app); // 3. Create the HTTP server
+const io = new Server(httpServer); // 4. Attach Socket.IO to the HTTP server
+const PORT = 3000;
 
 // Serve the index.html file
 app.get('/', (req, res) => {
-  // Assuming your HTML is in the same directory as server.js
-  res.sendFile(__dirname + '/index.html');
+  res.sendFile(join(__dirname, 'index.html'));
 });
 
-// --- General Chat Logic ---
+// --- CORE SOCKET.IO CONNECTION HANDLING ---
 io.on('connection', (socket) => {
-  console.log('A user connected to the main chat');
+  // This line is the most important test!
+  console.log('A user connected to the main chat'); 
 
-  // Listen for the general chat message event from the client
-  socket.on('chat message', (msg) => {
-    console.log('General message: ' + msg);
-    // Broadcast the message to all connected clients in the main namespace
-    io.emit('chat message', msg);
+  // Add the staff namespace as well, just to ensure that connection works
+  const staffIo = io.of('/staff');
+  staffIo.on('connection', (staffSocket) => {
+      console.log('A user connected to the /staff namespace');
   });
 
   socket.on('disconnect', () => {
-    console.log('A user disconnected from the main chat');
+    console.log('user disconnected');
   });
 });
 
-// --- Staff Chat Logic (using a separate namespace) ---
-staffIo.on('connection', (socket) => {
-  console.log('A STAFF member connected to the staff chat');
-  
-  // Listen for the staff message event
-  // This listener is only in the /staff namespace
-  socket.on('staff message', (msg) => {
-    console.log('Staff message: ' + msg);
-    // Broadcast the staff message ONLY to clients in the /staff namespace
-    staffIo.emit('staff message', msg);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('A STAFF member disconnected from the staff chat');
-  });
+// Start the server
+httpServer.listen(PORT, () => {
+  console.log(`Server listening on *:${PORT}`);
 });
-
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`listening on *:${PORT}`);
-});
-
-// To run this:
-// 1. npm init -y
-// 2. npm install express socket.io
-// 3. node server.js
