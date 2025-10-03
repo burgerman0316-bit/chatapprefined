@@ -7,10 +7,10 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = 3000;
 
-// --- CRITICAL SETUP: Serve static files from the 'public' folder ---
+// Serve static files from the 'public' folder
 app.use(express.static('public'));
 
-// --- CRITICAL FIX: Enable CORS to prevent browser connection errors ---
+// Configure Socket.IO for a single chat (CORS is still a good practice)
 const io = new Server(httpServer, {
     cors: {
         origin: "http://localhost:3000",
@@ -18,43 +18,26 @@ const io = new Server(httpServer, {
     }
 });
 
-// Serve the index.html file (It will look in the 'public' folder first due to the static setup)
+// Serve the index.html file
 app.get('/', (req, res) => {
-    // We explicitly send the file path, joining the current directory (__dirname) with the file path
     res.sendFile(join(__dirname, 'public', 'index.html'));
 });
 
 // ==========================================================
-// A. MAIN CHAT LOGIC (Default Namespace: '/')
+// SINGLE CHAT LOGIC (Default Namespace: '/')
 // ==========================================================
 io.on('connection', (socket) => {
-    console.log(`[Main Chat] A user connected: ${socket.id}`);
+    console.log(`A user connected: ${socket.id}`);
 
+    // Listen for incoming chat messages
     socket.on('chat message', (msg) => {
-        console.log(`[Main Chat] Message: ${msg}`);
-        io.emit('chat message', msg); // Broadcast to all clients in the main namespace
+        console.log(`Message received: ${msg}`);
+        // Broadcast the message to ALL connected clients
+        io.emit('chat message', msg); 
     });
 
     socket.on('disconnect', () => {
-        console.log(`[Main Chat] User disconnected: ${socket.id}`);
-    });
-});
-
-// ==========================================================
-// B. STAFF CHAT LOGIC (Custom Namespace: '/staff')
-// ==========================================================
-const staffIo = io.of('/staff');
-
-staffIo.on('connection', (staffSocket) => {
-    console.log(`[Staff Chat] An admin connected: ${staffSocket.id}`);
-
-    staffSocket.on('staff message', (msg) => {
-        console.log(`[Staff Chat] Message: ${msg}`);
-        staffIo.emit('staff message', msg); // Broadcast to all clients in the /staff namespace
-    });
-
-    staffSocket.on('disconnect', () => {
-        console.log(`[Staff Chat] Admin disconnected: ${staffSocket.id}`);
+        console.log(`User disconnected: ${socket.id}`);
     });
 });
 
