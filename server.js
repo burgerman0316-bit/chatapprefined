@@ -53,43 +53,56 @@ app.get('/', (req, res) => {
 // 2. HELPER FUNCTIONS
 // ======================================================
 
+/**
+ * Checks if the entered name matches a secure login name OR a public display name.
+ * Used to block regular users from using reserved names.
+ */
 function isStaffNameReserved(enteredUsername) {
     const checkName = enteredUsername.trim().toLowerCase();
+    
     return STAFF_LIST.some(staff => 
+        // Block if it matches the secure login name
         staff.loginName.toLowerCase() === checkName || 
+        // Block if it matches the public display name
         staff.displayName.toLowerCase() === checkName
     );
 }
 
+/**
+ * Determines admin status based ONLY on the secure login name.
+ */
 function getStaffDisplayInfo(enteredUsername) {
     const secureUsername = enteredUsername.trim();
     
-    const staffMember = STAFF_LIST.find(staff => 
+    // 1. Check for secure loginName match (GRANTS ADMIN ACCESS)
+    const staffMemberByLogin = STAFF_LIST.find(staff => 
         staff.loginName === secureUsername
     );
 
-    if (staffMember) {
+    if (staffMemberByLogin) {
         return {
             isAdmin: true,
-            username: staffMember.displayName
+            // Return the case-sensitive display name for the chat UI
+            displayName: staffMemberByLogin.displayName 
         };
     }
-    
-    // Check by display name if it matches an active user's display name
-    const existingStaff = STAFF_LIST.find(staff => 
+
+    // 2. Check for staff display name match (DOES NOT GRANT ADMIN)
+    const staffMemberByDisplay = STAFF_LIST.find(staff => 
         staff.displayName.toLowerCase() === secureUsername.toLowerCase()
     );
 
-    if (existingStaff) {
+    if (staffMemberByDisplay) {
          return {
-            isAdmin: true,
-            username: existingStaff.displayName
+            isAdmin: false, 
+            displayName: staffMemberByDisplay.displayName
         };
     }
 
+    // 3. Regular user: return the name as entered
     return {
         isAdmin: false,
-        username: secureUsername
+        displayName: secureUsername
     };
 }
 
@@ -120,11 +133,7 @@ function emitOnlineUsers() {
         const staffMember = STAFF_LIST.find(s => s.displayName.toLowerCase() === nameLower);
         if (staffMember) return staffMember.displayName;
         
-        // For regular users, attempt to capitalize (this relies on the client sending the name correctly)
-        // Since we store the name sent by the client, we can't reliably get the original casing here
-        // The client should send the name with the case it wants displayed
-        
-        // As a fallback, use the lower-case name and capitalize the first letter for a clean look
+        // For regular users, we rely on the name they provided (nameLower) and try to capitalize 
         return nameLower.charAt(0).toUpperCase() + nameLower.slice(1);
     });
     
@@ -157,27 +166,27 @@ io.on('connection', (socket) => {
         const staffInfo = getStaffDisplayInfo(trimmedName);
         
         if (staffInfo.isAdmin) {
-            // Staff login success:
-            const staffDisplayNameLower = staffInfo.username.toLowerCase();
+            // Staff login success (used secure login name)
+            const staffDisplayNameLower = staffInfo.displayName.toLowerCase();
             
             usersOnline.set(staffDisplayNameLower, socket.id); 
             socketsMap.set(socket.id, staffDisplayNameLower);
             
             socket.join(STAFF_ROOM); 
 
-            const privateMsg = addSystemMessageToHistory(`Staff member ${staffInfo.username} connected.`, true);
+            const privateMsg = addSystemMessageToHistory(`Staff member ${staffInfo.displayName} connected.`, true);
             socket.to(STAFF_ROOM).emit('staff message', privateMsg); 
             
             socket.emit('staff_status_update', {
                 isAdmin: true,
-                displayName: staffInfo.username,
+                displayName: staffInfo.displayName,
                 secureName: trimmedName
             });
             
             emitOnlineUsers(); 
             
         } else if (isStaffNameReserved(trimmedName)) {
-            // Regular user tried to use a secure staff loginName (e.g., "STAFF_CONTROLS-LIAM")
+            // Regular user tried to use a reserved staff name (secure login or public display)
             socket.emit('name_rejected', 'That name is reserved by staff. Please choose another name.');
             return;
 
@@ -201,13 +210,14 @@ io.on('connection', (socket) => {
     socket.on('chat message', (msg) => {
         const staffInfo = getStaffDisplayInfo(msg.username);
         
+        // Basic security check to ensure the user is logged in
         if (!usersOnline.has(msg.username.toLowerCase())) {
             console.log(`SECURITY REJECTION: Message from unauthorized user: ${msg.username}`);
             return; 
         }
 
         const messageData = {
-            username: staffInfo.username,
+            username: staffInfo.displayName, // Use case-sensitive display name
             content: msg.content,
             timestamp: new Date(),
             isAdmin: staffInfo.isAdmin
@@ -221,22 +231,28 @@ io.on('connection', (socket) => {
         io.emit('chat message', messageData);
     });
 
-    // DIRECT MESSAGE HANDLING (NEW)
+    // DIRECT MESSAGE HANDLING
     socket.on('direct message', (data) => {
-        const fromName = data.from.toLowerCase();
-        const toName = data.to.toLowerCase();
-        
+        const fromNameLower = data.from.toLowerCase();
+        // CRITICAL FIX: Convert recipient name to lowercase for map lookup
+        const toNameLower = data.to.toLowerCase(); 
+
         // 1. Check if sender is online (security check)
-        if (!usersOnline.has(fromName)) {
+        if (!usersOnline.has(fromNameLower)) {
             console.log(`DM error: Sender ${data.from} not online.`);
             return;
         }
         
-        const targetSocketId = usersOnline.get(toName);
+        const targetSocketId = usersOnline.get(toNameLower); 
         
         // 2. Check if recipient is online
         if (!targetSocketId) {
-            console.log(`DM error: Target ${data.to} not online.`);
+            // Emit a failure message back to the sender
+            const senderSocketId = usersOnline.get(fromNameLower);
+            if (senderSocketId) {
+                 io.to(senderSocketId).emit('chat message', addSystemMessageToHistory(`DM failed: User "${data.to}" not found or offline.`, false));
+            }
+            console.log(`DM error: Target ${data.to} not online or name mismatch in map.`);
             return;
         }
         
@@ -267,7 +283,7 @@ io.on('connection', (socket) => {
         }
 
         const messageData = {
-            username: staffInfo.username,
+            username: staffInfo.displayName, // Use case-sensitive display name
             content: msg.content,
             timestamp: new Date(),
             isAdmin: true 
@@ -284,10 +300,10 @@ io.on('connection', (socket) => {
         if (staffInfo.isAdmin) {
             chatHistory.length = 0;
             
-            const msg = addSystemMessageToHistory(`Chat history cleared by ${staffInfo.username}.`, true);
+            const msg = addSystemMessageToHistory(`Chat history cleared by ${staffInfo.displayName}.`, true);
             
             io.emit('history_cleared', {
-                username: staffInfo.username,
+                username: staffInfo.displayName,
                 timestamp: msg.timestamp
             });
         }
@@ -299,21 +315,31 @@ io.on('connection', (socket) => {
         
         if (nameLower) {
             
+            // Determine the case-sensitive display name for system messages
+            const isStaff = STAFF_LIST.some(s => s.displayName.toLowerCase() === nameLower);
+            const staffMember = STAFF_LIST.find(s => s.displayName.toLowerCase() === nameLower);
+            
+            const displayName = isStaff 
+                ? staffMember.displayName
+                : nameLower.charAt(0).toUpperCase() + nameLower.slice(1); // Basic capitalization for regular users
+            
             // Remove from the tracking map
             usersOnline.delete(nameLower); 
             socketsMap.delete(socket.id); 
 
             // Handle staff disconnect message
-            if (socket.rooms.has(STAFF_ROOM)) {
-                // Determine display name for system message
-                const staffMember = STAFF_LIST.find(s => s.displayName.toLowerCase() === nameLower);
-                const staffDisplayName = staffMember ? staffMember.displayName : nameLower;
-
-                const privateMsg = addSystemMessageToHistory(`Staff member ${staffDisplayName} disconnected.`, true);
+            if (socket.rooms.has(STAFF_ROOM) && isStaff) {
+                const privateMsg = addSystemMessageToHistory(`Staff member ${displayName} disconnected.`, true);
                 io.to(STAFF_ROOM).emit('staff message', privateMsg); 
             }
             
-            console.log(`User disconnected. Name ${nameLower} released.`);
+            // Regular user disconnect message
+            if (!isStaff) {
+                 const msg = addSystemMessageToHistory(`${displayName} has left the chat.`);
+                 io.emit('chat message', msg); 
+            }
+            
+            console.log(`User disconnected. Name ${displayName} released.`);
             emitOnlineUsers(); 
         }
     });
