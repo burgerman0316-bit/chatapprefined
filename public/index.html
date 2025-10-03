@@ -1,29 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>8th Grade Chat App</title>
-    <link rel="stylesheet" href="style.css"> 
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
     <div class="chat-container">
-        
         <div class="header-area">
-            
             <span id="userCountDisplay" class="user-count-badge">0 Users Online</span>
-
             <input type="text" id="usernameInput" placeholder="Enter your name">
             <button id="nameControlButton" onclick="handleNameAction()">Join Chat</button>
-
             <div id="staffControls" class="staff-controls" style="display: none;">
                 <button id="clearChatBtn" onclick="showAdminModal()">Clear History</button>
             </div>
         </div>
 
         <div class="messages-area">
-            <div id="messages">
-                </div>
+            <div id="messages"></div>
         </div>
 
         <form id="messageForm" onsubmit="sendMessage(); return false;">
