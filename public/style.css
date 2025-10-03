@@ -1,314 +1,47 @@
-/* REVISED: public/style.css (Final Version with all layout and design changes) */
-
-/* Basic Reset */
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #000; 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+body { 
+    font-family: sans-serif; 
+    padding: 20px; 
+    margin: 0; 
+    padding-bottom: 50px; 
+}
+#messages, #staffMessages { 
+    list-style-type: none; 
+    padding: 10px; 
+    border: 1px solid #ccc; 
+    min-height: 100px; 
+    margin-bottom: 20px; 
+}
+#messages li { 
+    padding: 0.5rem 1rem; 
+}
+#messages li:nth-child(odd) { 
+    background: #f4f4f4; 
 }
 
-/* Chat Container */
-.chat-container {
-    width: 100%;
-    max-width: 600px;
-    height: 90vh;
-    background: #1e1e1e; 
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    display: flex;
-    flex-direction: column;
-    border-radius: 8px;
-    overflow: hidden;
-    color: #f0f0f0; 
-    position: relative; /* CRITICAL for positioning dm-user-list */
+#staffMessages { 
+    border-color: darkred; 
+    background-color: #fdd; 
+}
+#staffMessages li { 
+    padding: 0.5rem 1rem; 
+    color: darkred; 
 }
 
-/* Header/Controls Area */
-.header-area {
-    padding: 10px;
-    background-color: #2c2c2c; 
-    border-bottom: 1px solid #444;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap; 
-}
-
-/* --- Name Field Shrink and Right Alignment --- */
-#usernameInput {
-    padding: 8px;
-    background-color: #383838; 
-    color: #f0f0f0;
-    border: 1px solid #555;
-    border-radius: 4px;
-    width: 120px; 
-    flex-shrink: 0; 
-    margin-left: auto;
-}
-
-/* --- Global Rounded Gray Button Styles --- */
-.header-area button {
-    padding: 8px 15px;
-    background-color: #585858;
-    color: white;
-    border: none;
-    border-radius: 20px; 
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.header-area button:hover {
-    background-color: #4a4a4a;
-}
-
-/* Admin Button Specifics (Clear History) */
-#clearChatBtn {
-    background-color: #8d0801; 
-}
-
-#clearChatBtn:hover {
-    background-color: #6d0600;
-}
-
-/* Messages Display Area */
-.messages-area {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 10px;
-}
-
-#messages, #staffMessages {
-    display: flex;
-    flex-direction: column;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-/* --- Message Bubble Styles & Simple Indicator --- */
-.msg {
-    margin-bottom: 10px; 
-    max-width: 80%;
-    padding: 8px 12px;
-    word-wrap: break-word;
-    border-radius: 10px; 
-    border: 1px solid transparent; 
-}
-
-.msg-header {
-    font-size: 0.8em;
-    margin-bottom: 3px;
-    font-weight: bold;
-    color: #b0b0b0; 
-}
-
-/* --- NON-ADMIN MESSAGE ALIGNMENT AND COLORS --- */
-.other {
-    align-self: flex-start;
-    background-color: #2c2c2c; 
-    border-bottom-left-radius: 2px; 
-}
-
-.own {
-    align-self: flex-end;
-    background-color: #4a4a4a; 
-    color: white;
-    border-bottom-right-radius: 2px; 
-}
-
-/* --- DM Message Styles (Distinguish DMs in the main feed) --- */
-.dm-sent {
-    background-color: #0d47a1; /* Darker blue for sent DMs */
-    border-right: 3px solid #64b5f6;
-}
-
-.dm-received {
-    background-color: #3f51b5; /* Blue for received DMs */
-    border-left: 3px solid #64b5f6;
-}
-
-
-/* --- STAFF MESSAGE STYLES (DARKER YELLOW WITH OUTLINE) --- */
-.admin-msg {
-    background-color: #FFD700; 
-    border: 1px solid #FFD700; 
-    color: #333; 
-    box-shadow: 0 0 5px rgba(255, 215, 0, 0.4); 
-}
-
-.admin-msg .msg-header {
-    color: #806200; 
-}
-
-/* 1. Admin messages from YOU (Own staff message) */
-.own.admin-msg {
-    border-bottom-right-radius: 2px; 
-    border-bottom-left-radius: 10px; 
-}
-
-/* 2. Admin messages from OTHERS (Other staff member) */
-.other.admin-msg {
-    border-bottom-left-radius: 2px; 
-    border-bottom-right-radius: 10px; 
-}
-
-
-/* System Messages */
-.system-msg, .admin-system-msg {
-    align-self: center;
-    background: none;
-    font-style: italic;
-    color: #888;
-    text-align: center;
-    padding: 5px;
-    border-radius: 0;
-    margin: 5px 0;
-}
-.admin-system-msg {
-    color: #ff6347; 
-    font-weight: bold;
-}
-
-
-/* Message Input Forms */
-#messageForm, #staffMessageForm {
-    display: flex;
-    padding: 10px;
-    background-color: #2c2c2c; 
-    border-top: 1px solid #444;
-}
-
-#messageInput, #staffMessageInput {
-    flex-grow: 1;
-    padding: 10px;
-    background-color: #383838;
-    color: #f0f0f0;
-    border: 1px solid #555;
-    border-radius: 4px;
-    margin-right: 8px;
-}
-
-/* --- Send Button Styling --- */
-#messageForm button, #staffMessageForm button {
-    padding: 10px 15px;
-    background-color: #585858; 
-    color: white;
-    border: none;
-    border-radius: 20px; 
-    cursor: pointer;
-}
-
-#messageForm button:hover, #staffMessageForm button:hover {
-    background-color: #4a4a4a;
-}
-
-/* --- Direct Message Autocomplete Styles (NEW) --- */
-.dm-user-list {
-    position: absolute;
-    bottom: 50px; /* Position it just above the input form */
-    width: 100%;
-    max-width: 600px;
-    max-height: 200px;
-    overflow-y: auto;
-    background-color: #383838; 
-    border: 1px solid #444;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
-    z-index: 10;
-    display: none; /* Hidden by default */
-    border-radius: 4px 4px 0 0;
-    left: 0;
-}
-
-.dm-user-item {
-    padding: 10px;
-    cursor: pointer;
-    color: #f0f0f0;
-    font-size: 0.9em;
-    border-bottom: 1px solid #444;
-}
-
-.dm-user-item:hover,
-.dm-user-item.selected {
-    background-color: #585858; 
-    font-weight: bold;
-}
-
-
-/* --- Chat Mode Indicator (MOVED TO HEADER) --- */
-.chat-mode-indicator {
-    padding: 5px 10px;
-    background-color: #585858; 
-    color: white;
-    font-weight: bold;
-    font-size: 0.8em;
-    border-radius: 4px; 
-    text-align: center;
-    flex-shrink: 0; 
-    order: -1; 
-}
-
-/* --- Modal Styles (Custom Popups) --- */
-.modal {
-    position: fixed; 
-    z-index: 1000; 
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7); 
+.chat-form { 
     display: flex; 
-    justify-content: center;
-    align-items: center;
-    
-    backdrop-filter: blur(5px); 
-    -webkit-backdrop-filter: blur(5px); 
+    background: rgba(0, 0, 0, 0.05);
+    padding: 10px;
+    margin-top: 10px;
 }
-
-.modal-content {
-    background-color: #2c2c2c; 
-    padding: 25px 30px;
-    border: 1px solid #444;
-    width: 80%;
-    max-width: 400px; 
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    color: white; 
+.chat-form input { 
+    flex-grow: 1; 
+    margin-right: 10px; 
+    padding: 8px; 
+    border: 1px solid #ccc;
 }
-
-.modal-content p {
-    margin-top: 0;
-    margin-bottom: 20px;
-    font-size: 1.1em;
-    color: white; 
-}
-
-/* Modal Buttons Styling */
-.modal-content button {
-    padding: 10px 20px;
-    color: white;
-    border: none;
-    border-radius: 20px;
+.chat-form button {
+    padding: 8px 15px;
     cursor: pointer;
-    transition: background-color 0.3s;
-    margin: 5px; 
-}
-
-/* "Yes, Clear" Button (Red/Danger color) */
-.modal-content button:nth-child(2) {
-    background-color: #8d0801; 
-}
-.modal-content button:nth-child(2):hover {
-    background-color: #6d0600;
-}
-
-/* "Cancel" Button (Default/Gray color) */
-.modal-content button:nth-child(3) {
-    background-color: #383838; 
-}
-.modal-content button:nth-child(3):hover {
-    background-color: #555;
+    border: none;
+    border-radius: 4px;
 }
