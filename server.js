@@ -20,11 +20,10 @@ const MAX_HISTORY = 100;
 
 const BANNED_NAMES = [
     "hitler", 
-    "liam", 
-    "diesel",
-    "ricky", 
-    "aaron",
-    "donovan",
+    "admin", 
+    "mod",
+    "foulword1", 
+    "foulword2", 
     // ADD ALL YOUR BANNED NAMES OR WORDS HERE
 ];
 
@@ -115,10 +114,9 @@ function addSystemMessageToHistory(content, isAdmin = false) {
 }
 
 /**
- * NEW FUNCTION: Gets the count of currently connected sockets and sends it to all clients.
+ * FIX: Gets the count of currently connected sockets and sends it to all clients.
  */
 function broadcastUserCount() {
-    // io.engine.clientsCount is the official way to get the count
     const count = io.engine.clientsCount;
     io.emit('user count', count);
 }
@@ -132,7 +130,7 @@ io.on('connection', (socket) => {
     console.log('A user connected');
 
     socket.emit('chat history', chatHistory);
-    // NEW: Send the initial count when a client connects
+    // Send initial count when a client connects (but before they log in)
     broadcastUserCount();
 
     // NAME VALIDATION AND STAFF CHECK
@@ -145,9 +143,10 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // Check for banned words (substring match)
+        // Check for banned words or reserved staff names
         if (isNameReserved(trimmedName)) {
-            // Check if it's reserved by staff (requires correct loginName for success)
+            
+            // If the name is reserved by staff (requires correct loginName for success)
             if (STAFF_LIST.some(staff => staff.loginName.toLowerCase() === lowerName || staff.displayName.toLowerCase() === lowerName)) {
                 const staffInfo = getStaffDisplayInfo(trimmedName);
                 if (!staffInfo.isAdmin) {
@@ -155,7 +154,7 @@ io.on('connection', (socket) => {
                     return;
                 }
                 
-                // Staff login success logic...
+                // Staff login success logic:
                 const staffDisplayNameLower = staffInfo.username.toLowerCase();
                 namesInUse.add(staffDisplayNameLower);
                 socketsMap.set(socket.id, staffDisplayNameLower);
@@ -168,6 +167,7 @@ io.on('connection', (socket) => {
                     displayName: staffInfo.username,
                     secureName: trimmedName
                 });
+                
             } else {
                 // Name is rejected because it contains a banned word
                  socket.emit('name_rejected', 'That name contains forbidden words. Please choose another name.');
@@ -182,12 +182,15 @@ io.on('connection', (socket) => {
             const msg = addSystemMessageToHistory(`${trimmedName} has joined the chat.`);
             io.emit('chat message', msg); 
         }
+        
+        // FIX: Broadcast the updated count AFTER successful login
+        broadcastUserCount();
     });
 
     // PUBLIC MESSAGE HANDLING
     socket.on('chat message', (msg) => {
         
-        // CRITICAL FIX: MESSAGE CONTENT FILTERING
+        // CRITICAL: MESSAGE CONTENT FILTERING
         if (containsBannedWord(msg.content)) {
             console.log(`MESSAGE REJECTION: Message from ${msg.username} contained a banned word.`);
             socket.emit('system_error', 'Your message contained forbidden language and was not sent.');
@@ -196,8 +199,6 @@ io.on('connection', (socket) => {
 
         const staffInfo = getStaffDisplayInfo(msg.username);
         
-        // ... (rest of security and history logic)
-
         const messageData = {
             username: staffInfo.username,
             content: msg.content,
@@ -213,8 +214,35 @@ io.on('connection', (socket) => {
         io.emit('chat message', messageData);
     });
 
-    // ... (staff message handling and admin controls remain the same)
-    
+    // ADMIN CONTROL HANDLING
+    socket.on('admin:clear_history', (data) => {
+        const staffInfo = getStaffDisplayInfo(data.username);
+        
+        if (staffInfo.isAdmin) {
+            chatHistory.length = 0;
+            
+            // 1. MESSAGE FOR STAFF ONLY (Includes Admin Name)
+            const staffMsgData = {
+                username: staffInfo.username,
+                content: `Chat history cleared by ${staffInfo.username}.`, // Personalized
+                timestamp: new Date()
+            };
+            io.to(STAFF_ROOM).emit('history_cleared_staff', staffMsgData);
+            
+            // 2. MESSAGE FOR REGULAR USERS (Generic Name)
+            const publicMsgData = {
+                username: "Moderator", // Generic name
+                content: "The chat history has been cleared.", // Generic message
+                timestamp: new Date()
+            };
+            io.except(STAFF_ROOM).emit('history_cleared_public', publicMsgData);
+
+            addSystemMessageToHistory(publicMsgData.content, true);
+
+            console.log(`History cleared by ${staffInfo.username}. Public notice sent.`);
+        }
+    });
+
     // USER DISCONNECTION
     socket.on('disconnect', () => {
         const nameToRemove = socketsMap.get(socket.id);
@@ -235,7 +263,7 @@ io.on('connection', (socket) => {
             }
         }
         
-        // NEW: Broadcast the updated count when a client disconnects
+        // FIX: Broadcast the updated count when a client disconnects
         broadcastUserCount();
     });
 });
