@@ -1,34 +1,75 @@
 const socket = io();
-const messagesContainer = document.getElementById("messages");
+const messagesContainer = document.getElementById("messages"); // Public container
+const staffMessagesContainer = document.getElementById("staffMessages"); // New private container
 const usernameInput = document.getElementById("usernameInput");
 const staffControlsDiv = document.getElementById("staffControls");
-const messageInput = document.getElementById("messageInput"); // Added to easily target input
+const messageInput = document.getElementById("messageInput"); // Public input
+const staffMessageInput = document.getElementById("staffMessageInput"); // New private input
+const publicMessageForm = document.getElementById("messageForm"); // Public form
+const staffMessageForm = document.getElementById("staffMessageForm"); // New private form
+const chatModeToggleBtn = document.getElementById("chatModeToggle");
+const chatModeIndicator = document.getElementById("chatModeIndicator");
+// NEW: Custom Alert Modal elements
+const customAlertModal = document.getElementById("customAlertModal");
+const customAlertMessage = document.getElementById("customAlertMessage");
+
 
 let currentUser = {
-    name: null,       
+    name: null,        
     isAdmin: false,
     displayName: null
 };
 
+let currentChatMode = 'public'; // 'public' or 'private'
+
 // ======================================================
-// NEW: LISTEN FOR ENTER KEY PRESS
+// NEW: CUSTOM ALERT FUNCTIONS (REPLACE alert())
 // ======================================================
 
-// The messageForm has an 'onsubmit' which handles the enter key when the
-// input is focused. This block is primarily for robust browser support,
-// but the core fix is usually ensuring the <form> wraps the input, which it does.
-// We'll keep the basic setup here and ensure the submit is robust.
+function showCustomAlert(message) {
+    customAlertMessage.textContent = message;
+    customAlertModal.style.display = 'flex';
+}
 
-messageInput.addEventListener('keypress', (e) => {
-    // Check if the pressed key is the 'Enter' key
-    if (e.key === 'Enter') {
-        // Prevent the default action (which is usually adding a newline or a full page reload)
-        e.preventDefault(); 
-        // Manually trigger the sendMessage function
-        sendMessage();
+function hideCustomAlert() {
+    customAlertModal.style.display = 'none';
+}
+
+// ======================================================
+// CHAT MODE SWITCHING
+// ======================================================
+
+function toggleChatMode(mode) {
+    if (!currentUser.isAdmin) return;
+    // ... (rest of toggleChatMode remains the same)
+    
+    if (mode === currentChatMode) return;
+
+    currentChatMode = mode;
+
+    if (mode === 'private') {
+        messagesContainer.style.display = 'none';
+        staffMessagesContainer.style.display = 'flex'; // Use flex for message alignment
+        publicMessageForm.style.display = 'none';
+        staffMessageForm.style.display = 'flex';
+        chatModeToggleBtn.textContent = 'Public Chat';
+        chatModeToggleBtn.onclick = () => toggleChatMode('public');
+        chatModeIndicator.textContent = 'Staff Chat (Private)';
+        staffMessageInput.focus();
+    } else {
+        messagesContainer.style.display = 'flex';
+        staffMessagesContainer.style.display = 'none';
+        publicMessageForm.style.display = 'flex';
+        staffMessageForm.style.display = 'none';
+        chatModeToggleBtn.textContent = 'Staff Chat';
+        chatModeToggleBtn.onclick = () => toggleChatMode('private');
+        chatModeIndicator.textContent = 'Public Chat';
+        messageInput.focus();
     }
-});
-
+    // Scroll to the bottom of the active chat
+    const activeContainer = mode === 'private' ? staffMessagesContainer : messagesContainer;
+    activeContainer.scrollTop = activeContainer.scrollHeight;
+}
 
 // ======================================================
 // NAME VALIDATION AND LOGIN
@@ -38,7 +79,7 @@ function changeName() {
     const newName = usernameInput.value.trim();
 
     if (newName === "") {
-        alert("Please enter a username to join the chat.");
+        showCustomAlert("Please enter a username to join the chat."); // <--- REPLACED ALERT
         return;
     }
     
@@ -52,11 +93,10 @@ socket.on('name_accepted', (displayName) => {
     currentUser.displayName = displayName;
     
     staffControlsDiv.style.display = 'none'; 
-    addMessage("System", `${displayName} has joined the chat.`, new Date());
     
     usernameInput.disabled = true; 
     document.querySelector('.header-area button').disabled = true;
-    messageInput.focus(); // Set focus to the message input immediately
+    messageInput.focus(); 
 });
 
 // Server accepted the name (staff user)
@@ -71,13 +111,13 @@ socket.on("staff_status_update", (data) => {
         
         usernameInput.disabled = true;
         document.querySelector('.header-area button').disabled = true;
-        messageInput.focus(); // Set focus to the message input immediately
+        messageInput.focus(); 
     }
 });
 
 // Server rejected the name (reserved by staff)
 socket.on('name_rejected', (reason) => {
-    alert(reason);
+    showCustomAlert(reason); // <--- REPLACED ALERT
     usernameInput.value = ''; 
     currentUser.name = null;
     currentUser.isAdmin = false;
@@ -92,7 +132,7 @@ socket.on('name_rejected', (reason) => {
 
 function showAdminModal() {
     if (!currentUser.isAdmin) {
-        alert("You must be staff to clear the chat.");
+        showCustomAlert("You must be staff to clear the chat."); // <--- REPLACED ALERT
         return;
     }
     document.getElementById("adminModal").style.display = 'flex'; 
@@ -111,10 +151,10 @@ function confirmClear() {
 }
 
 function sendMessage() {
-  const text = messageInput.value.trim(); // Use the global variable
+  const text = messageInput.value.trim(); 
   
   if (!currentUser.name) {
-    alert("Please enter and set your username first.");
+    showCustomAlert("Please enter and set your username first."); // <--- REPLACED ALERT
     return;
   }
   
@@ -127,38 +167,61 @@ function sendMessage() {
   };
 
   socket.emit("chat message", messageData);
-  messageInput.value = ""; // Clear input after send
-  messageInput.focus(); // Keep focus on the input field
+  messageInput.value = ""; 
+  messageInput.focus(); 
 }
 
-function addMessage(username, content, timestamp, isAdmin = false) {
-  const div = document.createElement('div');
-  
-  const isOwn = (username === currentUser.displayName); 
-  
-  if (username === "System") {
-      div.className = isAdmin ? 'msg admin-system-msg' : 'msg system-msg';
-  } else if (isOwn) {
-      div.className = `msg own ${isAdmin ? 'admin-msg' : ''}`;
-  } else {
-      div.className = `msg other ${isAdmin ? 'admin-msg' : ''}`;
-  }
-  
-  const header = document.createElement('div');
-  header.className = 'msg-header';
-  
-  const time = new Date(timestamp);
-  header.textContent = `${username} • ${time.toLocaleTimeString()}`;
+// NEW: Staff Chat Send Function
+function sendStaffMessage() {
+    const text = staffMessageInput.value.trim(); 
 
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-  body.textContent = content;
-  
-  div.appendChild(header);
-  div.appendChild(body);
-  messagesContainer.appendChild(div);
-  
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    if (!currentUser.isAdmin) {
+        showCustomAlert("You must be staff to use the private chat."); // <--- REPLACED ALERT
+        return;
+    }
+    
+    if (text === "") return;
+
+    const messageData = {
+        username: currentUser.name, 
+        content: text,
+        timestamp: new Date(),
+    };
+
+    socket.emit("staff message", messageData);
+    staffMessageInput.value = "";
+    staffMessageInput.focus();
+}
+
+
+function addMessage(username, content, timestamp, isAdmin = false, isStaffChat = false) {
+    const container = isStaffChat ? staffMessagesContainer : messagesContainer;
+    const div = document.createElement('div');
+    
+    const isOwn = (username === currentUser.displayName); 
+    
+    if (username === "System") {
+        div.className = isAdmin ? 'msg admin-system-msg' : 'msg system-msg';
+    } else if (isOwn) {
+        div.className = `msg own ${isAdmin ? 'admin-msg' : ''}`;
+    } else {
+        div.className = `msg other ${isAdmin ? 'admin-msg' : ''}`;
+    }
+
+    const header = document.createElement('div');
+    header.className = 'msg-header';
+    const time = new Date(timestamp);
+    header.textContent = `${username}${isStaffChat ? ' (STAFF)' : ''} • ${time.toLocaleTimeString()}`;
+
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    body.textContent = content;
+    
+    div.appendChild(header);
+    div.appendChild(body);
+    container.appendChild(div);
+    
+    container.scrollTop = container.scrollHeight;
 }
 
 
@@ -166,14 +229,20 @@ function addMessage(username, content, timestamp, isAdmin = false) {
 
 socket.on("history_cleared", (data) => {
     messagesContainer.innerHTML = "";
-    addMessage("System", `Chat history cleared by ${data.username}.`, new Date(), true);
+    addMessage("System", `Chat history cleared by ${data.username}.`, new Date(), true, false);
 });
 
 socket.on("chat history", (msgs) => {
   messagesContainer.innerHTML = "";
-  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.isAdmin));
+  msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.isAdmin, false));
 });
 
 socket.on("chat message", (msg) => {
-  addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin);
+  addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin, false);
+});
+
+socket.on("staff message", (msg) => {
+    if (currentUser.isAdmin) {
+        addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin, true);
+    }
 });
