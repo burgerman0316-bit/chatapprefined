@@ -10,7 +10,7 @@
     <div class="chat-container">
         <div class="header-area">
             <div id="chatModeIndicator" class="chat-mode-indicator">
-                School Chat
+                Public Chat
             </div>
             
             <input type="text" id="usernameInput" placeholder="Enter your name">
@@ -26,13 +26,16 @@
             <div id="messages">
                 </div>
             <div id="staffMessages" style="display: none;">
-            </div>
+                </div>
         </div>
 
         <form id="messageForm" onsubmit="sendMessage(); return false;">
-            <input id="messageInput" autocomplete="off" placeholder="Type a message..." />
+            <input id="messageInput" autocomplete="off" placeholder="Type a message or /? to DM" />
             <button>Send</button>
         </form>
+        
+        <div id="dmUserList" class="dm-user-list">
+            </div>
 
         <form id="staffMessageForm" onsubmit="sendStaffMessage(); return false;" style="display: none;">
             <input id="staffMessageInput" autocomplete="off" placeholder="Type a PRIVATE message..." />
@@ -59,4 +62,3 @@
     <script src="chat.js"></script>
 </body>
 </html>
-
