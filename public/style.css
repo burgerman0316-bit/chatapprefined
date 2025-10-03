@@ -4,7 +4,7 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #121212; 
+    background-color: #000; 
     display: flex;
     justify-content: center;
     align-items: center;
@@ -272,3 +272,4 @@ body {
 .modal-content button:nth-child(3):hover {
     background-color: #555;
 }
+
