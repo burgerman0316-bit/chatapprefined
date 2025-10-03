@@ -7,20 +7,21 @@ const app = express();
 const httpServer = createServer(app);
 const PORT = 3000;
 
-// --- CRITICAL FIX: ENABLE CORS ---
-// Without this, the client often fails to connect, resulting in a blank page 
-// or "transport error" in the browser console.
+// --- CRITICAL SETUP: Serve static files from the 'public' folder ---
+app.use(express.static('public'));
+
+// --- CRITICAL FIX: Enable CORS to prevent browser connection errors ---
 const io = new Server(httpServer, {
     cors: {
-        origin: "http://localhost:3000", // Allow connection from the server itself
+        origin: "http://localhost:3000",
         methods: ["GET", "POST"]
     }
 });
 
-// Serve the index.html file
+// Serve the index.html file (It will look in the 'public' folder first due to the static setup)
 app.get('/', (req, res) => {
-    // __dirname is the current directory of the server.js file
-    res.sendFile(join(__dirname, 'index.html'));
+    // We explicitly send the file path, joining the current directory (__dirname) with the file path
+    res.sendFile(join(__dirname, 'public', 'index.html'));
 });
 
 // ==========================================================
