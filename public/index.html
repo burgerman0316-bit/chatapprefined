@@ -8,34 +8,26 @@
 </head>
 <body>
     <div class="chat-container">
+        
         <div class="header-area">
-            <div id="chatModeIndicator" class="chat-mode-indicator">
-                Public Chat
-            </div>
             
+            <span id="userCountDisplay" class="user-count-badge">0 Users Online</span>
+
             <input type="text" id="usernameInput" placeholder="Enter your name">
             <button onclick="changeName()">Join Chat</button>
 
             <div id="staffControls" class="staff-controls" style="display: none;">
-                <button id="chatModeToggle" onclick="toggleChatMode('private')">Staff Chat</button>
                 <button id="clearChatBtn" onclick="showAdminModal()">Clear History</button>
             </div>
         </div>
-        
+
         <div class="messages-area">
             <div id="messages">
                 </div>
-            <div id="staffMessages" style="display: none;">
-            </div>
         </div>
 
         <form id="messageForm" onsubmit="sendMessage(); return false;">
             <input id="messageInput" autocomplete="off" placeholder="Type a message..." />
-            <button>Send</button>
-        </form>
-
-        <form id="staffMessageForm" onsubmit="sendStaffMessage(); return false;" style="display: none;">
-            <input id="staffMessageInput" autocomplete="off" placeholder="Type a PRIVATE message..." />
             <button>Send</button>
         </form>
     </div>
@@ -45,13 +37,6 @@
             <p>Are you sure you want to clear the entire chat history?</p>
             <button onclick="confirmClear()">Yes, Clear</button>
             <button onclick="hideAdminModal()">Cancel</button>
-        </div>
-    </div>
-
-    <div id="customAlertModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <p id="customAlertMessage"></p>
-            <button onclick="hideCustomAlert()">OK</button>
         </div>
     </div>
 
