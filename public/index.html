@@ -1,50 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Fixed Socket.IO Chat</title>
-    <style>
-        /* (Styles omitted for brevity, but keep them) */
-        body { margin: 0; padding-bottom: 3rem; font-family: sans-serif; }
-        #messages { list-style-type: none; margin: 0; padding: 0; border: 1px solid #ccc; margin-bottom: 10px; }
-        #messages li { padding: 0.5rem 1rem; }
-        #messages li:nth-child(odd) { background: #f4f4f4; }
-        #staffMessages { list-style-type: none; margin-top: 20px; padding: 10px; border: 1px solid darkred; background-color: #fdd; }
-        #staffMessages li { padding: 0.25rem 0.5rem; color: darkred; }
-        
-        .chat-form { 
-            background: rgba(0, 0, 0, 0.05);
-            padding: 0.5rem; 
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-        }
-        .chat-form input { flex-grow: 1; padding: 0.5rem; margin-right: 0.5rem; border: 1px solid #ccc; }
-        .chat-form button { padding: 0.5rem 1rem; cursor: pointer; }
-    </style>
+    <title>Broken Fix Test</title>
 </head>
 <body>
-
-    <h2>General Chat</h2>
-    <ul id="messages"></ul>
+    <h1>Check your Console for Connection Status!</h1>
     
-    <form id="generalForm" class="chat-form">
-        <input id="generalInput" autocomplete="off" placeholder="Type a General Message" />
-        <button>Send General</button>
-    </form>
-
-    <hr>
-    <h2>Staff Chat (Admin Console)</h2>
-    <ul id="staffMessages"></ul>
-
-    <form id="staffForm" class="chat-form">
-        <input id="staffChatInput" autocomplete="off" placeholder="Type a Staff Message" />
-        <button style="background-color: darkred; color: white;">Send Staff</button>
-    </form>
-
-
-    <script src="/socket.io/socket.io.js"></script>
+    <script src="/socket.io/socket.io.js"></script> 
+    
     <script>
-        // CLIENT-SIDE JAVASCRIPT IS BELOW
+        // 2. INSTANTIATE THE SOCKETS
+        var generalSocket = io();
+        var staffSocket = io('/staff'); 
+
+        // 3. LISTEN FOR CONNECTION ERRORS AND SUCCESS
+        generalSocket.on('connect', () => {
+            console.log('Client: General Socket Connected!');
+            // You should see this in your browser console if it works
+        });
+
+        generalSocket.on('connect_error', (err) => {
+            console.error('Client Error: General Socket Failed to Connect!', err.message);
+            // This will tell you exactly what is wrong
+        });
+        
+        staffSocket.on('connect', () => {
+            console.log('Client: Staff Socket Connected!');
+        });
+        
     </script>
 </body>
 </html>
