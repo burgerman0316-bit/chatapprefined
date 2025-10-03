@@ -4,7 +4,7 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #000; 
+    background-color: #121212; 
     display: flex;
     justify-content: center;
     align-items: center;
@@ -33,7 +33,6 @@ body {
     display: flex;
     gap: 8px;
     align-items: center;
-    /* Allow elements to wrap if needed */
     flex-wrap: wrap; 
 }
 
@@ -46,7 +45,9 @@ body {
     border-radius: 4px;
     /* CHANGE: Shrink name input field */
     width: 120px; 
-    flex-shrink: 0; /* Prevent it from shrinking too much */
+    flex-shrink: 0; 
+    /* NEW: Push this element to the right by consuming all available space to its left. */
+    margin-left: auto;
 }
 
 /* --- Global Rounded Gray Button Styles --- */
@@ -95,7 +96,6 @@ body {
     padding: 8px 12px;
     word-wrap: break-word;
     border-radius: 10px; 
-    /* Base style for no border */
     border: 1px solid transparent; 
 }
 
@@ -122,12 +122,10 @@ body {
 
 /* --- STAFF MESSAGE STYLES (DARKER YELLOW WITH OUTLINE) --- */
 .admin-msg {
-    /* Deeper Gold/Yellow Background */
     background-color: #FFD700; 
-    /* Yellow Outline (Border) */
     border: 1px solid #FFD700; 
-    color: #333; /* Dark text for contrast */
-    box-shadow: 0 0 5px rgba(255, 215, 0, 0.4); /* Subtle glow */
+    color: #333; 
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.4); 
 }
 
 .admin-msg .msg-header {
@@ -136,16 +134,14 @@ body {
 
 /* 1. Admin messages from YOU (Own staff message) */
 .own.admin-msg {
-    /* Aligned right by .own */
     border-bottom-right-radius: 2px; 
-    border-bottom-left-radius: 10px; /* Reset left corner */
+    border-bottom-left-radius: 10px; 
 }
 
 /* 2. Admin messages from OTHERS (Other staff member) */
 .other.admin-msg {
-    /* Aligned left by .other */
     border-bottom-left-radius: 2px; 
-    border-bottom-right-radius: 10px; /* Reset right corner */
+    border-bottom-right-radius: 10px; 
 }
 
 
@@ -200,19 +196,19 @@ body {
 
 /* --- Chat Mode Indicator (MOVED TO HEADER) --- */
 .chat-mode-indicator {
-    /* NEW: Make it look like a status label in the header */
     padding: 5px 10px;
-    background-color: #585858; /* Match the gray buttons */
+    background-color: #585858; 
     color: white;
     font-weight: bold;
     font-size: 0.8em;
-    border-radius: 4px; /* Slightly rounded corners */
+    border-radius: 4px; 
     text-align: center;
-    /* Ensures it sits cleanly in the header */
     flex-shrink: 0; 
     order: -1; 
+    /* NEW: Push the indicator to the right side of the main header area (left of the input) */
+    /* This combines with the input's margin-left: auto to control the right side block */
+    margin-left: 8px; /* Give a small gap from the Join button */
 }
-
 
 /* --- Modal Styles (PROPER POPUP, BLUR, WHITE TEXT) --- */
 .modal {
@@ -227,7 +223,6 @@ body {
     justify-content: center;
     align-items: center;
     
-    /* ADDED FOR BLUR EFFECT */
     backdrop-filter: blur(5px); 
     -webkit-backdrop-filter: blur(5px); 
 }
@@ -241,7 +236,7 @@ body {
     border-radius: 8px;
     text-align: center;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    color: white; /* WHITE TEXT FOR READABILITY */
+    color: white; 
 }
 
 .modal-content p {
