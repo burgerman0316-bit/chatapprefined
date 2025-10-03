@@ -4,11 +4,11 @@ body {
     margin: 0; 
     padding-bottom: 50px; 
 }
-#messages, #staffMessages { 
+#messages { 
     list-style-type: none; 
     padding: 10px; 
     border: 1px solid #ccc; 
-    min-height: 100px; 
+    min-height: 150px; 
     margin-bottom: 20px; 
 }
 #messages li { 
@@ -16,15 +16,6 @@ body {
 }
 #messages li:nth-child(odd) { 
     background: #f4f4f4; 
-}
-
-#staffMessages { 
-    border-color: darkred; 
-    background-color: #fdd; 
-}
-#staffMessages li { 
-    padding: 0.5rem 1rem; 
-    color: darkred; 
 }
 
 .chat-form { 
