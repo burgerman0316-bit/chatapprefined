@@ -1,36 +1,64 @@
-// server.js (or index.js)
 const express = require('express');
-const { createServer } = require('http'); // 1. Use Node's standard HTTP server
-const { Server } = require('socket.io'); // 2. Import the Socket.IO server
+const { createServer } = require('http');
+const { Server } = require('socket.io');
 const { join } = require('path');
 
 const app = express();
-const httpServer = createServer(app); // 3. Create the HTTP server
-const io = new Server(httpServer); // 4. Attach Socket.IO to the HTTP server
+const httpServer = createServer(app);
 const PORT = 3000;
+
+// --- CRITICAL FIX: ENABLE CORS ---
+// Without this, the client often fails to connect, resulting in a blank page 
+// or "transport error" in the browser console.
+const io = new Server(httpServer, {
+    cors: {
+        origin: "http://localhost:3000", // Allow connection from the server itself
+        methods: ["GET", "POST"]
+    }
+});
 
 // Serve the index.html file
 app.get('/', (req, res) => {
-  res.sendFile(join(__dirname, 'index.html'));
+    // __dirname is the current directory of the server.js file
+    res.sendFile(join(__dirname, 'index.html'));
 });
 
-// --- CORE SOCKET.IO CONNECTION HANDLING ---
+// ==========================================================
+// A. MAIN CHAT LOGIC (Default Namespace: '/')
+// ==========================================================
 io.on('connection', (socket) => {
-  // This line is the most important test!
-  console.log('A user connected to the main chat'); 
+    console.log(`[Main Chat] A user connected: ${socket.id}`);
 
-  // Add the staff namespace as well, just to ensure that connection works
-  const staffIo = io.of('/staff');
-  staffIo.on('connection', (staffSocket) => {
-      console.log('A user connected to the /staff namespace');
-  });
+    socket.on('chat message', (msg) => {
+        console.log(`[Main Chat] Message: ${msg}`);
+        io.emit('chat message', msg); // Broadcast to all clients in the main namespace
+    });
 
-  socket.on('disconnect', () => {
-    console.log('user disconnected');
-  });
+    socket.on('disconnect', () => {
+        console.log(`[Main Chat] User disconnected: ${socket.id}`);
+    });
 });
+
+// ==========================================================
+// B. STAFF CHAT LOGIC (Custom Namespace: '/staff')
+// ==========================================================
+const staffIo = io.of('/staff');
+
+staffIo.on('connection', (staffSocket) => {
+    console.log(`[Staff Chat] An admin connected: ${staffSocket.id}`);
+
+    staffSocket.on('staff message', (msg) => {
+        console.log(`[Staff Chat] Message: ${msg}`);
+        staffIo.emit('staff message', msg); // Broadcast to all clients in the /staff namespace
+    });
+
+    staffSocket.on('disconnect', () => {
+        console.log(`[Staff Chat] Admin disconnected: ${staffSocket.id}`);
+    });
+});
+
 
 // Start the server
 httpServer.listen(PORT, () => {
-  console.log(`Server listening on *:${PORT}`);
+    console.log(`Server running and listening on http://localhost:${PORT}`);
 });
