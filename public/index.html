@@ -3,87 +3,48 @@
 <head>
     <title>Fixed Socket.IO Chat</title>
     <style>
+        /* (Styles omitted for brevity, but keep them) */
         body { margin: 0; padding-bottom: 3rem; font-family: sans-serif; }
-        #messages { list-style-type: none; margin: 0; padding: 0; }
+        #messages { list-style-type: none; margin: 0; padding: 0; border: 1px solid #ccc; margin-bottom: 10px; }
         #messages li { padding: 0.5rem 1rem; }
-        #messages li:nth-child(odd) { background: #eee; }
-        #staffMessages { list-style-type: none; margin-top: 20px; padding: 10px; border: 1px solid red; background-color: #fdd; }
+        #messages li:nth-child(odd) { background: #f4f4f4; }
+        #staffMessages { list-style-type: none; margin-top: 20px; padding: 10px; border: 1px solid darkred; background-color: #fdd; }
         #staffMessages li { padding: 0.25rem 0.5rem; color: darkred; }
-        #form { padding: 0.5rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; }
-        #input, #staffInput { flex-grow: 1; padding: 0.5rem; margin-right: 0.5rem; }
+        
+        .chat-form { 
+            background: rgba(0, 0, 0, 0.05);
+            padding: 0.5rem; 
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .chat-form input { flex-grow: 1; padding: 0.5rem; margin-right: 0.5rem; border: 1px solid #ccc; }
+        .chat-form button { padding: 0.5rem 1rem; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <h2>General Chat</h2>
     <ul id="messages"></ul>
+    
+    <form id="generalForm" class="chat-form">
+        <input id="generalInput" autocomplete="off" placeholder="Type a General Message" />
+        <button>Send General</button>
+    </form>
 
-    <h2>Staff Chat (Admin-only view)</h2>
+    <hr>
+    <h2>Staff Chat (Admin Console)</h2>
     <ul id="staffMessages"></ul>
 
-    <form id="form">
-        <input id="input" autocomplete="off" placeholder="General Message" />
-        <input id="staffInput" autocomplete="off" placeholder="Staff Message (if connected)" />
-        <button>Send</button>
+    <form id="staffForm" class="chat-form">
+        <input id="staffChatInput" autocomplete="off" placeholder="Type a Staff Message" />
+        <button style="background-color: darkred; color: white;">Send Staff</button>
     </form>
+
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // 1. Connect to the main (default) namespace
-        var socket = io();
-
-        // 2. Connect to the separate staff namespace
-        // A staff user would have this connection, a regular user would not.
-        var staffSocket = io('/staff');
-        
-        var form = document.getElementById('form');
-        var input = document.getElementById('input');
-        var staffInput = document.getElementById('staffInput');
-        var messages = document.getElementById('messages');
-        var staffMessages = document.getElementById('staffMessages');
-
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // --- General Chat Send Logic ---
-            if (input.value) {
-                // Emit the general message event
-                socket.emit('chat message', input.value);
-                input.value = '';
-            }
-            
-            // --- Staff Chat Send Logic ---
-            if (staffInput.value) {
-                // Emit the staff message event to the /staff namespace
-                staffSocket.emit('staff message', staffInput.value);
-                staffInput.value = '';
-            }
-            
-            return false;
-        });
-
-        // --- General Chat Receive Logic ---
-        socket.on('chat message', function(msg) {
-            var item = document.createElement('li');
-            item.textContent = 'General: ' + msg;
-            messages.appendChild(item);
-            window.scrollTo(0, document.body.scrollHeight);
-        });
-
-        // --- Staff Chat Receive Logic ---
-        // This handler only fires if the client is connected to the /staff namespace
-        staffSocket.on('staff message', function(msg) {
-            var item = document.createElement('li');
-            item.textContent = 'STAFF: ' + msg;
-            staffMessages.appendChild(item);
-            window.scrollTo(0, document.body.scrollHeight);
-        });
-        
-        staffSocket.on('connect', () => {
-             console.log('Successfully connected to /staff namespace');
-             // You could change the UI here to indicate staff access
-        });
-
+        // CLIENT-SIDE JAVASCRIPT IS BELOW
     </script>
 </body>
 </html>
