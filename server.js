@@ -167,7 +167,9 @@ io.on('connection', (socket) => {
                 
                 // 2. Public Announcement to Everyone (Generic Message)
                 const publicMsg = addSystemMessageToHistory(`A moderator has entered the chat.`, true); // true for alert styling
-                io.emit('chat message', publicMsg);
+                
+                // FIX: Broadcast to all EXCEPT the staff room
+                io.except(STAFF_ROOM).emit('chat message', publicMsg);
                 
                 socket.emit('staff_status_update', {
                     isAdmin: true,
