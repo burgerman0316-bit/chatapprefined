@@ -3,21 +3,18 @@ const messagesContainer = document.getElementById("messages");
 const usernameInput = document.getElementById("usernameInput");
 const staffControlsDiv = document.getElementById("staffControls");
 const messageInput = document.getElementById("messageInput");
-const userCountDisplay = document.getElementById("userCountDisplay"); 
-const nameControlButton = document.getElementById("nameControlButton"); // NEW
+const userCountDisplay = document.getElementById("userCountDisplay");
+const nameControlButton = document.getElementById("nameControlButton");
 
+// User state
 let currentUser = {
-    name: null,        // Secure name (Staff: loginName, User: displayName)
+    name: null,           // will be socket.id after login
     isAdmin: false,
     displayName: null
 };
+let isNameSet = false;
 
-let isNameSet = false; // NEW STATE TRACKER
-
-// ======================================================
-// ENTER KEY PRESS / SEND MESSAGE
-// ======================================================
-
+// Send message on Enter key
 messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
@@ -25,83 +22,63 @@ messageInput.addEventListener('keypress', (e) => {
     }
 });
 
-
-// ======================================================
-// NAME VALIDATION AND LOGIN / NAME CHANGE
-// ======================================================
-
+// Handle name/join button
 function handleNameAction() {
     const newName = usernameInput.value.trim();
-
     if (newName === "") {
         alert("Please enter a username.");
         return;
     }
 
     if (!isNameSet) {
-        // --- INITIAL LOGIN ---
-        currentUser.name = newName; 
-        socket.emit("check_staff_status", newName); 
+        // Set secureName as socket.id
+        currentUser.name = socket.id;
+        socket.emit("check_staff_status", newName);
     } else {
-        // --- NAME CHANGE REQUEST ---
+        // Change name
         if (newName === currentUser.displayName) {
-            alert("Your new name must be different from your current display name.");
+            alert("Your new name must be different.");
             return;
         }
-
-        // Send request to server (using the secure loginName if staff)
         socket.emit("name_change_request", {
-            oldName: currentUser.name, 
-            newName: newName 
+            oldName: currentUser.name,
+            newName: newName
         });
     }
 }
 
-// Server accepted the name (regular user)
+// Handle server responses
 socket.on('name_accepted', (displayName) => {
     currentUser.isAdmin = false;
     currentUser.displayName = displayName;
-    
-    isNameSet = true; 
-    
-    staffControlsDiv.style.display = 'none'; 
-    addMessage("System", `${displayName} has joined the chat.`, new Date());
-    
-    // UI Updates
-    usernameInput.disabled = false; 
-    nameControlButton.textContent = "Change Name"; 
-    
-    document.querySelector('.header-area button').disabled = false; // Enable button
-    messageInput.focus(); 
+    isNameSet = true;
+    staffControlsDiv.style.display = 'none';
+    addMessage("System", `${displayName} has joined.`, new Date());
+    // UI updates
+    document.querySelector('.header-area button').disabled = false;
+    usernameInput.disabled = false;
+    nameControlButton.textContent = "Change Name";
+    messageInput.focus();
 });
 
-// Server accepted the name (staff user)
 socket.on("staff_status_update", (data) => {
     if (data.secureName === currentUser.name) {
         currentUser.isAdmin = true;
         currentUser.displayName = data.displayName;
-        
-        isNameSet = true; 
-
-        staffControlsDiv.style.display = 'inline-block'; 
-        
-        addMessage("System", `${data.displayName} has logged in.`, new Date(), true); 
-        
-        // UI Updates
+        isNameSet = true;
+        staffControlsDiv.style.display = 'inline-block';
+        addMessage("System", `${data.displayName} logged in.`, new Date(), true);
         usernameInput.disabled = false;
-        usernameInput.value = data.displayName; // Show display name in input
+        usernameInput.value = data.displayName;
         nameControlButton.textContent = "Change Name";
-        
-        document.querySelector('.header-area button').disabled = false; // Enable button
-        messageInput.focus(); 
+        document.querySelector('.header-area button').disabled = false;
+        messageInput.focus();
     }
 });
 
-// Server rejected the name (reserved, banned, or in use)
 socket.on('name_rejected', (reason) => {
     alert(reason);
-    usernameInput.value = currentUser.displayName || ''; 
-    
+    usernameInput.value = currentUser.displayName || '';
     if (!isNameSet) {
         currentUser.name = null;
         currentUser.isAdmin = false;
@@ -110,149 +87,108 @@ socket.on('name_rejected', (reason) => {
     staffControlsDiv.style.display = 'none';
 });
 
-// --- NEW: NAME CHANGE SUCCESS ---
 socket.on('name_change_success', (data) => {
     const oldName = data.oldDisplayName;
     const newName = data.newDisplayName;
-
-    // Update client-side state
-    currentUser.name = data.newSecureName; 
-    currentUser.displayName = newName;    
-    usernameInput.value = newName;        
-
-    // Broadcast system message (if regular user, server handles public broadcast)
+    currentUser.name = data.newSecureName;
+    currentUser.displayName = newName;
+    usernameInput.value = newName;
+    // Show name change message
     if (!currentUser.isAdmin) {
-        // Regular user: server handles the public broadcast, we only update our own UI
-        // We only add the system message if we are a regular user, because the server broadcast will come back via the 'chat message' listener
+        // server broadcasts message; no need here
     } else {
-        // Staff user: the server did NOT broadcast publicly, so we must display the name change here
-         addMessage("System", `${oldName} changed display name to ${newName}.`, data.timestamp, true);
+        addMessage("System", `${oldName} changed name to ${newName}.`, data.timestamp, true);
     }
-    
-    alert(`Name successfully changed to ${newName}!`);
+    alert(`Name changed to ${newName}`);
 });
 
-// --- NEW: NAME CHANGE FAILURE ---
 socket.on('name_change_failed', (reason) => {
     alert(reason);
-    usernameInput.value = currentUser.displayName; // Revert input to current name
+    usernameInput.value = currentUser.displayName;
 });
 
-
-// ======================================================
-// CONTROLS AND MESSAGING FUNCTIONS
-// ======================================================
-
-function showAdminModal() {
-    if (!currentUser.isAdmin) {
-        alert("You must be staff to clear the chat.");
+// Send message
+function sendMessage() {
+    let text = messageInput.value.trim();
+    if (text.length > 500) {
+        alert("Max 500 characters");
+        text = text.substring(0, 500);
+    }
+    if (!isNameSet) {
+        alert("Set your username first");
         return;
     }
-    document.getElementById("adminModal").style.display = 'flex'; 
+    if (text === "") return;
+
+    const msgData = {
+        username: currentUser.displayName,
+        content: text,
+        timestamp: new Date(),
+        secureName: currentUser.name
+    };
+    socket.emit('chat message', msgData);
+    messageInput.value = '';
+    messageInput.focus();
 }
 
-function hideAdminModal() {
-    document.getElementById("adminModal").style.display = 'none';
+// Add message to chat
+function addMessage(username, content, timestamp, isAdmin=false, messageSecureName=null) {
+    const div = document.createElement('div');
+
+    const isOwn = messageSecureName && messageSecureName === currentUser.name;
+
+    if (username === "System" || username === "System Alert") {
+        div.className = isAdmin ? 'msg admin-system-msg' : 'msg system-msg';
+    } else if (isOwn) {
+        div.className = `msg own ${isAdmin ? 'admin-msg' : ''}`;
+    } else {
+        div.className = `msg other ${isAdmin ? 'admin-msg' : ''}`;
+    }
+
+    const header = document.createElement('div');
+    header.className = 'msg-header';
+
+    const time = new Date(timestamp);
+    header.textContent = `${username} • ${time.toLocaleTimeString()}`;
+
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    body.textContent = content;
+
+    div.appendChild(header);
+    div.appendChild(body);
+    messagesContainer.appendChild(div);
+
+    // Auto-scroll
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-function confirmClear() {
-    hideAdminModal();
-    socket.emit("admin:clear_history", {
-        username: currentUser.name, 
-        timestamp: new Date()
-    });
-}
-
-function sendMessage() {
-  const text = messageInput.value.trim(); 
-  
-  if (!isNameSet) {
-    alert("Please enter and set your username first.");
-    return;
-  }
-  
-  if (text === "") return;
-
-  const messageData = {
-    username: currentUser.name, 
-    content: text,
-    timestamp: new Date(),
-  };
-
-  socket.emit("chat message", messageData);
-  messageInput.value = ""; 
-  messageInput.focus(); 
-}
-
-function addMessage(username, content, timestamp, isAdmin = false) {
-  const div = document.createElement('div');
-  
-  const isOwn = (username === currentUser.displayName); 
-  
-  if (username === "System" || username === "System Alert") {
-      div.className = isAdmin ? 'msg admin-system-msg' : 'msg system-msg';
-  } else if (isOwn) {
-      div.className = `msg own ${isAdmin ? 'admin-msg' : ''}`;
-  } else {
-      div.className = `msg other ${isAdmin ? 'admin-msg' : ''}`;
-  }
-  
-  const header = document.createElement('div');
-  header.className = 'msg-header';
-  
-  const time = new Date(timestamp);
-  header.textContent = `${username} • ${time.toLocaleTimeString()}`;
-
-  const body = document.createElement('div');
-  body.className = 'msg-body';
-  body.textContent = content;
-  
-  div.appendChild(header);
-  div.appendChild(body);
-  messagesContainer.appendChild(div);
-  
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
-
-// ======================================================
-// SOCKET.IO LISTENERS
-// ======================================================
-
-// --- HISTORY CLEAR LISTENERS (Private/Public) ---
+// =======================
+// Socket Listeners
+// =======================
 socket.on("history_cleared_staff", (data) => {
     messagesContainer.innerHTML = "";
-    addMessage("System", data.content, data.timestamp, true); 
+    addMessage("System", data.content, data.timestamp, true);
 });
-
 socket.on("history_cleared_public", (data) => {
     messagesContainer.innerHTML = "";
     addMessage("System", data.content, data.timestamp, true);
 });
-
-// --- MESSAGING AND HISTORY ---
 socket.on("chat history", (msgs) => {
     messagesContainer.innerHTML = "";
-    msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.isAdmin));
+    msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.isAdmin, m.secureName));
 });
-
 socket.on("chat message", (msg) => {
-    addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin);
+    addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin, msg.secureName);
 });
-
-// --- STAFF PRIVATE MESSAGE LISTENER ---
 socket.on("staff message", (msg) => {
     if (currentUser.isAdmin) {
         addMessage(msg.username, msg.content, msg.timestamp, true);
     }
 });
-
-// --- USER COUNT LISTENER ---
 socket.on("user count", (count) => {
     userCountDisplay.textContent = `${count} User${count !== 1 ? 's' : ''} Online`;
 });
-
-// --- ERROR LISTENER ---
 socket.on('system_error', (errorMsg) => {
-    addMessage("System Alert", errorMsg, new Date(), true); 
+    addMessage("System Alert", errorMsg, new Date(), true);
 });
