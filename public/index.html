@@ -2,32 +2,23 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Fixed Multi-Namespace Chat</title>
+    <title>Simple Unified Chat</title>
     
     <link rel="stylesheet" href="/style.css"> 
 </head>
 <body>
 
-    <h2>General Chat</h2>
+    <h2>Unified Chat</h2>
     <ul id="messages"></ul>
     
-    <form id="generalForm" class="chat-form">
-        <input id="generalInput" autocomplete="off" placeholder="Type a General Message" />
-        <button>Send General</button>
-    </form>
-
-    <hr>
-    <h2>Staff Chat (Admin Console)</h2>
-    <ul id="staffMessages"></ul>
-
-    <form id="staffForm" class="chat-form">
-        <input id="staffChatInput" autocomplete="off" placeholder="Type a Staff Message" />
-        <button style="background-color: darkred; color: white;">Send Staff</button>
+    <form id="chatForm" class="chat-form">
+        <input id="chatInput" autocomplete="on" placeholder="Type your message..." />
+        <button>Send</button>
     </form>
 
 
     <script src="/socket.io/socket.io.js"></script>
     
-    <script src="/chat.js"></script> 
+    <script src="/client.js"></script> 
 </body>
 </html>
