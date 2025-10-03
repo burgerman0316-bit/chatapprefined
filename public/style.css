@@ -4,7 +4,7 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #000; 
+    background-color: #121212; 
     display: flex;
     justify-content: center;
     align-items: center;
@@ -23,6 +23,7 @@ body {
     border-radius: 8px;
     overflow: hidden;
     color: #f0f0f0; 
+    position: relative; /* CRITICAL for positioning dm-user-list */
 }
 
 /* Header/Controls Area */
@@ -36,24 +37,22 @@ body {
     flex-wrap: wrap; 
 }
 
-/* --- Name Field Shrink and Styling --- */
+/* --- Name Field Shrink and Right Alignment --- */
 #usernameInput {
     padding: 8px;
     background-color: #383838; 
     color: #f0f0f0;
     border: 1px solid #555;
     border-radius: 4px;
-    /* CHANGE: Shrink name input field */
     width: 120px; 
     flex-shrink: 0; 
-    /* NEW: Push this element to the right by consuming all available space to its left. */
     margin-left: auto;
 }
 
 /* --- Global Rounded Gray Button Styles --- */
 .header-area button {
     padding: 8px 15px;
-    background-color: #585858; /* Medium Gray */
+    background-color: #585858;
     color: white;
     border: none;
     border-radius: 20px; 
@@ -119,6 +118,18 @@ body {
     color: white;
     border-bottom-right-radius: 2px; 
 }
+
+/* --- DM Message Styles (Distinguish DMs in the main feed) --- */
+.dm-sent {
+    background-color: #0d47a1; /* Darker blue for sent DMs */
+    border-right: 3px solid #64b5f6;
+}
+
+.dm-received {
+    background-color: #3f51b5; /* Blue for received DMs */
+    border-left: 3px solid #64b5f6;
+}
+
 
 /* --- STAFF MESSAGE STYLES (DARKER YELLOW WITH OUTLINE) --- */
 .admin-msg {
@@ -194,6 +205,38 @@ body {
     background-color: #4a4a4a;
 }
 
+/* --- Direct Message Autocomplete Styles (NEW) --- */
+.dm-user-list {
+    position: absolute;
+    bottom: 50px; /* Position it just above the input form */
+    width: 100%;
+    max-width: 600px;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #383838; 
+    border: 1px solid #444;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    display: none; /* Hidden by default */
+    border-radius: 4px 4px 0 0;
+    left: 0;
+}
+
+.dm-user-item {
+    padding: 10px;
+    cursor: pointer;
+    color: #f0f0f0;
+    font-size: 0.9em;
+    border-bottom: 1px solid #444;
+}
+
+.dm-user-item:hover,
+.dm-user-item.selected {
+    background-color: #585858; 
+    font-weight: bold;
+}
+
+
 /* --- Chat Mode Indicator (MOVED TO HEADER) --- */
 .chat-mode-indicator {
     padding: 5px 10px;
@@ -205,12 +248,9 @@ body {
     text-align: center;
     flex-shrink: 0; 
     order: -1; 
-    /* NEW: Push the indicator to the right side of the main header area (left of the input) */
-    /* This combines with the input's margin-left: auto to control the right side block */
-    margin-left: 8px; /* Give a small gap from the Join button */
 }
 
-/* --- Modal Styles (PROPER POPUP, BLUR, WHITE TEXT) --- */
+/* --- Modal Styles (Custom Popups) --- */
 .modal {
     position: fixed; 
     z-index: 1000; 
@@ -272,4 +312,3 @@ body {
 .modal-content button:nth-child(3):hover {
     background-color: #555;
 }
-
