@@ -12,7 +12,7 @@ let currentUser = {
     isAdmin: false,
     displayName: null
 };
-let isNameSet = false;
+let isNameSet = false; // Track if user has set a name
 
 // Send message on Enter key
 messageInput.addEventListener('keypress', (e) => {
@@ -51,6 +51,7 @@ function handleNameAction() {
 socket.on('name_accepted', (displayName) => {
     currentUser.isAdmin = false;
     currentUser.displayName = displayName;
+    // secureName remains socket.id
     isNameSet = true;
     staffControlsDiv.style.display = 'none';
     addMessage("System", `${displayName} has joined.`, new Date());
@@ -159,8 +160,10 @@ function addMessage(username, content, timestamp, isAdmin=false, messageSecureNa
     div.appendChild(body);
     messagesContainer.appendChild(div);
 
-    // Auto-scroll
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    // Scroll to bottom after DOM update
+    setTimeout(() => {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }, 0);
 }
 
 // =======================
