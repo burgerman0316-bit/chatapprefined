@@ -5,16 +5,34 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+// FIX: Enable CORS to prevent browser connection errors
+const io = new Server(server, {
+    cors: {
+        origin: "http://localhost:3000",
+        methods: ["GET", "POST"]
+    }
+});
 
 // ======================================================
 // 1. CONFIGURATION 
 // ======================================================
 const STAFF_ROOM = 'staff_room'; // Staff chat channel
+const MAX_HISTORY = 100;
+
+// --- BANNED NAMES/WORDS LIST (Substrings are banned) ---
+const BANNED_NAMES = [
+    "hitler", 
+    "admin", 
+    "mod",
+    "foulword1", 
+    "foulword2", 
+    // ADD ALL YOUR BANNED NAMES OR WORDS HERE (They will be checked case-insensitively)
+];
+
 const STAFF_LIST = [
     {  
         loginName: "STAFF_CONTROLS-LIAM", 
-        displayName: "Liam Stern"   
+        displayName: "Liam Stern"    
     },
     {  
         loginName: "STAFF_CONTROLS-DIESEL",
@@ -35,8 +53,6 @@ const STAFF_LIST = [
 ];
 
 const chatHistory = [];
-const MAX_HISTORY = 100;
-
 const namesInUse = new Set();
 const socketsMap = new Map(); 
 
@@ -52,13 +68,30 @@ app.get('/', (req, res) => {
 // 2. HELPER FUNCTIONS
 // ======================================================
 
-function isStaffNameReserved(enteredUsername) {
+/**
+ * Checks if the entered name is reserved either by staff or because it 
+ * contains a banned word.
+ * This is the function updated to check for substrings in banned names.
+ */
+function isNameReserved(enteredUsername) {
     const checkName = enteredUsername.trim().toLowerCase();
+
+    // 1. Check against BANNED_NAMES (SUBSTRING CONTAINMENT)
+    for (const bannedWord of BANNED_NAMES) {
+        // If the entered name CONTAINS the banned word, reject it
+        if (checkName.includes(bannedWord.toLowerCase())) {
+            console.log(`REJECTION: Name "${enteredUsername}" contains banned word: "${bannedWord}"`);
+            return true;
+        }
+    }
+
+    // 2. Check against Staff Names (EXACT MATCH)
     return STAFF_LIST.some(staff => 
         staff.loginName.toLowerCase() === checkName || 
         staff.displayName.toLowerCase() === checkName
     );
 }
+
 
 function getStaffDisplayInfo(enteredUsername) {
     const secureUsername = enteredUsername.trim();
@@ -113,15 +146,27 @@ io.on('connection', (socket) => {
         const trimmedName = enteredName.trim();
         const lowerName = trimmedName.toLowerCase();
 
+        // 1. Check if name is already in use
         if (namesInUse.has(lowerName)) {
             socket.emit('name_rejected', 'That name is already in use. Please choose another name.');
             return;
         }
 
-        if (isStaffNameReserved(trimmedName)) {
+        // 2. Check for banned words (substring match)
+        for (const bannedWord of BANNED_NAMES) {
+            if (lowerName.includes(bannedWord.toLowerCase())) {
+                socket.emit('name_rejected', 'That name contains forbidden words. Please choose another name.');
+                return;
+            }
+        }
+
+        // 3. Check for staff/reserved names
+        // We use the simpler STAFF_LIST check here since banned names are already filtered above
+        if (STAFF_LIST.some(staff => staff.loginName.toLowerCase() === lowerName || staff.displayName.toLowerCase() === lowerName)) {
             const staffInfo = getStaffDisplayInfo(trimmedName);
             
-            if (!staffInfo.isAdmin) {
+            // If the name matches a staff member's display name or an incorrect loginName
+            if (!staffInfo.isAdmin) { 
                 socket.emit('name_rejected', 'That name is reserved by staff. Please choose another name.');
                 return;
             }
@@ -153,7 +198,6 @@ io.on('connection', (socket) => {
             
             // Save and broadcast the public "joined the chat" message
             const msg = addSystemMessageToHistory(`${trimmedName} has joined the chat.`);
-            // FIX: Use io.emit to send to all, including the sender
             io.emit('chat message', msg); 
         }
     });
@@ -162,7 +206,8 @@ io.on('connection', (socket) => {
     socket.on('chat message', (msg) => {
         const staffInfo = getStaffDisplayInfo(msg.username);
         
-        if (!staffInfo.isAdmin && isStaffNameReserved(msg.username)) {
+        // Security Check: If a non-staff user tries to send a message using a reserved staff name
+        if (!staffInfo.isAdmin && STAFF_LIST.some(staff => staff.loginName === msg.username)) {
             console.log(`SECURITY REJECTION: Non-staff user tried to send message as reserved name: ${msg.username}`);
             return; 
         }
@@ -233,6 +278,12 @@ io.on('connection', (socket) => {
             namesInUse.delete(nameToRemove);
             socketsMap.delete(socket.id);
             console.log(`User disconnected. Name ${nameToRemove} released.`);
+            
+            // Announce public disconnection only if they were not staff (staff announcements are private)
+            if (!socket.rooms.has(STAFF_ROOM)) {
+                 const msg = addSystemMessageToHistory(`${nameToRemove} has left the chat.`);
+                 io.emit('chat message', msg);
+            }
         }
     });
 });
