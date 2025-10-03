@@ -114,10 +114,11 @@ function addSystemMessageToHistory(content, isAdmin = false) {
 }
 
 /**
- * FIX: Gets the count of currently connected sockets and sends it to all clients.
+ * FIX: Gets the count of currently connected USERS (based on namesInUse) and sends it to all clients.
  */
 function broadcastUserCount() {
-    const count = io.engine.clientsCount;
+    // We count the size of the Set that stores successfully logged-in usernames.
+    const count = namesInUse.size; 
     io.emit('user count', count);
 }
 
@@ -133,7 +134,7 @@ io.on('connection', (socket) => {
     // Send initial count when a client connects (but before they log in)
     broadcastUserCount();
 
-    // NAME VALIDATION AND STAFF CHECK
+    // NAME VALIDATION AND STAFF CHECK (INITIAL LOGIN)
     socket.on('check_staff_status', (enteredName) => {
         const trimmedName = enteredName.trim();
         const lowerName = trimmedName.toLowerCase();
@@ -146,7 +147,7 @@ io.on('connection', (socket) => {
         // Check for banned words or reserved staff names
         if (isNameReserved(trimmedName)) {
             
-            // If the name is reserved by staff (requires correct loginName for success)
+            // Staff login attempt (requires correct loginName for success)
             if (STAFF_LIST.some(staff => staff.loginName.toLowerCase() === lowerName || staff.displayName.toLowerCase() === lowerName)) {
                 const staffInfo = getStaffDisplayInfo(trimmedName);
                 if (!staffInfo.isAdmin) {
@@ -187,6 +188,78 @@ io.on('connection', (socket) => {
         broadcastUserCount();
     });
 
+    // NEW: NAME CHANGE REQUEST HANDLING
+    socket.on('name_change_request', (data) => {
+        const oldSecureName = data.oldName.trim();
+        const newName = data.newName.trim();
+        const newLowerName = newName.toLowerCase();
+        
+        const currentDisplayName = socketsMap.get(socket.id); 
+
+        // 1. Basic Validation
+        if (!newName || newName === currentDisplayName) {
+            socket.emit('name_change_failed', 'A valid, different name is required.');
+            return;
+        }
+        
+        // 2. Check for Banned/Reserved Names
+        if (isNameReserved(newName)) {
+            socket.emit('name_change_failed', 'That name is reserved or contains forbidden words.');
+            return;
+        }
+
+        // 3. Check if the new name is already in use
+        if (namesInUse.has(newLowerName)) {
+            socket.emit('name_change_failed', 'That name is already taken.');
+            return;
+        }
+        
+        // --- SUCCESS: PERFORM NAME CHANGE ---
+        
+        // 1. Update the namesInUse set (release old, claim new)
+        if (currentDisplayName) {
+            namesInUse.delete(currentDisplayName.toLowerCase());
+        }
+        namesInUse.add(newLowerName);
+        
+        // 2. Update the socket map (maps socket ID to the new display name)
+        socketsMap.set(socket.id, newName); 
+        
+        // 3. Build success data
+        const successData = {
+            oldDisplayName: currentDisplayName,
+            newDisplayName: newName,
+            newSecureName: newName, 
+            timestamp: new Date()
+        };
+        
+        // If the user was a staff member, we must preserve their secure loginName for future checks
+        if (getStaffDisplayInfo(oldSecureName).isAdmin) {
+            successData.newSecureName = oldSecureName; // Keep the original STAFF_CONTROLS-X login name
+            
+            // Staff name changes are private
+            socket.emit('name_change_success', successData); 
+            
+            // Notify other staff privately
+            const privateMsg = {
+                 username: "System",
+                 content: `Staff member ${currentDisplayName} changed display name to ${newName}.`,
+                 timestamp: new Date(),
+                 isAdmin: true
+            };
+            socket.to(STAFF_ROOM).emit('staff message', privateMsg);
+            
+            return; // Exit, no public broadcast for staff name change
+        }
+        
+        // 4. Send success back to the user who requested the change
+        socket.emit('name_change_success', successData);
+        
+        // 5. Broadcast public notification (Regular user only)
+        io.emit('chat message', addSystemMessageToHistory(`${currentDisplayName} is now known as ${newName}.`));
+
+    });
+
     // PUBLIC MESSAGE HANDLING
     socket.on('chat message', (msg) => {
         
@@ -214,7 +287,7 @@ io.on('connection', (socket) => {
         io.emit('chat message', messageData);
     });
 
-    // ADMIN CONTROL HANDLING
+    // ADMIN CONTROL HANDLING (PRIVACY IMPLEMENTED)
     socket.on('admin:clear_history', (data) => {
         const staffInfo = getStaffDisplayInfo(data.username);
         
@@ -224,15 +297,15 @@ io.on('connection', (socket) => {
             // 1. MESSAGE FOR STAFF ONLY (Includes Admin Name)
             const staffMsgData = {
                 username: staffInfo.username,
-                content: `Chat history cleared by ${staffInfo.username}.`, // Personalized
+                content: `Chat history cleared by ${staffInfo.username}.`, 
                 timestamp: new Date()
             };
             io.to(STAFF_ROOM).emit('history_cleared_staff', staffMsgData);
             
             // 2. MESSAGE FOR REGULAR USERS (Generic Name)
             const publicMsgData = {
-                username: "Moderator", // Generic name
-                content: "The chat history has been cleared.", // Generic message
+                username: "Moderator", 
+                content: "The chat history has been cleared.", 
                 timestamp: new Date()
             };
             io.except(STAFF_ROOM).emit('history_cleared_public', publicMsgData);
@@ -253,7 +326,7 @@ io.on('connection', (socket) => {
         }
         
         if (nameToRemove) {
-            namesInUse.delete(nameToRemove);
+            namesInUse.delete(nameToRemove.toLowerCase()); // Use lowercase for Set lookup
             socketsMap.delete(socket.id);
             console.log(`User disconnected. Name ${nameToRemove} released.`);
             
@@ -263,7 +336,7 @@ io.on('connection', (socket) => {
             }
         }
         
-        // FIX: Broadcast the updated count when a client disconnects
+        // Broadcast the updated count when a client disconnects
         broadcastUserCount();
     });
 });
