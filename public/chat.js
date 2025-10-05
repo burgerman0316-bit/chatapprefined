@@ -269,8 +269,8 @@ function sendMessage() {
             return;
         }
 
-        const recipient = commandParts[1];
-        const content = commandParts[2];
+        const recipient = commandParts[1]; // Corrected: access the recipient by index 1
+        const content = commandParts[2];   // Corrected: access the content by index 2
         
         const messageData = {
             recipient: recipient,
@@ -293,18 +293,6 @@ function sendMessage() {
 }
 
 messageInput.addEventListener('input', handleDmInput);
-
-function autofillDMRecipient(username) {
-    const currentContent = messageInput.textContent;
-    const msgIndex = currentContent.lastIndexOf("/msg");
-    if (msgIndex !== -1) {
-        const prefix = currentContent.substring(0, msgIndex + 5);
-        const newContent = `${prefix}${username} `;
-        messageInput.textContent = newContent;
-        setCursorToEnd(messageInput);
-        hideDmUserMenu();
-    }
-}
 
 function handleDmInput() {
     const text = messageInput.textContent;
@@ -333,7 +321,15 @@ function showDmUserMenu(searchTerm = "") {
         button.textContent = user;
         button.onclick = (e) => {
             e.preventDefault();
-            autofillDMRecipient(user);
+            const currentContent = messageInput.textContent;
+            const msgIndex = currentContent.lastIndexOf("/msg");
+            if (msgIndex !== -1) {
+                const prefix = currentContent.substring(0, msgIndex + 5);
+                const newContent = `${prefix}${user} `;
+                messageInput.textContent = newContent;
+                setCursorToEnd(messageInput);
+                hideDmUserMenu();
+            }
         };
         dmUserMenu.appendChild(button);
     });
