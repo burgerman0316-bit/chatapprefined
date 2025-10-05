@@ -269,8 +269,8 @@ function sendMessage() {
             return;
         }
 
-        const recipient = commandParts[1]; // Corrected: Access the recipient by index 1
-        const content = commandParts[2];   // Corrected: Access the content by index 2
+        const recipient = commandParts[1];
+        const content = commandParts[2];
         
         const messageData = {
             recipient: recipient,
