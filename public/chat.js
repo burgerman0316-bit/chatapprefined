@@ -7,6 +7,8 @@ const userCountDisplay = document.getElementById("userCountDisplay");
 const nameControlButton = document.getElementById("nameControlButton");
 const dmUserMenu = document.getElementById("dmUserMenu");
 const messageFormButton = document.querySelector('#messageForm button');
+const staffNameModal = document.getElementById("staffNameModal");
+const staffNameModalMessage = document.getElementById("staffNameModalMessage");
 
 let currentUser = {
     name: null,
@@ -22,7 +24,6 @@ let dmMenuHighlightedIndex = -1;
 messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
-        // If DM menu is open and an item is highlighted, trigger its click
         if (dmUserMenu.style.display === 'flex' && dmMenuHighlightedIndex !== -1) {
             const buttons = dmUserMenu.querySelectorAll('button');
             buttons[dmMenuHighlightedIndex].click();
@@ -108,7 +109,7 @@ socket.on("staff_status_update", (data) => {
 
 // Server rejected the name
 socket.on('name_rejected', (reason) => {
-    addMessage("System Alert", reason, new Date(), true);
+    showStaffNameModal(reason);
     usernameInput.value = currentUser.displayName || '';
     if (!isNameSet) {
         currentUser.name = null;
@@ -155,6 +156,15 @@ function showAdminModal() {
 
 function hideAdminModal() {
     document.getElementById("adminModal").style.display = 'none';
+}
+
+function showStaffNameModal(message) {
+    staffNameModalMessage.textContent = message;
+    staffNameModal.style.display = 'flex';
+}
+
+function hideStaffNameModal() {
+    staffNameModal.style.display = 'none';
 }
 
 function confirmClear() {
@@ -234,8 +244,9 @@ function showDmUserMenu(searchTerm = "") {
         const userButton = document.createElement("button");
         userButton.textContent = user;
         userButton.dataset.username = user;
-        userButton.setAttribute('type', 'button'); // Prevent form submission
-        userButton.onclick = () => {
+        userButton.setAttribute('type', 'button');
+        userButton.onclick = (e) => {
+            e.preventDefault(); // Prevent form submission
             const currentText = messageInput.textContent;
             const msgStart = currentText.lastIndexOf("/msg");
             if (msgStart !== -1) {
@@ -339,17 +350,23 @@ socket.on("history_cleared_public", (data) => {
 socket.on("chat history", (msgs) => {
     messagesContainer.innerHTML = "";
     msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.isAdmin));
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 });
 
-socket.on('chat message', (msg) => addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin));
+socket.on('chat message', (msg) => {
+    addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+});
 
 socket.on('private message', (msg) => {
     const isOwn = (msg.sender === currentUser.displayName);
     addMessage(`${msg.sender} to ${msg.recipient}`, msg.content, msg.timestamp, false, true);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 });
 
 socket.on('system_error', (message) => {
     addMessage("System Alert", message, new Date(), true);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 });
 
 socket.on('user count', (data) => {
@@ -360,9 +377,11 @@ socket.on('user count', (data) => {
 socket.on('staff message', (msg) => {
     if (currentUser.isAdmin) {
         addMessage(msg.username, msg.content, msg.timestamp, true);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 });
 
 socket.on('plain_notice', (data) => {
     addPlainText(data.content, data.timestamp);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 });
