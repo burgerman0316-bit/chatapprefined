@@ -24,6 +24,7 @@ let dmMenuHighlightedIndex = -1;
 messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
+        // If DM menu is open and an item is highlighted, trigger its click
         if (dmUserMenu.style.display === 'flex' && dmMenuHighlightedIndex !== -1) {
             const buttons = dmUserMenu.querySelectorAll('button');
             buttons[dmMenuHighlightedIndex].click();
@@ -186,9 +187,10 @@ function sendMessage() {
     if (text === "") return;
 
     if (text.startsWith("/msg ")) {
-        const parts = text.substring(5).split(" ");
-        const recipient = parts.shift();
-        const content = parts.join(" ").trim();
+        // Correctly parse recipient and message
+        const commandParts = text.substring(5).split(/\s(.*)/s);
+        const recipient = commandParts[0];
+        const content = commandParts[1] || '';
 
         if (!recipient || !content) {
             addMessage("System Alert", "Invalid /msg command. Usage: /msg [username] [message]", new Date(), true);
@@ -246,7 +248,7 @@ function showDmUserMenu(searchTerm = "") {
         userButton.dataset.username = user;
         userButton.setAttribute('type', 'button');
         userButton.onclick = (e) => {
-            e.preventDefault(); // Prevent form submission
+            e.preventDefault();
             const currentText = messageInput.textContent;
             const msgStart = currentText.lastIndexOf("/msg");
             if (msgStart !== -1) {
@@ -324,8 +326,6 @@ function addMessage(username, content, timestamp, isAdmin = false, isPrivate = f
   div.appendChild(header);
   div.appendChild(body);
   messagesContainer.appendChild(div);
-
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 function addPlainText(content, timestamp) {
@@ -334,17 +334,18 @@ function addPlainText(content, timestamp) {
   const time = new Date(timestamp || Date.now());
   div.textContent = `${content} • ${time.toLocaleTimeString()}`;
   messagesContainer.appendChild(div);
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
 socket.on("history_cleared_staff", (data) => {
     messagesContainer.innerHTML = "";
     addMessage("System", data.content, data.timestamp, true);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 });
 
 socket.on("history_cleared_public", (data) => {
     messagesContainer.innerHTML = "";
     addMessage("System", data.content, data.timestamp, true);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 });
 
 socket.on("chat history", (msgs) => {
@@ -360,7 +361,7 @@ socket.on('chat message', (msg) => {
 
 socket.on('private message', (msg) => {
     const isOwn = (msg.sender === currentUser.displayName);
-    addMessage(`${msg.sender} to ${msg.recipient}`, msg.content, msg.timestamp, false, true);
+    addMessage(isOwn ? `${msg.sender} to ${msg.recipient}` : `${msg.sender} to ${msg.recipient}`, msg.content, msg.timestamp, false, true);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 });
 
