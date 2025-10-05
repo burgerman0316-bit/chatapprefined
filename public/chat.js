@@ -187,16 +187,16 @@ function sendMessage() {
     if (text === "") return;
 
     if (text.startsWith("/msg ")) {
-        // Correctly parse recipient and message
-        const commandParts = text.substring(5).split(/\s(.*)/s);
-        const recipient = commandParts[0];
-        const content = commandParts[1] || '';
+        const commandParts = text.substring(5).match(/^(\S+)\s(.*)/s);
 
-        if (!recipient || !content) {
+        if (!commandParts || commandParts.length < 3) {
             addMessage("System Alert", "Invalid /msg command. Usage: /msg [username] [message]", new Date(), true);
             messageInput.textContent = "";
             return;
         }
+
+        const recipient = commandParts[1];
+        const content = commandParts[2];
         
         const messageData = {
             recipient: recipient,
