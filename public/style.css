@@ -21,6 +21,7 @@ body {
     border-radius: 8px;
     overflow: hidden;
     color: #f0f0f0;
+    position: relative; /* Added for proper DM menu positioning */
 }
 
 /* Header/Controls Area */
@@ -73,7 +74,7 @@ body {
     padding: 10px;
 }
 
-#messages, #staffMessages {
+#messages {
     display: flex;
     flex-direction: column;
     list-style: none;
@@ -146,14 +147,14 @@ body {
     font-weight: bold;
 }
 
-#messageForm, #staffMessageForm {
+#messageForm {
     display: flex;
     padding: 10px;
     background-color: #2c2c2c;
     border-top: 1px solid #444;
 }
 
-#messageInput, #staffMessageInput {
+#messageInput {
     flex-grow: 1;
     padding: 10px;
     background-color: #383838;
@@ -163,7 +164,7 @@ body {
     margin-right: 8px;
 }
 
-#messageForm button, #staffMessageForm button {
+#messageForm button {
     padding: 10px 15px;
     background-color: #585858;
     color: white;
@@ -172,7 +173,7 @@ body {
     cursor: pointer;
 }
 
-#messageForm button:hover, #staffMessageForm button:hover {
+#messageForm button:hover {
     background-color: #4a4a4a;
 }
 
@@ -248,4 +249,56 @@ body {
     background-color: #555;
 }
 
-/* Plain centered chat line (not a bubble)
+.chat-plain {
+  font-size: 0.9em;
+  color: #888;
+  text-align: center;
+  font-style: italic;
+  margin: 10px 0;
+}
+
+/* DM User Menu */
+.dm-user-menu {
+  position: absolute;
+  bottom: 60px; /* Adjust based on your message input height */
+  width: 100%;
+  max-width: 600px;
+  background-color: #2c2c2c;
+  border-top: 1px solid #444;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.dm-user-menu button {
+  background-color: transparent;
+  border: none;
+  color: #f0f0f0;
+  text-align: left;
+  padding: 10px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #383838;
+  font-size: 14px;
+}
+
+.dm-user-menu button:hover {
+  background-color: #383838;
+}
+
+/* Style for private messages */
+.msg.private {
+    background-color: #31332c;
+    border: 1px solid #5a6646;
+}
+
+.msg.own.private {
+    background-color: #2b353d;
+    border: 1px solid #465a66;
+}
+
+.msg.private .msg-header, .msg.own.private .msg-header {
+    color: #b9b9b9;
+}
