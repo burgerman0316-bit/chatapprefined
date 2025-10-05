@@ -2,7 +2,7 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #000;
+    background-color: #121212;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -175,14 +175,6 @@ body {
     min-height: 40px;
 }
 
-/* Custom placeholder for contenteditable div */
-.custom-input[data-placeholder]:empty::before {
-    content: attr(data-placeholder);
-    color: #888;
-    cursor: text;
-    pointer-events: none;
-}
-
 #messageForm button {
     padding: 10px 15px;
     background-color: #585858;
@@ -309,4 +301,12 @@ body {
 }
 .modal-content button:nth-child(3):hover {
     background-color: #555;
+}
+
+/* New CSS to handle the placeholder */
+.custom-input[data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: #888;
+    cursor: text;
+    pointer-events: none;
 }
