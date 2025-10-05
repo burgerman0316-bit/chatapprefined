@@ -9,6 +9,7 @@ const dmUserMenu = document.getElementById("dmUserMenu");
 const messageFormButton = document.querySelector('#messageForm button');
 const staffNameModal = document.getElementById("staffNameModal");
 const staffNameModalMessage = document.getElementById("staffNameModalMessage");
+const messageForm = document.getElementById('messageForm');
 
 let currentUser = {
     name: null,
@@ -82,6 +83,12 @@ function addPlainText(content, timestamp) {
     messagesContainer.appendChild(plainEl);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
+
+// Intercept form submission
+messageForm.addEventListener('submit', (e) => {
+    e.preventDefault(); // Prevent the default form submission
+    sendMessage();
+});
 
 // Handle key presses for sending messages and DM menu navigation
 messageInput.addEventListener('keypress', (e) => {
@@ -262,8 +269,8 @@ function sendMessage() {
             return;
         }
 
-        const recipient = commandParts[1];
-        const content = commandParts[2];
+        const recipient = commandParts;
+        const content = commandParts;
         
         const messageData = {
             recipient: recipient,
@@ -317,11 +324,8 @@ function showDmUserMenu(searchTerm = "") {
             const currentContent = messageInput.textContent;
             const msgIndex = currentContent.lastIndexOf("/msg");
             if (msgIndex !== -1) {
-                const fullCommand = `/msg ${user}`;
-                const remainingContent = currentContent.substring(msgIndex + 5);
-
-                const newContent = fullCommand + remainingContent.substring(remainingContent.indexOf(' ') + 1);
-
+                const prefix = currentContent.substring(0, msgIndex + 5);
+                const newContent = `${prefix}${user} `;
                 messageInput.textContent = newContent;
                 setCursorToEnd(messageInput);
                 hideDmUserMenu();
@@ -397,4 +401,3 @@ document.addEventListener('DOMContentLoaded', () => {
     messageInput.contentEditable = false;
     messageFormButton.disabled = true;
 });
-
