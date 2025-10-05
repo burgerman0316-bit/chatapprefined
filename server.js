@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -24,6 +23,7 @@ const STAFF_LIST = [
 const chatHistory = [];
 const namesInUse = new Set();
 const socketsMap = new Map();
+const usernamesMap = new Map(); // New map for username to socket ID lookup
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
@@ -78,6 +78,7 @@ io.on('connection', (socket) => {
         const info = getStaffDisplayInfo(trimmed);
         namesInUse.add(info.username.toLowerCase());
         socketsMap.set(socket.id, info.username);
+        usernamesMap.set(info.username.toLowerCase(), socket.id); // Add to new map
         socket.join(STAFF_ROOM);
 
         const privateMsg = { username: 'System', content: `Staff member ${info.username} connected.`, timestamp: new Date(), isAdmin: true, secureName: info.secureName };
@@ -93,6 +94,7 @@ io.on('connection', (socket) => {
     } else {
       namesInUse.add(lower);
       socketsMap.set(socket.id, trimmed);
+      usernamesMap.set(trimmed.toLowerCase(), socket.id); // Add to new map
       socket.emit('name_accepted', trimmed);
 
       const joinMsg = { username: trimmed, content: `${trimmed} has joined the chat.`, timestamp: new Date(), isAdmin: false, secureName: trimmed };
@@ -112,9 +114,13 @@ io.on('connection', (socket) => {
     if (isNameReserved(newName)) { socket.emit('name_change_failed', 'That name is reserved or contains forbidden words.'); return; }
     if (namesInUse.has(newLower)) { socket.emit('name_change_failed', 'That name is already taken.'); return; }
 
-    if (currentDisplay) namesInUse.delete(currentDisplay.toLowerCase());
+    if (currentDisplay) {
+        namesInUse.delete(currentDisplay.toLowerCase());
+        usernamesMap.delete(currentDisplay.toLowerCase()); // Update new map
+    }
     namesInUse.add(newLower);
     socketsMap.set(socket.id, newName);
+    usernamesMap.set(newLower, socket.id); // Update new map
 
     const success = { oldDisplayName: currentDisplay, newDisplayName: newName, newSecureName: newName, timestamp: new Date() };
 
@@ -153,13 +159,8 @@ io.on('connection', (socket) => {
     const senderDisplayName = socketsMap.get(socket.id);
     if (!senderDisplayName) return;
 
-    let recipientSocketId = null;
-    for (const [id, displayName] of socketsMap.entries()) {
-      if (displayName.toLowerCase() === msg.recipient.toLowerCase()) {
-        recipientSocketId = id;
-        break;
-      }
-    }
+    // Use the new map for a direct, efficient lookup
+    const recipientSocketId = usernamesMap.get(msg.recipient.toLowerCase());
 
     if (recipientSocketId) {
       const messageData = {
@@ -168,7 +169,9 @@ io.on('connection', (socket) => {
         content: msg.content,
         timestamp: new Date()
       };
+      // Send to recipient
       io.to(recipientSocketId).emit('private message', messageData);
+      // Send back to sender
       socket.emit('private message', messageData);
     } else {
       socket.emit('system_error', `User '${msg.recipient}' not found or not online.`);
@@ -194,6 +197,14 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     const nameToRemove = socketsMap.get(socket.id);
+    if (!nameToRemove) return;
+
+    const lowerName = nameToRemove.toLowerCase();
+    if (namesInUse.has(lowerName)) {
+      namesInUse.delete(lowerName);
+      usernamesMap.delete(lowerName); // Remove from new map
+    }
+    socketsMap.delete(socket.id);
 
     if (socket.rooms.has(STAFF_ROOM)) {
       const privateMsg = {
@@ -202,26 +213,22 @@ io.on('connection', (socket) => {
         timestamp: new Date(),
         isAdmin: true
       };
-      io.to(STAFF_ROOM).emit('staff message', privateMsg);
-    }
-
-    if (nameToRemove) {
-      namesInUse.delete(nameToRemove.toLowerCase());
-      socketsMap.delete(socket.id);
-      console.log(`User disconnected. Name ${nameToRemove} released.`);
-
-      const publicNotice = {
+      socket.to(STAFF_ROOM).emit('staff message', privateMsg);
+    } else {
+      const disconnectMsg = {
         username: 'System',
-        content: 'A user has left the chat.',
+        content: `${nameToRemove} has left the chat.`,
         timestamp: new Date(),
-        isAdmin: true
+        isAdmin: false
       };
-      pushHistory(publicNotice);
-      io.emit('chat message', publicNotice);
+      pushHistory(disconnectMsg);
+      io.emit('chat message', disconnectMsg);
     }
     broadcastUserCount();
   });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
