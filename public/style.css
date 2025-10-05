@@ -225,7 +225,7 @@ body {
     font-size: 14px;
 }
 
-.dm-user-menu button:hover, .dm-user-menu button:focus {
+.dm-user-menu button.highlighted, .dm-user-menu button:hover {
     background-color: #555;
 }
 
