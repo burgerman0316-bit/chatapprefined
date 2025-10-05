@@ -186,6 +186,8 @@ function sendMessage() {
     if (text === "") return;
 
     if (text.startsWith("/msg ")) {
+        // Correctly parse the command using a regular expression
+        // The regex captures the first word after "/msg " and the rest of the message
         const commandParts = text.substring(5).match(/^(\S+)\s(.*)/s);
 
         if (!commandParts || commandParts.length < 3) {
@@ -194,8 +196,10 @@ function sendMessage() {
             return;
         }
 
-        const recipient = commandParts;
-        const content = commandParts;
+        // The first captured group (at index 1) is the recipient
+        const recipient = commandParts[1];
+        // The second captured group (at index 2) is the message content
+        const content = commandParts[2];
         
         const messageData = {
             recipient: recipient,
@@ -385,3 +389,4 @@ socket.on('plain_notice', (data) => {
     addPlainText(data.content, data.timestamp);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 });
+
