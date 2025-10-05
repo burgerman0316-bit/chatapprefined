@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -11,7 +12,7 @@ const io = new Server(server, {
 
 const STAFF_ROOM = 'staff_room';
 const MAX_HISTORY = 100;
-const BANNED_NAMES = ['hitler','admin','mod','foulword1','foulword2'];
+const BANNED_NAMES = ['hitler', 'admin', 'mod', 'foulword1', 'foulword2'];
 const STAFF_LIST = [
   { loginName: 'STAFF_CONTROLS-LIAM', displayName: 'Liam Stern' },
   { loginName: 'STAFF_CONTROLS-DIESEL', displayName: 'Diesel Carter' },
@@ -22,7 +23,7 @@ const STAFF_LIST = [
 
 const chatHistory = [];
 const namesInUse = new Set();
-const socketsMap = new Map(); // socketId -> displayName
+const socketsMap = new Map();
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
@@ -56,15 +57,6 @@ function broadcastUserCount() {
   io.emit('user count', namesInUse.size);
 }
 
-function findSocketIdByDisplay(displayName) {
-  if (!displayName) return null;
-  const lower = String(displayName).toLowerCase();
-  for (const [id, disp] of socketsMap.entries()) {
-    if (String(disp).toLowerCase() === lower) return id;
-  }
-  return null;
-}
-
 io.on('connection', (socket) => {
   console.log('socket connected:', socket.id);
   socket.emit('chat history', chatHistory);
@@ -77,8 +69,10 @@ io.on('connection', (socket) => {
     if (namesInUse.has(lower)) { socket.emit('name_rejected', 'That name is already in use.'); return; }
 
     if (isNameReserved(trimmed)) {
+      // staff or banned
       const staffMatch = STAFF_LIST.find(s => s.loginName.toLowerCase() === lower || s.displayName.toLowerCase() === lower);
       if (staffMatch) {
+        // require exact loginName to actually log in as staff
         if (staffMatch.loginName.toLowerCase() !== lower && staffMatch.displayName.toLowerCase() === lower) {
           socket.emit('name_rejected', 'That name is reserved by staff.'); return;
         }
@@ -91,7 +85,7 @@ io.on('connection', (socket) => {
         socket.to(STAFF_ROOM).emit('staff message', privateMsg);
 
         const publicMsg = { username: 'System', content: 'A moderator has entered the chat.', timestamp: new Date(), isAdmin: true, secureName: null };
-        pushHistory(publicMsg);
+        // send to everyone (including staff) but you can change to exclude staff if desired:
         io.emit('chat message', publicMsg);
 
         socket.emit('staff_status_update', { isAdmin: true, displayName: info.username, secureName: info.secureName });
@@ -103,16 +97,11 @@ io.on('connection', (socket) => {
       socketsMap.set(socket.id, trimmed);
       socket.emit('name_accepted', trimmed);
 
-      const joinMsg = { username: 'System', content: `${trimmed} has joined the chat.`, timestamp: new Date(), isAdmin: true, secureName: null };
+      const joinMsg = { username: trimmed, content: `${trimmed} has joined the chat.`, timestamp: new Date(), isAdmin: false, secureName: trimmed };
       pushHistory(joinMsg);
       io.emit('chat message', joinMsg);
     }
     broadcastUserCount();
-  });
-
-  socket.on('request_user_list', () => {
-    const list = Array.from(socketsMap.values()).filter(Boolean);
-    socket.emit('user_list', list);
   });
 
   socket.on('name_change_request', (data) => {
@@ -140,7 +129,7 @@ io.on('connection', (socket) => {
     }
 
     socket.emit('name_change_success', success);
-    const publicSys = { username: 'System', content: `${currentDisplay} is now known as ${newName}.`, timestamp: new Date(), isAdmin: true, secureName: null };
+    const publicSys = { username: 'System', content: `${currentDisplay} is now known as ${newName}.`, timestamp: new Date(), isAdmin: true, secureName: newName };
     pushHistory(publicSys);
     io.emit('chat message', publicSys);
   });
@@ -152,7 +141,7 @@ io.on('connection', (socket) => {
         return;
       }
       const staffInfo = getStaffDisplayInfo(msg.username);
-      const messageData = { username: staffInfo.username || msg.username, content: msg.content, timestamp: new Date(), isAdmin: staffInfo.isAdmin, secureName: staffInfo.secureName || null };
+      const messageData = { username: staffInfo.username, content: msg.content, timestamp: new Date(), isAdmin: staffInfo.isAdmin, secureName: staffInfo.secureName };
       pushHistory(messageData);
       io.emit('chat message', messageData);
     } catch (err) {
@@ -161,77 +150,56 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('private_message', (data) => {
-    try {
-      const fromSecure = String(data.fromSecure || '').trim();
-      const toDisplay = String(data.toDisplay || '').trim();
-      const content = String(data.content || '').trim();
-      if (!fromSecure || !toDisplay || !content) {
-        socket.emit('system_error', 'Invalid private message.');
-        return;
-      }
-      if (containsBannedWord(content)) {
-        socket.emit('system_error', 'Your message contained forbidden language and was not sent.');
-        return;
-      }
-
-      const toSocketId = findSocketIdByDisplay(toDisplay);
-      if (!toSocketId) {
-        socket.emit('system_error', `User "${toDisplay}" is not online.`);
-        return;
-      }
-
-      const timestamp = new Date();
-      const fromDisplay = socketsMap.get(socket.id) || fromSecure;
-
-      const incoming = { username: fromDisplay, content, timestamp, isPrivate: true, from: fromDisplay };
-      const outgoing = { username: fromDisplay, content, timestamp, isPrivate: true, to: toDisplay };
-
-      io.to(toSocketId).emit('private_message_incoming', incoming);
-      socket.emit('private_message_sent', outgoing);
-
-      // optional: store private messages (commented out)
-      // pushHistory({ ...outgoing, isPrivate: true, secureFrom: fromSecure, secureTo: toDisplay });
-    } catch (err) {
-      console.error('private_message handler error:', err);
-      socket.emit('system_error', 'Server error while sending private message.');
-    }
-  });
-
   socket.on('admin:clear_history', (data) => {
     const info = getStaffDisplayInfo(data.username);
     if (info.isAdmin) {
       chatHistory.length = 0;
-      const staffMsg = { username: info.username, content: `Chat history cleared by ${info.username}.`, timestamp: new Date(), secureName: info.secureName };
-      io.to(STAFF_ROOM).emit('history_cleared_staff', staffMsg);
-
-      const publicMsg = { username: 'Moderator', content: 'The chat history has been cleared.', timestamp: new Date() };
-      io.emit('history_cleared_public', publicMsg);
-      pushHistory(publicMsg);
+      const clearMsg = {
+        username: 'System',
+        content: `Moderator ${info.username} has cleared the chat history.`,
+        timestamp: new Date(),
+        isAdmin: true
+      };
+      pushHistory(clearMsg);
+      io.emit('chat message', clearMsg);
+    } else {
+      socket.emit('system_error', 'Unauthorized: Admin privileges required to clear history.');
     }
   });
 
+  // USER DISCONNECTION
   socket.on('disconnect', () => {
-    const name = socketsMap.get(socket.id);
-    const inStaff = socket.rooms.has(STAFF_ROOM);
+    const nameToRemove = socketsMap.get(socket.id);
 
-    if (inStaff && name) {
-      const privateMsg = { username: 'System', content: `Staff member ${name} disconnected.`, timestamp: new Date(), isAdmin: true, secureName: null };
+    // Private staff notification if applicable
+    if (socket.rooms.has(STAFF_ROOM)) {
+      const privateMsg = {
+        username: 'System',
+        content: `Staff member ${nameToRemove} disconnected.`,
+        timestamp: new Date(),
+        isAdmin: true
+      };
       io.to(STAFF_ROOM).emit('staff message', privateMsg);
     }
 
-    if (name) {
-      namesInUse.delete(name.toLowerCase());
+    if (nameToRemove) {
+      namesInUse.delete(nameToRemove.toLowerCase());
       socketsMap.delete(socket.id);
+      console.log(`User disconnected. Name ${nameToRemove} released.`);
 
-      const leaveMsg = { username: 'System', content: `${name} has left the chat.`, timestamp: new Date(), isAdmin: true, secureName: null };
-      pushHistory(leaveMsg);
-      io.emit('chat message', leaveMsg);
+      // Public neutral notice
+      const publicNotice = {
+        username: 'System',
+        content: 'A user has left the chat.',
+        timestamp: new Date(),
+        isAdmin: true
+      };
+      pushHistory(publicNotice);
+      io.emit('chat message', publicNotice);
     }
-
     broadcastUserCount();
   });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
