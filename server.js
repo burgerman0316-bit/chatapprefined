@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -85,7 +84,6 @@ io.on('connection', (socket) => {
         socket.to(STAFF_ROOM).emit('staff message', privateMsg);
 
         const publicMsg = { username: 'System', content: 'A moderator has entered the chat.', timestamp: new Date(), isAdmin: true, secureName: null };
-        // send to everyone (including staff) but you can change to exclude staff if desired:
         io.emit('chat message', publicMsg);
 
         socket.emit('staff_status_update', { isAdmin: true, displayName: info.username, secureName: info.secureName });
