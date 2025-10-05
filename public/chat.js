@@ -15,12 +15,37 @@ let currentUser = {
 
 let isNameSet = false;
 let onlineUsers = [];
+let dmMenuHighlightedIndex = -1;
 
 // ENTER KEY PRESS / SEND MESSAGE
 messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
-        sendMessage();
+        // If DM menu is open and an item is highlighted, trigger its click
+        if (dmUserMenu.style.display === 'flex' && dmMenuHighlightedIndex !== -1) {
+            const buttons = dmUserMenu.querySelectorAll('button');
+            buttons[dmMenuHighlightedIndex].click();
+        } else {
+            sendMessage();
+        }
+    }
+});
+
+// Key navigation for DM menu
+messageInput.addEventListener('keydown', (e) => {
+    if (dmUserMenu.style.display === 'flex') {
+        const buttons = dmUserMenu.querySelectorAll('button');
+        if (buttons.length > 0) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                dmMenuHighlightedIndex = (dmMenuHighlightedIndex + 1) % buttons.length;
+                updateDmMenuHighlight();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                dmMenuHighlightedIndex = (dmMenuHighlightedIndex - 1 + buttons.length) % buttons.length;
+                updateDmMenuHighlight();
+            }
+        }
     }
 });
 
@@ -58,7 +83,7 @@ socket.on('name_accepted', (displayName) => {
     addPlainText(`${displayName} has joined the chat.`, new Date());
     usernameInput.disabled = false;
     nameControlButton.textContent = "Change Name";
-    document.querySelector('.header-area button').disabled = false;
+    messageInput.contentEditable = true;
     messageInput.focus();
 });
 
@@ -73,7 +98,7 @@ socket.on("staff_status_update", (data) => {
         usernameInput.disabled = false;
         usernameInput.value = data.displayName;
         nameControlButton.textContent = "Change Name";
-        document.querySelector('.header-area button').disabled = false;
+        messageInput.contentEditable = true;
         messageInput.focus();
     }
 });
@@ -101,7 +126,6 @@ socket.on('name_change_success', (data) => {
 
     if (!currentUser.isAdmin) {
         // regular user: server will broadcast; update UI via plain notice so it isn't a bubble
-        // addPlainText(`${oldName} is now known as ${newName}.`, data.timestamp);
     } else {
         addMessage("System", `${oldName} changed display name to ${newName}.`, data.timestamp, true);
     }
@@ -136,9 +160,8 @@ function confirmClear() {
     });
 }
 
-// Replaces the existing sendMessage function
 function sendMessage() {
-  const text = messageInput.value.trim();
+  const text = messageInput.textContent.trim();
 
   if (!isNameSet) {
     alert("Please enter and set your username first.");
@@ -147,16 +170,14 @@ function sendMessage() {
 
   if (text === "") return;
 
-  // Handle the /msg command for private messages
   if (text.startsWith("/msg ")) {
-    // Splits the input into recipient and message
     const parts = text.substring(5).split(" ");
     const recipient = parts.shift();
     const content = parts.join(" ").trim();
 
     if (!recipient || !content) {
       addMessage("System Alert", "Invalid /msg command. Usage: /msg [username] [message]", new Date(), true);
-      messageInput.value = "";
+      messageInput.textContent = "";
       return;
     }
     
@@ -168,7 +189,6 @@ function sendMessage() {
     socket.emit("private message", messageData);
 
   } else {
-    // Existing public message logic
     const messageData = {
       username: currentUser.name,
       content: text,
@@ -177,50 +197,102 @@ function sendMessage() {
     socket.emit("chat message", messageData);
   }
 
-  messageInput.value = "";
+  messageInput.textContent = "";
   messageInput.focus();
 }
 
-// Event listener for showing the DM user menu
-messageInput.addEventListener('input', (e) => {
-  const text = e.target.value.trim();
-  if (text.startsWith("/msg")) {
-    showDmUserMenu(text.substring(5)); // Pass the search term
-  } else {
-    hideDmUserMenu();
-  }
-});
+messageInput.addEventListener('input', handleDmInput);
+
+function handleDmInput() {
+    const text = messageInput.textContent;
+    const cursorPosition = getCursorPosition(messageInput);
+
+    if (text.substring(0, cursorPosition).endsWith("/msg")) {
+        const searchTerm = text.substring(text.lastIndexOf("/msg") + 5, cursorPosition);
+        showDmUserMenu(searchTerm);
+    } else {
+        hideDmUserMenu();
+    }
+}
 
 function showDmUserMenu(searchTerm = "") {
-  dmUserMenu.innerHTML = "";
-  
-  const filteredUsers = onlineUsers
-    .filter(name => name.toLowerCase().includes(searchTerm.toLowerCase()) && name !== currentUser.displayName)
-    .sort((a, b) => a.localeCompare(b));
+    dmUserMenu.innerHTML = "";
+    dmMenuHighlightedIndex = -1;
 
-  filteredUsers.slice(0, 3).forEach(user => {
-    const userButton = document.createElement("button");
-    userButton.textContent = user;
-    userButton.onclick = () => {
-      messageInput.value = `/msg ${user} `;
-      messageInput.focus();
-      hideDmUserMenu();
-    };
-    dmUserMenu.appendChild(userButton);
-  });
+    const filteredUsers = onlineUsers
+        .filter(name => name.toLowerCase().includes(searchTerm.toLowerCase()) && name !== currentUser.displayName)
+        .sort((a, b) => a.localeCompare(b));
 
-  if (filteredUsers.length > 0) {
-    dmUserMenu.style.display = "flex";
-  } else {
-    hideDmUserMenu();
-  }
+    filteredUsers.slice(0, 3).forEach((user, index) => {
+        const userButton = document.createElement("button");
+        userButton.textContent = user;
+        userButton.dataset.username = user;
+        userButton.onclick = () => {
+            const currentText = messageInput.textContent;
+            const msgStart = currentText.lastIndexOf("/msg");
+            if (msgStart !== -1) {
+                messageInput.textContent = currentText.substring(0, msgStart + 5) + user + " ";
+                setCursorToEnd(messageInput);
+            }
+            hideDmUserMenu();
+        };
+        dmUserMenu.appendChild(userButton);
+    });
+
+    if (filteredUsers.length > 0) {
+        positionDmMenu();
+        dmUserMenu.style.display = "flex";
+    } else {
+        hideDmUserMenu();
+    }
 }
 
 function hideDmUserMenu() {
-  dmUserMenu.style.display = "none";
+    dmUserMenu.style.display = "none";
 }
 
-// Modify the 'addMessage' function to handle the new private message style
+function updateDmMenuHighlight() {
+    const buttons = dmUserMenu.querySelectorAll('button');
+    buttons.forEach((btn, index) => {
+        btn.classList.toggle('highlighted', index === dmMenuHighlightedIndex);
+    });
+}
+
+function positionDmMenu() {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0).cloneRange();
+        range.collapse(true);
+        const rect = range.getClientRects()[0];
+        if (rect) {
+            dmUserMenu.style.left = `${rect.left}px`;
+            dmUserMenu.style.top = `${rect.top - dmUserMenu.offsetHeight - 10}px`;
+        }
+    }
+}
+
+function getCursorPosition(element) {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(element);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        return preCaretRange.toString().length;
+    }
+    return 0;
+}
+
+function setCursorToEnd(el) {
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    el.focus();
+}
+
 function addMessage(username, content, timestamp, isAdmin = false, isPrivate = false) {
   const div = document.createElement('div');
   const isOwn = (username === currentUser.displayName);
@@ -251,7 +323,6 @@ function addMessage(username, content, timestamp, isAdmin = false, isPrivate = f
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// NEW: addPlainText - inserts plain centered text into the messages area (not a message bubble)
 function addPlainText(content, timestamp) {
   const div = document.createElement('div');
   div.className = 'chat-plain';
@@ -261,9 +332,6 @@ function addPlainText(content, timestamp) {
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// SOCKET.IO LISTENERS
-
-// HISTORY CLEAR LISTENERS
 socket.on("history_cleared_staff", (data) => {
     messagesContainer.innerHTML = "";
     addMessage("System", data.content, data.timestamp, true);
@@ -274,7 +342,6 @@ socket.on("history_cleared_public", (data) => {
     addMessage("System", data.content, data.timestamp, true);
 });
 
-// MESSAGING AND HISTORY
 socket.on("chat history", (msgs) => {
     messagesContainer.innerHTML = "";
     msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.isAdmin));
@@ -284,33 +351,28 @@ socket.on("chat message", (msg) => {
     addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin);
 });
 
-// STAFF PRIVATE MESSAGE LISTENER
 socket.on("staff message", (msg) => {
     if (currentUser.isAdmin) {
         addMessage(msg.username, msg.content, msg.timestamp, true);
     }
 });
 
-// USER COUNT LISTENER
 socket.on("user count", (data) => {
     const { count, userList } = data;
     userCountDisplay.textContent = `${count} User${count !== 1 ? 's' : ''} Online`;
     onlineUsers = userList;
 });
 
-// New listener for incoming private messages
 socket.on("private message", (msg) => {
   const isOwnMessage = msg.sender === currentUser.displayName;
   const content = isOwnMessage ? `(DM to ${msg.recipient}): ${msg.content}` : `(DM from ${msg.sender}): ${msg.content}`;
   addMessage(isOwnMessage ? currentUser.displayName : msg.sender, content, msg.timestamp, false, true);
 });
 
-// ERROR LISTENER
 socket.on('system_error', (errorMsg) => {
     addMessage("System Alert", errorMsg, new Date(), true);
 });
 
-// NEW: plain_notice listener (server can emit 'plain_notice' for non-bubble text)
 socket.on('plain_notice', (data) => {
     addPlainText(data.content, data.timestamp);
 });
