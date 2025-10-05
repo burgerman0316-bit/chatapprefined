@@ -54,7 +54,8 @@ function pushHistory(msg) {
 }
 
 function broadcastUserCount() {
-  io.emit('user count', namesInUse.size);
+  const userList = Array.from(socketsMap.values()).sort();
+  io.emit('user count', { count: namesInUse.size, userList });
 }
 
 io.on('connection', (socket) => {
@@ -69,10 +70,8 @@ io.on('connection', (socket) => {
     if (namesInUse.has(lower)) { socket.emit('name_rejected', 'That name is already in use.'); return; }
 
     if (isNameReserved(trimmed)) {
-      // staff or banned
       const staffMatch = STAFF_LIST.find(s => s.loginName.toLowerCase() === lower || s.displayName.toLowerCase() === lower);
       if (staffMatch) {
-        // require exact loginName to actually log in as staff
         if (staffMatch.loginName.toLowerCase() !== lower && staffMatch.displayName.toLowerCase() === lower) {
           socket.emit('name_rejected', 'That name is reserved by staff.'); return;
         }
@@ -85,7 +84,6 @@ io.on('connection', (socket) => {
         socket.to(STAFF_ROOM).emit('staff message', privateMsg);
 
         const publicMsg = { username: 'System', content: 'A moderator has entered the chat.', timestamp: new Date(), isAdmin: true, secureName: null };
-        // send to everyone (including staff) but you can change to exclude staff if desired:
         io.emit('chat message', publicMsg);
 
         socket.emit('staff_status_update', { isAdmin: true, displayName: info.username, secureName: info.secureName });
@@ -132,6 +130,7 @@ io.on('connection', (socket) => {
     const publicSys = { username: 'System', content: `${currentDisplay} is now known as ${newName}.`, timestamp: new Date(), isAdmin: true, secureName: newName };
     pushHistory(publicSys);
     io.emit('chat message', publicSys);
+    broadcastUserCount();
   });
 
   socket.on('chat message', (msg) => {
@@ -147,6 +146,32 @@ io.on('connection', (socket) => {
     } catch (err) {
       console.error('chat message handler error:', err);
       socket.emit('system_error', 'Server error while processing message.');
+    }
+  });
+
+  socket.on('private message', (msg) => {
+    const senderDisplayName = socketsMap.get(socket.id);
+    if (!senderDisplayName) return;
+
+    let recipientSocketId = null;
+    for (const [id, displayName] of socketsMap.entries()) {
+      if (displayName.toLowerCase() === msg.recipient.toLowerCase()) {
+        recipientSocketId = id;
+        break;
+      }
+    }
+
+    if (recipientSocketId) {
+      const messageData = {
+        sender: senderDisplayName,
+        recipient: msg.recipient,
+        content: msg.content,
+        timestamp: new Date()
+      };
+      io.to(recipientSocketId).emit('private message', messageData);
+      socket.emit('private message', messageData);
+    } else {
+      socket.emit('system_error', `User '${msg.recipient}' not found or not online.`);
     }
   });
 
@@ -167,11 +192,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  // USER DISCONNECTION
   socket.on('disconnect', () => {
     const nameToRemove = socketsMap.get(socket.id);
 
-    // Private staff notification if applicable
     if (socket.rooms.has(STAFF_ROOM)) {
       const privateMsg = {
         username: 'System',
@@ -187,7 +210,6 @@ io.on('connection', (socket) => {
       socketsMap.delete(socket.id);
       console.log(`User disconnected. Name ${nameToRemove} released.`);
 
-      // Public neutral notice
       const publicNotice = {
         username: 'System',
         content: 'A user has left the chat.',
