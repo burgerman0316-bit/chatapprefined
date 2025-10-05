@@ -83,8 +83,10 @@ io.on('connection', (socket) => {
         const privateMsg = { username: 'System', content: `Staff member ${info.username} connected.`, timestamp: new Date(), isAdmin: true, secureName: info.secureName };
         socket.to(STAFF_ROOM).emit('staff message', privateMsg);
 
-        // emit a centered plain notice for moderator-entered (not a normal chat message)
-        io.emit('plain_notice', { content: 'A moderator has entered the chat.', timestamp: new Date() });
+        // Public system notice (recorded in history)
+        const publicMsg = { username: 'System', content: 'A moderator has entered the chat.', timestamp: new Date(), isAdmin: true, secureName: null };
+        pushHistory(publicMsg);
+        io.emit('chat message', publicMsg);
 
         socket.emit('staff_status_update', { isAdmin: true, displayName: info.username, secureName: info.secureName });
       } else {
@@ -95,7 +97,8 @@ io.on('connection', (socket) => {
       socketsMap.set(socket.id, trimmed);
       socket.emit('name_accepted', trimmed);
 
-      const joinMsg = { username: trimmed, content: `${trimmed} has joined the chat.`, timestamp: new Date(), isAdmin: false, secureName: trimmed };
+      // Make join a System message
+      const joinMsg = { username: 'System', content: `${trimmed} has joined the chat.`, timestamp: new Date(), isAdmin: true, secureName: trimmed };
       pushHistory(joinMsg);
       io.emit('chat message', joinMsg);
     }
@@ -155,7 +158,6 @@ io.on('connection', (socket) => {
       const staffMsg = { username: info.username, content: `Chat history cleared by ${info.username}.`, timestamp: new Date(), secureName: info.secureName };
       io.to(STAFF_ROOM).emit('history_cleared_staff', staffMsg);
 
-      // keep behavior: clear UI and show admin system message for everyone
       const publicMsg = { username: 'Moderator', content: 'The chat history has been cleared.', timestamp: new Date() };
       io.emit('history_cleared_public', publicMsg);
       pushHistory(publicMsg);
@@ -175,8 +177,10 @@ io.on('connection', (socket) => {
       namesInUse.delete(name.toLowerCase());
       socketsMap.delete(socket.id);
 
-      // emit a centered plain notice (same style as moderator entered)
-      io.emit('plain_notice', { content: `${name} has left the chat.`, timestamp: new Date() });
+      // Make leave a System message
+      const leaveMsg = { username: 'System', content: `${name} has left the chat.`, timestamp: new Date(), isAdmin: true, secureName: name };
+      pushHistory(leaveMsg);
+      io.emit('chat message', leaveMsg);
     }
 
     broadcastUserCount();
