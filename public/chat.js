@@ -6,6 +6,7 @@ const messageInput = document.getElementById("messageInput");
 const userCountDisplay = document.getElementById("userCountDisplay");
 const nameControlButton = document.getElementById("nameControlButton");
 const dmUserMenu = document.getElementById("dmUserMenu");
+const messageFormButton = document.querySelector('#messageForm button');
 
 let currentUser = {
     name: null,
@@ -54,7 +55,7 @@ function handleNameAction() {
     const newName = usernameInput.value.trim();
 
     if (newName === "") {
-        alert("Please enter a username.");
+        addMessage("System Alert", "Please enter a username.", new Date(), true);
         return;
     }
 
@@ -63,7 +64,7 @@ function handleNameAction() {
         socket.emit("check_staff_status", newName);
     } else {
         if (newName === currentUser.displayName) {
-            alert("Your new name must be different from your current display name.");
+            addMessage("System Alert", "Your new name must be different from your current display name.", new Date(), true);
             return;
         }
 
@@ -84,6 +85,7 @@ socket.on('name_accepted', (displayName) => {
     usernameInput.disabled = false;
     nameControlButton.textContent = "Change Name";
     messageInput.contentEditable = true;
+    messageFormButton.disabled = false;
     messageInput.focus();
 });
 
@@ -99,18 +101,21 @@ socket.on("staff_status_update", (data) => {
         usernameInput.value = data.displayName;
         nameControlButton.textContent = "Change Name";
         messageInput.contentEditable = true;
+        messageFormButton.disabled = false;
         messageInput.focus();
     }
 });
 
 // Server rejected the name
 socket.on('name_rejected', (reason) => {
-    alert(reason);
+    addMessage("System Alert", reason, new Date(), true);
     usernameInput.value = currentUser.displayName || '';
     if (!isNameSet) {
         currentUser.name = null;
         currentUser.isAdmin = false;
         currentUser.displayName = null;
+        messageInput.contentEditable = false;
+        messageFormButton.disabled = true;
     }
     staffControlsDiv.style.display = 'none';
 });
@@ -130,19 +135,19 @@ socket.on('name_change_success', (data) => {
         addMessage("System", `${oldName} changed display name to ${newName}.`, data.timestamp, true);
     }
 
-    alert(`Name successfully changed to ${newName}!`);
+    addMessage("System Alert", `Name successfully changed to ${newName}!`, new Date(), true);
 });
 
 // NAME CHANGE FAILURE
 socket.on('name_change_failed', (reason) => {
-    alert(reason);
+    addMessage("System Alert", reason, new Date(), true);
     usernameInput.value = currentUser.displayName;
 });
 
 // CONTROLS AND MESSAGING FUNCTIONS
 function showAdminModal() {
     if (!currentUser.isAdmin) {
-        alert("You must be staff to clear the chat.");
+        addMessage("System Alert", "You must be staff to clear the chat.", new Date(), true);
         return;
     }
     document.getElementById("adminModal").style.display = 'flex';
@@ -161,44 +166,44 @@ function confirmClear() {
 }
 
 function sendMessage() {
-  const text = messageInput.textContent.trim();
+    const text = messageInput.textContent.trim();
 
-  if (!isNameSet) {
-    alert("Please enter and set your username first.");
-    return;
-  }
-
-  if (text === "") return;
-
-  if (text.startsWith("/msg ")) {
-    const parts = text.substring(5).split(" ");
-    const recipient = parts.shift();
-    const content = parts.join(" ").trim();
-
-    if (!recipient || !content) {
-      addMessage("System Alert", "Invalid /msg command. Usage: /msg [username] [message]", new Date(), true);
-      messageInput.textContent = "";
-      return;
+    if (!isNameSet) {
+        addMessage("System Alert", "Please enter and set your username first.", new Date(), true);
+        return;
     }
-    
-    const messageData = {
-      recipient: recipient,
-      content: content,
-      timestamp: new Date()
-    };
-    socket.emit("private message", messageData);
 
-  } else {
-    const messageData = {
-      username: currentUser.name,
-      content: text,
-      timestamp: new Date(),
-    };
-    socket.emit("chat message", messageData);
-  }
+    if (text === "") return;
 
-  messageInput.textContent = "";
-  messageInput.focus();
+    if (text.startsWith("/msg ")) {
+        const parts = text.substring(5).split(" ");
+        const recipient = parts.shift();
+        const content = parts.join(" ").trim();
+
+        if (!recipient || !content) {
+            addMessage("System Alert", "Invalid /msg command. Usage: /msg [username] [message]", new Date(), true);
+            messageInput.textContent = "";
+            return;
+        }
+        
+        const messageData = {
+            recipient: recipient,
+            content: content,
+            timestamp: new Date()
+        };
+        socket.emit("private message", messageData);
+
+    } else {
+        const messageData = {
+            username: currentUser.name,
+            content: text,
+            timestamp: new Date(),
+        };
+        socket.emit("chat message", messageData);
+    }
+
+    messageInput.textContent = "";
+    messageInput.focus();
 }
 
 messageInput.addEventListener('input', handleDmInput);
@@ -343,7 +348,7 @@ socket.on('private message', (msg) => {
 });
 
 socket.on('system_error', (message) => {
-    addMessage("System Error", message, new Date(), true);
+    addMessage("System Alert", message, new Date(), true);
 });
 
 socket.on('user count', (data) => {
@@ -351,6 +356,12 @@ socket.on('user count', (data) => {
     onlineUsers = data.userList;
 });
 
-window.addEventListener('beforeunload', () => {
-    socket.disconnect();
+socket.on('staff message', (msg) => {
+    if (currentUser.isAdmin) {
+        addMessage(msg.username, msg.content, msg.timestamp, true);
+    }
+});
+
+socket.on('plain_notice', (data) => {
+    addPlainText(data.content, data.timestamp);
 });
