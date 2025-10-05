@@ -24,7 +24,6 @@ let dmMenuHighlightedIndex = -1;
 messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
-        // If DM menu is open and an item is highlighted, trigger its click
         if (dmUserMenu.style.display === 'flex' && dmMenuHighlightedIndex !== -1) {
             const buttons = dmUserMenu.querySelectorAll('button');
             buttons[dmMenuHighlightedIndex].click();
@@ -187,7 +186,7 @@ function sendMessage() {
     if (text === "") return;
 
     if (text.startsWith("/msg ")) {
-        // Correctly parse recipient and message
+        // Correctly parse recipient and message using a regex
         const commandParts = text.substring(5).match(/^(\S+)\s(.*)/s);
 
         if (!commandParts || commandParts.length < 3) {
