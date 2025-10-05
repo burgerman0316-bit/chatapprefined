@@ -280,7 +280,6 @@ function sendMessage() {
         socket.emit("private message", messageData);
 
     } else {
-        // Send a public message
         const messageData = {
             username: currentUser.displayName,
             content: text,
@@ -294,6 +293,18 @@ function sendMessage() {
 }
 
 messageInput.addEventListener('input', handleDmInput);
+
+function autofillDMRecipient(username) {
+    const currentContent = messageInput.textContent;
+    const msgIndex = currentContent.lastIndexOf("/msg");
+    if (msgIndex !== -1) {
+        const prefix = currentContent.substring(0, msgIndex + 5);
+        const newContent = `${prefix}${username} `;
+        messageInput.textContent = newContent;
+        setCursorToEnd(messageInput);
+        hideDmUserMenu();
+    }
+}
 
 function handleDmInput() {
     const text = messageInput.textContent;
@@ -322,15 +333,7 @@ function showDmUserMenu(searchTerm = "") {
         button.textContent = user;
         button.onclick = (e) => {
             e.preventDefault();
-            const currentContent = messageInput.textContent;
-            const msgIndex = currentContent.lastIndexOf("/msg");
-            if (msgIndex !== -1) {
-                const prefix = currentContent.substring(0, msgIndex + 5);
-                const newContent = `${prefix}${user} `;
-                messageInput.textContent = newContent;
-                setCursorToEnd(messageInput);
-                hideDmUserMenu();
-            }
+            autofillDMRecipient(user);
         };
         dmUserMenu.appendChild(button);
     });
@@ -402,4 +405,3 @@ document.addEventListener('DOMContentLoaded', () => {
     messageInput.contentEditable = false;
     messageFormButton.disabled = true;
 });
-
