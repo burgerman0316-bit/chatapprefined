@@ -187,6 +187,7 @@ function sendMessage() {
     if (text === "") return;
 
     if (text.startsWith("/msg ")) {
+        // Correctly parse recipient and message
         const commandParts = text.substring(5).match(/^(\S+)\s(.*)/s);
 
         if (!commandParts || commandParts.length < 3) {
@@ -195,8 +196,8 @@ function sendMessage() {
             return;
         }
 
-        const recipient = commandParts[1];
-        const content = commandParts[2];
+        const recipient = commandParts;
+        const content = commandParts;
         
         const messageData = {
             recipient: recipient,
