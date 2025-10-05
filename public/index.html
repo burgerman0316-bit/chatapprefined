@@ -37,6 +37,14 @@
             <button onclick="hideAdminModal()">Cancel</button>
         </div>
     </div>
+    
+    <!-- Modal for system alerts -->
+    <div id="systemAlertModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <p id="systemAlertText"></p>
+            <button onclick="hideSystemAlertModal()">Close</button>
+        </div>
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="chat.js"></script>
