@@ -269,8 +269,8 @@ function sendMessage() {
             return;
         }
 
-        const recipient = commandParts[1]; // Corrected: access the recipient by index 1
-        const content = commandParts[2];   // Corrected: access the content by index 2
+        const recipient = commandParts[1]; // Corrected: Access the recipient by index 1
+        const content = commandParts[2];   // Corrected: Access the content by index 2
         
         const messageData = {
             recipient: recipient,
@@ -280,6 +280,7 @@ function sendMessage() {
         socket.emit("private message", messageData);
 
     } else {
+        // Send a public message
         const messageData = {
             username: currentUser.displayName,
             content: text,
@@ -401,3 +402,4 @@ document.addEventListener('DOMContentLoaded', () => {
     messageInput.contentEditable = false;
     messageFormButton.disabled = true;
 });
+
