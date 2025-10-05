@@ -206,9 +206,11 @@ messageInput.addEventListener('input', handleDmInput);
 function handleDmInput() {
     const text = messageInput.textContent;
     const cursorPosition = getCursorPosition(messageInput);
+    const textBeforeCursor = text.substring(0, cursorPosition);
+    const msgIndex = textBeforeCursor.lastIndexOf("/msg");
 
-    if (text.substring(0, cursorPosition).endsWith("/msg")) {
-        const searchTerm = text.substring(text.lastIndexOf("/msg") + 5, cursorPosition);
+    if (msgIndex !== -1 && textBeforeCursor.length >= msgIndex + 5) {
+        const searchTerm = textBeforeCursor.substring(msgIndex + 5);
         showDmUserMenu(searchTerm);
     } else {
         hideDmUserMenu();
@@ -240,7 +242,6 @@ function showDmUserMenu(searchTerm = "") {
     });
 
     if (filteredUsers.length > 0) {
-        positionDmMenu();
         dmUserMenu.style.display = "flex";
     } else {
         hideDmUserMenu();
@@ -256,19 +257,6 @@ function updateDmMenuHighlight() {
     buttons.forEach((btn, index) => {
         btn.classList.toggle('highlighted', index === dmMenuHighlightedIndex);
     });
-}
-
-function positionDmMenu() {
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0).cloneRange();
-        range.collapse(true);
-        const rect = range.getClientRects()[0];
-        if (rect) {
-            dmUserMenu.style.left = `${rect.left}px`;
-            dmUserMenu.style.top = `${rect.top - dmUserMenu.offsetHeight - 10}px`;
-        }
-    }
 }
 
 function getCursorPosition(element) {
@@ -347,32 +335,22 @@ socket.on("chat history", (msgs) => {
     msgs.forEach(m => addMessage(m.username, m.content, m.timestamp, m.isAdmin));
 });
 
-socket.on("chat message", (msg) => {
-    addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin);
+socket.on('chat message', (msg) => addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin));
+
+socket.on('private message', (msg) => {
+    const isOwn = (msg.sender === currentUser.displayName);
+    addMessage(`${msg.sender} to ${msg.recipient}`, msg.content, msg.timestamp, false, true);
 });
 
-socket.on("staff message", (msg) => {
-    if (currentUser.isAdmin) {
-        addMessage(msg.username, msg.content, msg.timestamp, true);
-    }
+socket.on('system_error', (message) => {
+    addMessage("System Error", message, new Date(), true);
 });
 
-socket.on("user count", (data) => {
-    const { count, userList } = data;
-    userCountDisplay.textContent = `${count} User${count !== 1 ? 's' : ''} Online`;
-    onlineUsers = userList;
+socket.on('user count', (data) => {
+    userCountDisplay.textContent = `${data.count} Users Online`;
+    onlineUsers = data.userList;
 });
 
-socket.on("private message", (msg) => {
-  const isOwnMessage = msg.sender === currentUser.displayName;
-  const content = isOwnMessage ? `(DM to ${msg.recipient}): ${msg.content}` : `(DM from ${msg.sender}): ${msg.content}`;
-  addMessage(isOwnMessage ? currentUser.displayName : msg.sender, content, msg.timestamp, false, true);
-});
-
-socket.on('system_error', (errorMsg) => {
-    addMessage("System Alert", errorMsg, new Date(), true);
-});
-
-socket.on('plain_notice', (data) => {
-    addPlainText(data.content, data.timestamp);
+window.addEventListener('beforeunload', () => {
+    socket.disconnect();
 });
