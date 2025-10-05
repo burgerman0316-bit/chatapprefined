@@ -234,6 +234,7 @@ function showDmUserMenu(searchTerm = "") {
         const userButton = document.createElement("button");
         userButton.textContent = user;
         userButton.dataset.username = user;
+        userButton.setAttribute('type', 'button'); // Prevent form submission
         userButton.onclick = () => {
             const currentText = messageInput.textContent;
             const msgStart = currentText.lastIndexOf("/msg");
