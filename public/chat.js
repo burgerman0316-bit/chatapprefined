@@ -38,7 +38,7 @@ function addMessage(username, content, timestamp, isSystem = false, isAdmin = fa
     const msgEl = document.createElement("div");
     msgEl.classList.add("msg");
 
-    const isOwn = username === currentUser.displayName || username === currentUser.name;
+    const isOwn = username === currentUser.displayName || (currentUser.isAdmin && username === currentUser.name);
 
     if (isOwn) {
         msgEl.classList.add("own");
@@ -171,7 +171,7 @@ socket.on("staff_status_update", (data) => {
         currentUser.displayName = data.displayName;
         isNameSet = true;
         staffControlsDiv.style.display = 'inline-block';
-        addMessage("System", `${data.displayName} has logged in.`, new Date(), true);
+        addMessage("System", `${data.displayName} has logged in.`, new Date(), true, true);
         usernameInput.disabled = false;
         usernameInput.value = data.displayName;
         nameControlButton.textContent = "Change Name";
@@ -204,7 +204,7 @@ socket.on('name_change_success', (data) => {
     if (!currentUser.isAdmin) {
         addPlainText(`${oldName} is now known as ${newName}.`, data.timestamp);
     } else {
-        addMessage("System", `${oldName} changed display name to ${newName}.`, data.timestamp, true);
+        addMessage("System", `${oldName} changed display name to ${newName}.`, data.timestamp, true, true);
     }
     addMessage("System Alert", `Name successfully changed to ${newName}!`, new Date(), true);
 });
@@ -274,7 +274,7 @@ function sendMessage() {
 
     } else {
         const messageData = {
-            username: currentUser.name,
+            username: currentUser.displayName,
             content: text,
             timestamp: new Date(),
         };
@@ -320,7 +320,7 @@ function showDmUserMenu(searchTerm = "") {
                 const newContent = `${prefix}${user} `;
                 messageInput.textContent = newContent;
                 setCursorToEnd(messageInput);
-                hideDmUserMenu();
+                hideDmUserMenu(); // Hide the menu
             }
         };
         dmUserMenu.appendChild(button);
@@ -345,11 +345,11 @@ function setCursorToEnd(element) {
 
 // SOCKET LISTENERS
 socket.on('chat message', (msg) => {
-    addMessage(msg.username, msg.content, msg.timestamp, msg.isAdmin, false, false);
+    addMessage(msg.username, msg.content, msg.timestamp, false, msg.isAdmin, false);
 });
 
 socket.on('private message', (msg) => {
-    const sender = msg.sender;
+    const sender = msg.sender || msg.username;
     const content = msg.content;
     const isOwn = sender === currentUser.displayName;
 
@@ -357,13 +357,25 @@ socket.on('private message', (msg) => {
 });
 
 socket.on('staff message', (msg) => {
-    // Add messages received from the staff room
+    addMessage(msg.username, msg.content, msg.timestamp, true, msg.isAdmin, false);
 });
 
 socket.on('chat history', (history) => {
     messagesContainer.innerHTML = '';
     history.forEach(msg => {
-        addMessage(msg.username, msg.content, msg.timestamp, false, msg.isAdmin, false);
+        if (msg.isAdmin && msg.content.includes("Staff member")) {
+            // For staff join/leave messages
+            addPlainText(msg.content, msg.timestamp);
+        } else if (msg.isAdmin) {
+            // For other admin messages
+            addMessage(msg.username, msg.content, msg.timestamp, true, true, false);
+        } else if (msg.username === "System") {
+            // For general system messages
+            addPlainText(msg.content, msg.timestamp);
+        } else {
+            // Regular messages
+            addMessage(msg.username, msg.content, msg.timestamp, false, false, false);
+        }
     });
 });
 
@@ -374,4 +386,10 @@ socket.on('user count', (data) => {
 
 socket.on('system_error', (message) => {
     addMessage("System Error", message, new Date(), true);
+});
+
+// INITIAL SETUP
+document.addEventListener('DOMContentLoaded', () => {
+    messageInput.contentEditable = false;
+    messageFormButton.disabled = true;
 });
