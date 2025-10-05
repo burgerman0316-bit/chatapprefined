@@ -10,7 +10,16 @@ const io = new Server(server, {
   cors: { origin: '*' }
 });
 
+const STAFF_ROOM = 'staff_room';
 const MAX_HISTORY = 100;
+const BANNED_NAMES = ['hitler', 'admin', 'mod', 'foulword1', 'foulword2'];
+const STAFF_LIST = [
+  { loginName: 'STAFF_CONTROLS-LIAM', displayName: 'Liam Stern' },
+  { loginName: 'STAFF_CONTROLS-DIESEL', displayName: 'Diesel Carter' },
+  { loginName: 'STAFF_CONTROLS-RICKY', displayName: 'Ricky Martinez' },
+  { loginName: 'STAFF_CONTROLS-AARON', displayName: 'Aaron Ortega' },
+  { loginName: 'STAFF_CONTROLS-DONOVAN', displayName: 'Donovan Powell' }
+];
 
 const chatHistory = [];
 const namesInUse = new Set();
@@ -22,17 +31,20 @@ app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.ht
 function isNameReserved(name) {
   if (!name) return false;
   const check = name.trim().toLowerCase();
-  return false;
+  for (const b of BANNED_NAMES) if (check.includes(b.toLowerCase())) return true;
+  return STAFF_LIST.some(s => s.loginName.toLowerCase() === check || s.displayName.toLowerCase() === check);
 }
 
 function containsBannedWord(content) {
   if (!content) return false;
   const c = content.toLowerCase();
-  return false;
+  return BANNED_NAMES.some(b => c.includes(b.toLowerCase()));
 }
 
 function getStaffDisplayInfo(enteredUsername) {
   const secure = String(enteredUsername || '').trim();
+  const staff = STAFF_LIST.find(s => s.loginName === secure);
+  if (staff) return { isAdmin: true, username: staff.displayName, secureName: staff.loginName };
   return { isAdmin: false, username: secure || '', secureName: secure || '' };
 }
 
@@ -58,7 +70,26 @@ io.on('connection', (socket) => {
     if (namesInUse.has(lower)) { socket.emit('name_rejected', 'That name is already in use.'); return; }
 
     if (isNameReserved(trimmed)) {
+      const staffMatch = STAFF_LIST.find(s => s.loginName.toLowerCase() === lower || s.displayName.toLowerCase() === lower);
+      if (staffMatch) {
+        if (staffMatch.loginName.toLowerCase() !== lower && staffMatch.displayName.toLowerCase() === lower) {
+          socket.emit('name_rejected', 'That name is reserved by staff.'); return;
+        }
+        const info = getStaffDisplayInfo(trimmed);
+        namesInUse.add(info.username.toLowerCase());
+        socketsMap.set(socket.id, info.username);
+        socket.join(STAFF_ROOM);
+
+        const privateMsg = { username: 'System', content: `Staff member ${info.username} connected.`, timestamp: new Date(), isAdmin: true, secureName: info.secureName };
+        socket.to(STAFF_ROOM).emit('staff message', privateMsg);
+
+        const publicMsg = { username: 'System', content: 'A moderator has entered the chat.', timestamp: new Date(), isAdmin: true, secureName: null };
+        io.emit('chat message', publicMsg);
+
+        socket.emit('staff_status_update', { isAdmin: true, displayName: info.username, secureName: info.secureName });
+      } else {
         socket.emit('name_rejected', 'That name contains forbidden words.'); return;
+      }
     } else {
       namesInUse.add(lower);
       socketsMap.set(socket.id, trimmed);
@@ -86,6 +117,14 @@ io.on('connection', (socket) => {
     socketsMap.set(socket.id, newName);
 
     const success = { oldDisplayName: currentDisplay, newDisplayName: newName, newSecureName: newName, timestamp: new Date() };
+
+    if (getStaffDisplayInfo(oldSecure).isAdmin) {
+      success.newSecureName = oldSecure;
+      socket.emit('name_change_success', success);
+      const privateMsg = { username: 'System', content: `Staff member ${currentDisplay} changed display name to ${newName}.`, timestamp: new Date(), isAdmin: true, secureName: oldSecure };
+      socket.to(STAFF_ROOM).emit('staff message', privateMsg);
+      return;
+    }
 
     socket.emit('name_change_success', success);
     const publicSys = { username: 'System', content: `${currentDisplay} is now known as ${newName}.`, timestamp: new Date(), isAdmin: true, secureName: newName };
@@ -155,6 +194,16 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     const nameToRemove = socketsMap.get(socket.id);
+
+    if (socket.rooms.has(STAFF_ROOM)) {
+      const privateMsg = {
+        username: 'System',
+        content: `Staff member ${nameToRemove} disconnected.`,
+        timestamp: new Date(),
+        isAdmin: true
+      };
+      io.to(STAFF_ROOM).emit('staff message', privateMsg);
+    }
 
     if (nameToRemove) {
       namesInUse.delete(nameToRemove.toLowerCase());
