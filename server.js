@@ -1,37 +1,24 @@
+// server.js
 const express = require('express');
 const http = require('http');
-const { Server } = require("socket.io");
+const { Server } = require('socket.io');
 const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: {
-        origin: "http://localhost:3000",
-        methods: ["GET", "POST"]
-    }
+  cors: { origin: '*' }
 });
 
-// ======================================================
-// 1. CONFIGURATION 
-// ======================================================
 const STAFF_ROOM = 'staff_room';
 const MAX_HISTORY = 100;
-
-const BANNED_NAMES = [
-    "hitler",
-    "admin",
-    "mod",
-    "foulword1",
-    "foulword2",
-];
-
+const BANNED_NAMES = ['hitler','admin','mod','foulword1','foulword2'];
 const STAFF_LIST = [
-    { loginName: "STAFF_CONTROLS-LIAM", displayName: "Liam Stern" },
-    { loginName: "STAFF_CONTROLS-DIESEL", displayName: "Diesel Carter" },
-    { loginName: "STAFF_CONTROLS-RICKY", displayName: "Ricky Martinez" },
-    { loginName: "STAFF_CONTROLS-AARON", displayName: "Aaron Ortega" },
-    { loginName: "STAFF_CONTROLS-DONOVAN", displayName: "Donovan Powell" }
+  { loginName: 'STAFF_CONTROLS-LIAM', displayName: 'Liam Stern' },
+  { loginName: 'STAFF_CONTROLS-DIESEL', displayName: 'Diesel Carter' },
+  { loginName: 'STAFF_CONTROLS-RICKY', displayName: 'Ricky Martinez' },
+  { loginName: 'STAFF_CONTROLS-AARON', displayName: 'Aaron Ortega' },
+  { loginName: 'STAFF_CONTROLS-DONOVAN', displayName: 'Donovan Powell' }
 ];
 
 const chatHistory = [];
@@ -39,136 +26,161 @@ const namesInUse = new Set();
 const socketsMap = new Map();
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
-// ======================================================
-// 2. HELPERS
-// ======================================================
-function isNameReserved(enteredUsername) {
-    const checkName = enteredUsername.trim().toLowerCase();
-    for (const bannedWord of BANNED_NAMES) {
-        if (checkName.includes(bannedWord.toLowerCase())) return true;
-    }
-    return STAFF_LIST.some(staff =>
-        staff.loginName.toLowerCase() === checkName ||
-        staff.displayName.toLowerCase() === checkName
-    );
+function isNameReserved(name) {
+  if (!name) return false;
+  const check = name.trim().toLowerCase();
+  for (const b of BANNED_NAMES) if (check.includes(b.toLowerCase())) return true;
+  return STAFF_LIST.some(s => s.loginName.toLowerCase() === check || s.displayName.toLowerCase() === check);
 }
 
 function containsBannedWord(content) {
-    const lowerContent = content.toLowerCase();
-    for (const bannedWord of BANNED_NAMES) {
-        if (lowerContent.includes(bannedWord.toLowerCase())) return true;
-    }
-    return false;
+  if (!content) return false;
+  const c = content.toLowerCase();
+  return BANNED_NAMES.some(b => c.includes(b.toLowerCase()));
 }
 
 function getStaffDisplayInfo(enteredUsername) {
-    const secureUsername = enteredUsername.trim();
-    const staffMember = STAFF_LIST.find(staff => staff.loginName === secureUsername);
-    if (staffMember) return { isAdmin: true, username: staffMember.displayName };
-    return { isAdmin: false, username: secureUsername };
+  const secure = String(enteredUsername || '').trim();
+  const staff = STAFF_LIST.find(s => s.loginName === secure);
+  if (staff) return { isAdmin: true, username: staff.displayName, secureName: staff.loginName };
+  return { isAdmin: false, username: secure || '', secureName: secure || '' };
 }
 
-function addSystemMessageToHistory(content, isAdmin = false) {
-    const messageData = {
-        username: "System",
-        content: content,
-        timestamp: new Date(),
-        isAdmin: isAdmin
-    };
-    chatHistory.push(messageData);
-    while (chatHistory.length > MAX_HISTORY) chatHistory.shift();
-    return messageData;
+function pushHistory(msg) {
+  chatHistory.push(msg);
+  while (chatHistory.length > MAX_HISTORY) chatHistory.shift();
 }
 
 function broadcastUserCount() {
-    const count = namesInUse.size;
-    io.emit('user count', count);
+  io.emit('user count', namesInUse.size);
 }
 
-// ======================================================
-// 3. SOCKET.IO
-// ======================================================
 io.on('connection', (socket) => {
-    console.log('A user connected', socket.id);
+  console.log('socket connected:', socket.id);
+  socket.emit('chat history', chatHistory);
+  broadcastUserCount();
 
-    socket.emit('chat history', chatHistory);
+  socket.on('check_staff_status', (enteredName) => {
+    const trimmed = String(enteredName || '').trim();
+    const lower = trimmed.toLowerCase();
+    if (!trimmed) { socket.emit('name_rejected', 'Please provide a name.'); return; }
+    if (namesInUse.has(lower)) { socket.emit('name_rejected', 'That name is already in use.'); return; }
+
+    if (isNameReserved(trimmed)) {
+      // staff or banned
+      const staffMatch = STAFF_LIST.find(s => s.loginName.toLowerCase() === lower || s.displayName.toLowerCase() === lower);
+      if (staffMatch) {
+        // require exact loginName to actually log in as staff
+        if (staffMatch.loginName.toLowerCase() !== lower && staffMatch.displayName.toLowerCase() === lower) {
+          socket.emit('name_rejected', 'That name is reserved by staff.'); return;
+        }
+        const info = getStaffDisplayInfo(trimmed);
+        namesInUse.add(info.username.toLowerCase());
+        socketsMap.set(socket.id, info.username);
+        socket.join(STAFF_ROOM);
+
+        const privateMsg = { username: 'System', content: `Staff member ${info.username} connected.`, timestamp: new Date(), isAdmin: true, secureName: info.secureName };
+        socket.to(STAFF_ROOM).emit('staff message', privateMsg);
+
+        const publicMsg = { username: 'System', content: 'A moderator has entered the chat.', timestamp: new Date(), isAdmin: true, secureName: null };
+        // send to everyone (including staff) but you can change to exclude staff if desired:
+        io.emit('chat message', publicMsg);
+
+        socket.emit('staff_status_update', { isAdmin: true, displayName: info.username, secureName: info.secureName });
+      } else {
+        socket.emit('name_rejected', 'That name contains forbidden words.'); return;
+      }
+    } else {
+      namesInUse.add(lower);
+      socketsMap.set(socket.id, trimmed);
+      socket.emit('name_accepted', trimmed);
+
+      const joinMsg = { username: trimmed, content: `${trimmed} has joined the chat.`, timestamp: new Date(), isAdmin: false, secureName: trimmed };
+      pushHistory(joinMsg);
+      io.emit('chat message', joinMsg);
+    }
     broadcastUserCount();
+  });
 
-    socket.on('check_staff_status', (enteredName) => {
-        const trimmedName = enteredName.trim();
-        const lowerName = trimmedName.toLowerCase();
+  socket.on('name_change_request', (data) => {
+    const oldSecure = String(data.oldName || '').trim();
+    const newName = String(data.newName || '').trim();
+    const newLower = newName.toLowerCase();
+    const currentDisplay = socketsMap.get(socket.id) || '';
 
-        if (namesInUse.has(lowerName)) {
-            socket.emit('name_rejected', 'That name is already in use. Please choose another name.');
-            return;
-        }
+    if (!newName || newName === currentDisplay) { socket.emit('name_change_failed', 'A valid, different name is required.'); return; }
+    if (isNameReserved(newName)) { socket.emit('name_change_failed', 'That name is reserved or contains forbidden words.'); return; }
+    if (namesInUse.has(newLower)) { socket.emit('name_change_failed', 'That name is already taken.'); return; }
 
-        if (isNameReserved(trimmedName)) {
-            if (STAFF_LIST.some(staff => staff.loginName.toLowerCase() === lowerName || staff.displayName.toLowerCase() === lowerName)) {
-                const staffInfo = getStaffDisplayInfo(trimmedName);
-                if (!staffInfo.isAdmin) {
-                    socket.emit('name_rejected', 'That name is reserved by staff. Please choose another name.');
-                    return;
-                }
+    if (currentDisplay) namesInUse.delete(currentDisplay.toLowerCase());
+    namesInUse.add(newLower);
+    socketsMap.set(socket.id, newName);
 
-                const staffDisplayNameLower = staffInfo.username.toLowerCase();
-                namesInUse.add(staffDisplayNameLower);
-                socketsMap.set(socket.id, staffDisplayNameLower);
-                socket.join(STAFF_ROOM);
+    const success = { oldDisplayName: currentDisplay, newDisplayName: newName, newSecureName: newName, timestamp: new Date() };
 
-                const privateMsg = addSystemMessageToHistory(`Staff member ${staffInfo.username} connected.`, true);
-                socket.to(STAFF_ROOM).emit('staff message', privateMsg);
+    if (getStaffDisplayInfo(oldSecure).isAdmin) {
+      success.newSecureName = oldSecure;
+      socket.emit('name_change_success', success);
+      const privateMsg = { username: 'System', content: `Staff member ${currentDisplay} changed display name to ${newName}.`, timestamp: new Date(), isAdmin: true, secureName: oldSecure };
+      socket.to(STAFF_ROOM).emit('staff message', privateMsg);
+      return;
+    }
 
-                const publicMsg = { username: "Moderator", content: "A moderator has entered the chat.", timestamp: new Date(), isAdmin: true };
-                chatHistory.push(publicMsg);
-                while (chatHistory.length > MAX_HISTORY) chatHistory.shift();
-                io.except(STAFF_ROOM).emit('chat message', publicMsg);
+    socket.emit('name_change_success', success);
+    const publicSys = { username: 'System', content: `${currentDisplay} is now known as ${newName}.`, timestamp: new Date(), isAdmin: true, secureName: newName };
+    pushHistory(publicSys);
+    io.emit('chat message', publicSys);
+  });
 
-                socket.emit('staff_status_update', {
-                    isAdmin: true,
-                    displayName: staffInfo.username,
-                    secureName: trimmedName
-                });
+  socket.on('chat message', (msg) => {
+    try {
+      if (containsBannedWord(msg.content)) {
+        socket.emit('system_error', 'Your message contained forbidden language and was not sent.');
+        return;
+      }
+      const staffInfo = getStaffDisplayInfo(msg.username);
+      const messageData = { username: staffInfo.username, content: msg.content, timestamp: new Date(), isAdmin: staffInfo.isAdmin, secureName: staffInfo.secureName };
+      pushHistory(messageData);
+      io.emit('chat message', messageData);
+    } catch (err) {
+      console.error('chat message handler error:', err);
+      socket.emit('system_error', 'Server error while processing message.');
+    }
+  });
 
-            } else {
-                socket.emit('name_rejected', 'That name contains forbidden words. Please choose another name.');
-                return;
-            }
-        } else {
-            namesInUse.add(lowerName);
-            socketsMap.set(socket.id, lowerName);
-            socket.emit('name_accepted', trimmedName);
+  socket.on('admin:clear_history', (data) => {
+    const info = getStaffDisplayInfo(data.username);
+    if (info.isAdmin) {
+      chatHistory.length = 0;
+      const staffMsg = { username: info.username, content: `Chat history cleared by ${info.username}.`, timestamp: new Date(), secureName: info.secureName };
+      io.to(STAFF_ROOM).emit('history_cleared_staff', staffMsg);
+      const publicMsg = { username: 'Moderator', content: 'The chat history has been cleared.', timestamp: new Date() };
+      io.emit('history_cleared_public', publicMsg);
+      pushHistory(publicMsg);
+    }
+  });
 
-            const publicMsg = { username: trimmedName, content: `${trimmedName} has joined the chat.`, timestamp: new Date(), isAdmin: false };
-            chatHistory.push(publicMsg);
-            while (chatHistory.length > MAX_HISTORY) chatHistory.shift();
-            io.emit('chat message', publicMsg);
-        }
+  socket.on('disconnect', () => {
+    const name = socketsMap.get(socket.id);
+    const inStaff = socket.rooms.has(STAFF_ROOM);
+    if (inStaff && name) {
+      const privateMsg = { username: 'System', content: `Staff member ${name} disconnected.`, timestamp: new Date(), isAdmin: true, secureName: null };
+      io.to(STAFF_ROOM).emit('staff message', privateMsg);
+    }
+    if (name) {
+      namesInUse.delete(name.toLowerCase());
+      socketsMap.delete(socket.id);
+      if (!inStaff) {
+        const leaveMsg = { username: name, content: `${name} has left the chat.`, timestamp: new Date(), isAdmin: false, secureName: name };
+        pushHistory(leaveMsg);
+        io.emit('chat message', leaveMsg);
+      }
+    }
+    broadcastUserCount();
+  });
+});
 
-        broadcastUserCount();
-    });
-
-    socket.on('name_change_request', (data) => {
-        const oldSecureName = data.oldName.trim();
-        const newName = data.newName.trim();
-        const newLowerName = newName.toLowerCase();
-        const currentDisplayName = socketsMap.get(socket.id);
-
-        if (!newName || newName === currentDisplayName) {
-            socket.emit('name_change_failed', 'A valid, different name is required.');
-            return;
-        }
-        if (isNameReserved(newName)) {
-            socket.emit('name_change_failed', 'That name is reserved or contains forbidden words.');
-            return;
-        }
-        if (namesInUse.has(newLowerName)) {
-            socket.emit('name_change_failed', 'That name is already taken.');
-            return;
-        }
-
-        if (currentDisplayName) names
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
