@@ -21,13 +21,11 @@
             <div id="messages"></div>
         </div>
 
-        <!-- DM user menu added here -->
-        <div id="dmUserMenu" class="dm-user-menu" style="display: none;">
-            <!-- User buttons will be inserted here by JavaScript -->
-        </div>
-
         <form id="messageForm" onsubmit="sendMessage(); return false;">
-            <input id="messageInput" autocomplete="off" placeholder="Type a message..." />
+            <div class="input-container">
+                <div id="messageInput" class="custom-input" contenteditable="true" placeholder="Type a message..."></div>
+                <div id="dmUserMenu" class="dm-user-menu" style="display: none;"></div>
+            </div>
             <button>Send</button>
         </form>
     </div>
