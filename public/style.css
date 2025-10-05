@@ -225,7 +225,6 @@ body {
     font-size: 14px;
 }
 
-/* Corrected highlight behavior for DM menu buttons */
 .dm-user-menu button.highlighted, .dm-user-menu button:hover {
     background-color: #555;
 }
