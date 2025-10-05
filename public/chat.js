@@ -312,15 +312,19 @@ function showDmUserMenu(searchTerm = "") {
     filteredUsers.slice(0, 3).forEach((user, index) => {
         const button = document.createElement("button");
         button.textContent = user;
-        button.onclick = () => {
+        button.onclick = (e) => {
+            e.stopPropagation(); // Stop the event from bubbling up and submitting the form
             const currentContent = messageInput.textContent;
             const msgIndex = currentContent.lastIndexOf("/msg");
             if (msgIndex !== -1) {
-                const prefix = currentContent.substring(0, msgIndex + 5);
-                const newContent = `${prefix}${user} `;
+                const fullCommand = `/msg ${user}`;
+                const remainingContent = currentContent.substring(msgIndex + 5);
+
+                const newContent = fullCommand + remainingContent.substring(remainingContent.indexOf(' ') + 1);
+
                 messageInput.textContent = newContent;
                 setCursorToEnd(messageInput);
-                hideDmUserMenu(); // Hide the menu
+                hideDmUserMenu();
             }
         };
         dmUserMenu.appendChild(button);
@@ -393,3 +397,4 @@ document.addEventListener('DOMContentLoaded', () => {
     messageInput.contentEditable = false;
     messageFormButton.disabled = true;
 });
+
