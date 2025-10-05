@@ -5,6 +5,7 @@ const staffControlsDiv = document.getElementById("staffControls");
 const messageInput = document.getElementById("messageInput");
 const userCountDisplay = document.getElementById("userCountDisplay");
 const nameControlButton = document.getElementById("nameControlButton");
+const dmUserMenu = document.getElementById("dmUserMenu");
 
 let currentUser = {
     name: null,
@@ -13,6 +14,7 @@ let currentUser = {
 };
 
 let isNameSet = false;
+let onlineUsers = [];
 
 // ENTER KEY PRESS / SEND MESSAGE
 messageInput.addEventListener('keypress', (e) => {
@@ -99,7 +101,6 @@ socket.on('name_change_success', (data) => {
 
     if (!currentUser.isAdmin) {
         // regular user: server will broadcast; update UI via plain notice so it isn't a bubble
-        // Optionally show a plain text notice locally (comment out if you prefer server's broadcast only)
         // addPlainText(`${oldName} is now known as ${newName}.`, data.timestamp);
     } else {
         addMessage("System", `${oldName} changed display name to ${newName}.`, data.timestamp, true);
@@ -135,6 +136,7 @@ function confirmClear() {
     });
 }
 
+// Replaces the existing sendMessage function
 function sendMessage() {
   const text = messageInput.value.trim();
 
@@ -145,33 +147,96 @@ function sendMessage() {
 
   if (text === "") return;
 
-  const messageData = {
-    username: currentUser.name,
-    content: text,
-    timestamp: new Date(),
-  };
+  // Handle the /msg command for private messages
+  if (text.startsWith("/msg ")) {
+    // Splits the input into recipient and message
+    const parts = text.substring(5).split(" ");
+    const recipient = parts.shift();
+    const content = parts.join(" ").trim();
 
-  socket.emit("chat message", messageData);
+    if (!recipient || !content) {
+      addMessage("System Alert", "Invalid /msg command. Usage: /msg [username] [message]", new Date(), true);
+      messageInput.value = "";
+      return;
+    }
+    
+    const messageData = {
+      recipient: recipient,
+      content: content,
+      timestamp: new Date()
+    };
+    socket.emit("private message", messageData);
+
+  } else {
+    // Existing public message logic
+    const messageData = {
+      username: currentUser.name,
+      content: text,
+      timestamp: new Date(),
+    };
+    socket.emit("chat message", messageData);
+  }
+
   messageInput.value = "";
   messageInput.focus();
 }
 
-function addMessage(username, content, timestamp, isAdmin = false) {
-  const div = document.createElement('div');
+// Event listener for showing the DM user menu
+messageInput.addEventListener('input', (e) => {
+  const text = e.target.value.trim();
+  if (text.startsWith("/msg")) {
+    showDmUserMenu(text.substring(5)); // Pass the search term
+  } else {
+    hideDmUserMenu();
+  }
+});
 
+function showDmUserMenu(searchTerm = "") {
+  dmUserMenu.innerHTML = "";
+  
+  const filteredUsers = onlineUsers
+    .filter(name => name.toLowerCase().includes(searchTerm.toLowerCase()) && name !== currentUser.displayName)
+    .sort((a, b) => a.localeCompare(b));
+
+  filteredUsers.slice(0, 3).forEach(user => {
+    const userButton = document.createElement("button");
+    userButton.textContent = user;
+    userButton.onclick = () => {
+      messageInput.value = `/msg ${user} `;
+      messageInput.focus();
+      hideDmUserMenu();
+    };
+    dmUserMenu.appendChild(userButton);
+  });
+
+  if (filteredUsers.length > 0) {
+    dmUserMenu.style.display = "flex";
+  } else {
+    hideDmUserMenu();
+  }
+}
+
+function hideDmUserMenu() {
+  dmUserMenu.style.display = "none";
+}
+
+// Modify the 'addMessage' function to handle the new private message style
+function addMessage(username, content, timestamp, isAdmin = false, isPrivate = false) {
+  const div = document.createElement('div');
   const isOwn = (username === currentUser.displayName);
 
-  if (username === "System" || username === "System Alert") {
-      div.className = isAdmin ? 'msg admin-system-msg' : 'msg system-msg';
+  if (isPrivate) {
+    div.className = isOwn ? 'msg own private' : 'msg other private';
+  } else if (username === "System" || username === "System Alert") {
+    div.className = isAdmin ? 'msg admin-system-msg' : 'msg system-msg';
   } else if (isOwn) {
-      div.className = `msg own ${isAdmin ? 'admin-msg' : ''}`;
+    div.className = `msg own ${isAdmin ? 'admin-msg' : ''}`;
   } else {
-      div.className = `msg other ${isAdmin ? 'admin-msg' : ''}`;
+    div.className = `msg other ${isAdmin ? 'admin-msg' : ''}`;
   }
-
+  
   const header = document.createElement('div');
   header.className = 'msg-header';
-
   const time = new Date(timestamp);
   header.textContent = `${username} • ${time.toLocaleTimeString()}`;
 
@@ -191,7 +256,6 @@ function addPlainText(content, timestamp) {
   const div = document.createElement('div');
   div.className = 'chat-plain';
   const time = new Date(timestamp || Date.now());
-  // If you prefer no timestamp shown, remove the time portion below
   div.textContent = `${content} • ${time.toLocaleTimeString()}`;
   messagesContainer.appendChild(div);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -228,8 +292,17 @@ socket.on("staff message", (msg) => {
 });
 
 // USER COUNT LISTENER
-socket.on("user count", (count) => {
+socket.on("user count", (data) => {
+    const { count, userList } = data;
     userCountDisplay.textContent = `${count} User${count !== 1 ? 's' : ''} Online`;
+    onlineUsers = userList;
+});
+
+// New listener for incoming private messages
+socket.on("private message", (msg) => {
+  const isOwnMessage = msg.sender === currentUser.displayName;
+  const content = isOwnMessage ? `(DM to ${msg.recipient}): ${msg.content}` : `(DM from ${msg.sender}): ${msg.content}`;
+  addMessage(isOwnMessage ? currentUser.displayName : msg.sender, content, msg.timestamp, false, true);
 });
 
 // ERROR LISTENER
