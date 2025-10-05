@@ -225,7 +225,8 @@ body {
     font-size: 14px;
 }
 
-.dm-user-menu button:hover, .dm-user-menu button.highlighted {
+/* Corrected highlight behavior for DM menu buttons */
+.dm-user-menu button.highlighted, .dm-user-menu button:hover {
     background-color: #555;
 }
 
@@ -290,7 +291,7 @@ body {
     margin: 5px;
 }
 
-/* Specific button styles within modal */
+/* Specific button styles within admin modal */
 .modal-content button:nth-child(2) {
     background-color: #8d0801;
 }
@@ -298,18 +299,13 @@ body {
     background-color: #6d0600;
 }
 
-.modal-content button:last-of-type {
-    background-color: #585858;
-}
-.modal-content button:last-of-type:hover {
-    background-color: #4a4a4a;
-}
-
-/* Style for the "Ok" button in staffNameModal */
+/* Specific button styles within staff name modal */
 #staffNameModal .modal-content button {
     background-color: #585858; /* Gray color */
-    display: block; /* Make the button a block element */
-    width: 100%; /* Fill the width */
+}
+
+#staffNameModal .modal-content button:hover {
+    background-color: #4a4a4a;
 }
 
 /* New CSS to handle the placeholder */
