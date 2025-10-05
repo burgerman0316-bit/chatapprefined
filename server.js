@@ -22,7 +22,7 @@ const STAFF_LIST = [
 
 const chatHistory = [];
 const namesInUse = new Set();
-const socketsMap = new Map();
+const socketsMap = new Map(); // socketId -> displayName
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
@@ -56,6 +56,15 @@ function broadcastUserCount() {
   io.emit('user count', namesInUse.size);
 }
 
+function findSocketIdByDisplay(displayName) {
+  if (!displayName) return null;
+  const lower = String(displayName).toLowerCase();
+  for (const [id, disp] of socketsMap.entries()) {
+    if (String(disp).toLowerCase() === lower) return id;
+  }
+  return null;
+}
+
 io.on('connection', (socket) => {
   console.log('socket connected:', socket.id);
   socket.emit('chat history', chatHistory);
@@ -68,10 +77,8 @@ io.on('connection', (socket) => {
     if (namesInUse.has(lower)) { socket.emit('name_rejected', 'That name is already in use.'); return; }
 
     if (isNameReserved(trimmed)) {
-      // staff or banned
       const staffMatch = STAFF_LIST.find(s => s.loginName.toLowerCase() === lower || s.displayName.toLowerCase() === lower);
       if (staffMatch) {
-        // require exact loginName to actually log in as staff
         if (staffMatch.loginName.toLowerCase() !== lower && staffMatch.displayName.toLowerCase() === lower) {
           socket.emit('name_rejected', 'That name is reserved by staff.'); return;
         }
@@ -83,7 +90,6 @@ io.on('connection', (socket) => {
         const privateMsg = { username: 'System', content: `Staff member ${info.username} connected.`, timestamp: new Date(), isAdmin: true, secureName: info.secureName };
         socket.to(STAFF_ROOM).emit('staff message', privateMsg);
 
-        // Public system notice (recorded in history)
         const publicMsg = { username: 'System', content: 'A moderator has entered the chat.', timestamp: new Date(), isAdmin: true, secureName: null };
         pushHistory(publicMsg);
         io.emit('chat message', publicMsg);
@@ -97,12 +103,16 @@ io.on('connection', (socket) => {
       socketsMap.set(socket.id, trimmed);
       socket.emit('name_accepted', trimmed);
 
-      // Make join a System message
-      const joinMsg = { username: 'System', content: `${trimmed} has joined the chat.`, timestamp: new Date(), isAdmin: true, secureName: trimmed };
+      const joinMsg = { username: 'System', content: `${trimmed} has joined the chat.`, timestamp: new Date(), isAdmin: true, secureName: null };
       pushHistory(joinMsg);
       io.emit('chat message', joinMsg);
     }
     broadcastUserCount();
+  });
+
+  socket.on('request_user_list', () => {
+    const list = Array.from(socketsMap.values()).filter(Boolean);
+    socket.emit('user_list', list);
   });
 
   socket.on('name_change_request', (data) => {
@@ -130,7 +140,7 @@ io.on('connection', (socket) => {
     }
 
     socket.emit('name_change_success', success);
-    const publicSys = { username: 'System', content: `${currentDisplay} is now known as ${newName}.`, timestamp: new Date(), isAdmin: true, secureName: newName };
+    const publicSys = { username: 'System', content: `${currentDisplay} is now known as ${newName}.`, timestamp: new Date(), isAdmin: true, secureName: null };
     pushHistory(publicSys);
     io.emit('chat message', publicSys);
   });
@@ -142,12 +152,49 @@ io.on('connection', (socket) => {
         return;
       }
       const staffInfo = getStaffDisplayInfo(msg.username);
-      const messageData = { username: staffInfo.username, content: msg.content, timestamp: new Date(), isAdmin: staffInfo.isAdmin, secureName: staffInfo.secureName };
+      const messageData = { username: staffInfo.username || msg.username, content: msg.content, timestamp: new Date(), isAdmin: staffInfo.isAdmin, secureName: staffInfo.secureName || null };
       pushHistory(messageData);
       io.emit('chat message', messageData);
     } catch (err) {
       console.error('chat message handler error:', err);
       socket.emit('system_error', 'Server error while processing message.');
+    }
+  });
+
+  socket.on('private_message', (data) => {
+    try {
+      const fromSecure = String(data.fromSecure || '').trim();
+      const toDisplay = String(data.toDisplay || '').trim();
+      const content = String(data.content || '').trim();
+      if (!fromSecure || !toDisplay || !content) {
+        socket.emit('system_error', 'Invalid private message.');
+        return;
+      }
+      if (containsBannedWord(content)) {
+        socket.emit('system_error', 'Your message contained forbidden language and was not sent.');
+        return;
+      }
+
+      const toSocketId = findSocketIdByDisplay(toDisplay);
+      if (!toSocketId) {
+        socket.emit('system_error', `User "${toDisplay}" is not online.`);
+        return;
+      }
+
+      const timestamp = new Date();
+      const fromDisplay = socketsMap.get(socket.id) || fromSecure;
+
+      const incoming = { username: fromDisplay, content, timestamp, isPrivate: true, from: fromDisplay };
+      const outgoing = { username: fromDisplay, content, timestamp, isPrivate: true, to: toDisplay };
+
+      io.to(toSocketId).emit('private_message_incoming', incoming);
+      socket.emit('private_message_sent', outgoing);
+
+      // optional: store private messages (commented out)
+      // pushHistory({ ...outgoing, isPrivate: true, secureFrom: fromSecure, secureTo: toDisplay });
+    } catch (err) {
+      console.error('private_message handler error:', err);
+      socket.emit('system_error', 'Server error while sending private message.');
     }
   });
 
@@ -177,8 +224,7 @@ io.on('connection', (socket) => {
       namesInUse.delete(name.toLowerCase());
       socketsMap.delete(socket.id);
 
-      // Make leave a System message
-      const leaveMsg = { username: 'System', content: `${name} has left the chat.`, timestamp: new Date(), isAdmin: true, secureName: name };
+      const leaveMsg = { username: 'System', content: `${name} has left the chat.`, timestamp: new Date(), isAdmin: true, secureName: null };
       pushHistory(leaveMsg);
       io.emit('chat message', leaveMsg);
     }
