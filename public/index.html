@@ -7,45 +7,63 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Username Modal -->
-    <div class="custom-modal" id="usernameModal">
+    <!-- Overlay to block UI before login -->
+    <div id="overlay"></div>
+
+    <!-- Chat Container -->
+    <div id="container">
+        <div id="user-info">
+            <h2>Chat Info</h2>
+            <p>Welcome, <span id="display-name">Guest</span>!</p>
+            <p>Users Online: <span id="user-count">0</span></p>
+            <div id="user-list-container">
+                <h4>Online Users:</h4>
+                <ul id="user-list"></ul>
+            </div>
+            <p class="commands">**Commands:**</p>
+            <p class="commands">`/msg [user] [message]`</p>
+            <p class="commands">`/clear` (Mod only)</p>
+            <button id="adminPanelBtn" style="display:none;">Admin Control Panel</button>
+            <button id="clearChatBtn" style="display:none;">Clear Chat</button>
+        </div>
+        <div id="chat-area">
+            <ul id="messages"></ul>
+            <div id="messageForm">
+                <div class="input-container">
+                    <div id="messageInput" contenteditable="true" data-placeholder="Type a message or command..."></div>
+                </div>
+                <button id="sendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
         <div class="modal-content">
-            <h2>Enter Your Username</h2>
-            <input type="text" id="usernameInput" placeholder="Your name">
+            <h3>Enter Your Name</h3>
+            <input type="text" id="usernameInput" placeholder="Username" />
             <button id="joinBtn">Join Chat</button>
-            <button class="close-modal" id="usernameClose">&times;</button>
-            <p id="usernameError" class="error-text"></p>
         </div>
     </div>
 
     <!-- DM Modal -->
-    <div class="custom-modal" id="dmModal">
+    <div class="modal" id="dmModal">
         <div class="modal-content">
-            <h3>Send Private Message</h3>
+            <button class="closeModal" id="dmCloseBtn">X</button>
+            <h3>Select User to DM</h3>
             <ul id="dmUserList"></ul>
-            <button class="close-modal" id="dmClose">&times;</button>
         </div>
     </div>
 
     <!-- Admin Panel Modal -->
-    <div class="custom-modal" id="adminModal">
+    <div class="modal" id="adminPanelModal">
         <div class="modal-content">
+            <button class="closeModal" id="adminCloseBtn">X</button>
             <h3>Admin Controls</h3>
-            <button id="clearHistoryBtn">Clear Chat History</button>
-            <button id="banUserBtn">Ban User</button>
-            <button id="hardwareBanBtn">Hardware Ban</button>
-            <button class="close-modal" id="adminClose">&times;</button>
+            <button id="clearHistoryAdmin">Clear Chat History</button>
+            <button id="hardwareBanBtn">Hardware Ban User</button>
+            <ul id="adminUserList"></ul>
         </div>
-    </div>
-
-    <!-- Chat Area -->
-    <div id="chat-container">
-        <div id="chat-messages"></div>
-        <div id="chat-input-container">
-            <div id="messageInput" contenteditable="true" data-placeholder="Type a message..."></div>
-            <button id="sendBtn">Send</button>
-        </div>
-        <button id="adminPanelBtn" style="display:none;">Admin Panel</button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
