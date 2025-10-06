@@ -1,6 +1,6 @@
 const socket = io();
 
-// DOM Elements
+// ===== DOM Elements =====
 const usernameInput = document.getElementById('usernameInput');
 const joinBtn = document.getElementById('joinBtn');
 const clearChatBtn = document.getElementById('clearChatBtn');
@@ -8,6 +8,9 @@ const userCountDisplay = document.getElementById('userCountDisplay');
 const messagesDiv = document.getElementById('messages');
 const messageForm = document.getElementById('messageForm');
 const messageInputDiv = document.getElementById('messageInput');
+
+// ===== Modals =====
+const staffNameModal = document.getElementById('staffNameModal');
 const dmModal = document.getElementById('dmModal');
 const dmUserList = document.getElementById('dmUserList');
 const dmCloseBtn = document.getElementById('dmCloseBtn');
@@ -15,82 +18,95 @@ const dmCloseBtn = document.getElementById('dmCloseBtn');
 let displayName = '';
 let secureName = '';
 let isAdmin = false;
-let dmTarget = null;
+let dmTarget = null; // Stores currently selected DM target
 
-// ========== Utility ==========
-
+// ===== Helper Functions =====
 function appendMessage(msg) {
-    const item = document.createElement('div');
-    item.classList.add('msg');
-    if(msg.system) item.classList.add('system');
-    else item.classList.add(msg.username === displayName ? 'own' : 'other');
+  const item = document.createElement('div');
+  item.classList.add('msg');
 
-    const header = msg.system ? '' : `<div class="msg-header">${msg.username}${msg.isAdmin ? ' (Admin)' : ''}</div>`;
-    const body = `<div class="message-content">${msg.content}</div>`;
-    item.innerHTML = header + body;
-    messagesDiv.appendChild(item);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  if (!msg.isAdmin) {
+    if (msg.username && displayName && msg.username.toLowerCase() === displayName.toLowerCase()) {
+      item.classList.add('own');
+    } else {
+      item.classList.add('other');
+    }
+  }
+
+  if (msg.isPrivate) item.classList.add('private');
+  if (msg.isSystem) item.classList.add('system-msg');
+
+  const header = msg.username ? `<div class="msg-header">${msg.username}</div>` : '';
+  const body = `<div class="message-content">${msg.content}</div>`;
+  const foot = msg.timestamp ? `<div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>` : '';
+  
+  item.innerHTML = header + body + foot;
+  messagesDiv.appendChild(item);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// ========== Join / Staff / Name Checks ==========
+function showStaffNameModal(message) {
+  const modalText = staffNameModal.querySelector('.modal-message');
+  modalText.textContent = message;
+  staffNameModal.style.display = 'flex';
+}
 
+function hideStaffNameModal() {
+  staffNameModal.style.display = 'none';
+}
+
+function showDmModal(users) {
+  dmUserList.innerHTML = '';
+  users.forEach(u => {
+    if (u.toLowerCase() !== displayName.toLowerCase()) {
+      const btn = document.createElement('button');
+      btn.textContent = u;
+      btn.addEventListener('click', () => {
+        dmTarget = u;
+        messageInputDiv.innerHTML = '';
+        const span = document.createElement('span');
+        span.classList.add('dm-highlight');
+        span.textContent = `[${u}]: `;
+        messageInputDiv.appendChild(span);
+        messageInputDiv.appendChild(document.createTextNode(' '));
+        dmModal.style.display = 'none';
+        messageInputDiv.focus();
+      });
+      dmUserList.appendChild(btn);
+    }
+  });
+  dmModal.style.display = 'flex';
+}
+
+function hideDmModal() {
+  dmModal.style.display = 'none';
+}
+
+// ===== Event Listeners =====
+
+// Join chat
 joinBtn.addEventListener('click', () => {
-    const name = usernameInput.value.trim();
-    if(!name) return;
-
-    socket.emit('check_name', name);
+  const name = usernameInput.value.trim();
+  if (!name) return;
+  socket.emit('check_staff_status', name);
 });
 
-socket.on('name_accepted', name => {
-    displayName = name;
-    secureName = name;
-    usernameInput.disabled = true;
-    joinBtn.disabled = true;
-});
-
-socket.on('name_rejected', reason => {
-    alert(reason); // or could show a modal here
-});
-
-// ========== Chat / Messages ==========
-
-messageForm.addEventListener('submit', e => {
+// Enter key sends message
+messageInputDiv.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    const text = messageInputDiv.innerText.trim();
-    if(!text) return;
-
-    // /msg handling
-    if(text.startsWith('/msg ')) {
-        const rest = text.slice(5).trim();
-        if(!rest) {
-            // Show DM modal
-            dmUserList.innerHTML = '';
-            // Request current users
-            socket.emit('get_user_list');
-            dmModal.style.display = 'flex';
-            return;
-        }
-    }
-
-    // If DM highlight exists, send private
-    if(dmTarget && messageInputDiv.innerText.startsWith(`[${dmTarget}]:`)) {
-        const content = messageInputDiv.innerText.replace(`[${dmTarget}]: `,'');
-        socket.emit('private_message', { recipient: dmTarget, content });
-        appendMessage({ username: `You → ${dmTarget}`, content, system:false });
-        dmTarget = null;
-        messageInputDiv.innerText = '';
-        return;
-    }
-
-    // Regular message
-    socket.emit('chat_message', { username: secureName || displayName, content: text });
-    messageInputDiv.innerText = '';
+    messageForm.dispatchEvent(new Event('submit'));
+  }
 });
 
-socket.on('chat_message', msg => appendMessage(msg));
-socket.on('user_count', data => userCountDisplay.textContent = `${data.count} Users Online`);
+// Form submit
+messageForm.addEventListener('submit', e => {
+  e.preventDefault();
+  let content = messageInputDiv.innerText.trim();
+  if (!content || !displayName) return;
 
-socket.on('user_list', list => {
-    dmUserList.innerHTML = '';
-    list.forEach(user => {
-        if(user
+  // Check for DM highlight
+  if (dmTarget) {
+    const firstChild = messageInputDiv.firstChild;
+    if (firstChild && firstChild.classList.contains('dm-highlight')) {
+      const p
