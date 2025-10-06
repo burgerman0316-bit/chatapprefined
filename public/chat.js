@@ -28,9 +28,8 @@ let displayName = '';
 let isAdmin = false;
 
 // --- Initial Setup ---
-// Show the login modal immediately upon load
 document.addEventListener('DOMContentLoaded', () => {
-    // If the modal isn't already visible (e.g., from a previous session state), show it
+    // Show the login modal immediately upon load
     if (!document.getElementById('container').style.display || document.getElementById('container').style.display === 'none') {
         myModal.show();
     }
@@ -73,7 +72,7 @@ function updateUsers(userList) {
         // Add user to the main list
         userListEl.appendChild(li);
 
-        // Add user to the Admin Panel list (only if admin panel button is visible)
+        // Add user to the Admin Panel list
         if (isAdmin) {
              const adminLi = document.createElement('li');
              adminLi.textContent = user;
@@ -87,7 +86,6 @@ function updateUsers(userList) {
                  if (confirm(`Are you sure you want to KICK "${user}" from the chat?`)) {
                       socket.emit('admin:kick_user', { targetName: user, adminName: displayName });
                       
-                      // Optionally close the modal after action
                       const adminModal = bootstrap.Modal.getInstance(adminModalEl);
                       if (adminModal) adminModal.hide();
                  }
@@ -114,7 +112,7 @@ messageForm.addEventListener('submit', e => {
     const content = messageInputDiv.innerText.trim();
     if (!content) return;
 
-    // Check for /msg command
+    // Check for commands
     if (content.startsWith('/msg ')) {
         const parts = content.split(' ');
         const recipient = parts[1];
@@ -125,7 +123,6 @@ messageForm.addEventListener('submit', e => {
             appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg [username] [message]', timestamp: new Date() });
         }
     } 
-    // Check for /clear command (Admin-only client-side check)
     else if (content.toLowerCase() === '/clear') {
         if (isAdmin) {
              if (confirm('Are you sure you want to clear the chat history for everyone?')) {
@@ -134,7 +131,6 @@ messageForm.addEventListener('submit', e => {
         } else {
             appendMessage({ username: 'System', content: 'You do not have permission to use the /clear command.', timestamp: new Date() });
         }
-        
     } else {
         // Regular public message
         socket.emit('chat message', { username: displayName, content });
@@ -155,7 +151,6 @@ messageInputDiv.addEventListener('keydown', e => {
 clearChatBtn.addEventListener('click', () => {
     if (confirm('Are you sure you want to clear the chat history for everyone?')) {
         socket.emit('admin:clear_history', { username: displayName });
-        // Close modal after sending command
         const adminModal = bootstrap.Modal.getInstance(adminModalEl);
         if (adminModal) adminModal.hide();
     }
@@ -169,11 +164,9 @@ function handleSuccessfulLogin(data) {
     isAdmin = data.isAdmin || false; 
     displayNameEl.textContent = displayName;
     
-    // Hide modal and show chat container
     myModal.hide(); 
     container.style.display = 'flex'; 
 
-    // FIX: Show/Hide Admin Button (Must be 'block' for button)
     if (isAdmin) {
         adminPanelBtn.style.display = 'block';
     } else {
@@ -201,7 +194,7 @@ socket.on('name_in_use_modal', msg => {
 
 // Chat Events
 socket.on('chat history', history => {
-    messagesDiv.innerHTML = ''; // Clear existing
+    messagesDiv.innerHTML = ''; 
     history.forEach(msg => appendMessage(msg));
 });
 socket.on('chat message', msg => appendMessage(msg));
@@ -209,8 +202,8 @@ socket.on('private message', msg => appendMessage(msg));
 
 // Admin Events
 socket.on('admin:history_cleared', msg => {
-    messagesDiv.innerHTML = ''; // Physical UI clear
-    appendMessage(msg); // Add the system message that history was cleared
+    messagesDiv.innerHTML = ''; 
+    appendMessage(msg); 
 });
 
 // System Alerts
