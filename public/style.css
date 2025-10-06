@@ -8,6 +8,7 @@ body {
   height: 100vh;
 }
 
+/* Main chat container */
 .chat-container {
   width: 100%;
   max-width: 600px;
@@ -22,13 +23,18 @@ body {
   position: relative;
 }
 
+/* Header area (top bar) */
 .header-area {
   padding: 10px;
   background-color: #2c2c2c;
   border-bottom: 1px solid #444;
   display: flex;
-  gap: 8px;
+  gap: 10px; /* spacing between items */
   align-items: center;
+}
+
+#userCountDisplay {
+  margin-right: 8px; /* space between label and input */
 }
 
 #usernameInput {
@@ -37,7 +43,7 @@ body {
   color: #f0f0f0;
   border: 1px solid #555;
   border-radius: 4px;
-  width: 140px;
+  width: 150px;
 }
 
 .header-area button {
@@ -60,11 +66,13 @@ body {
   background-color: #6d0600;
 }
 
+/* Message area */
 .messages-area {
   flex-grow: 1;
   overflow-y: auto;
   padding: 10px;
 }
+
 #messages {
   display: flex;
   flex-direction: column;
@@ -127,34 +135,41 @@ body {
   color: #c0c0c0;
 }
 
-/* Input area */
+/* Input area (bottom form) */
 #messageForm {
   display: flex;
+  align-items: center;
   padding: 10px;
   background-color: #2c2c2c;
   border-top: 1px solid #444;
+  gap: 10px; /* spacing between input and button */
 }
+
 .input-container {
   flex-grow: 1;
-  position: relative;
 }
+
 .custom-input {
   flex-grow: 1;
-  padding: 10px;
+  padding: 8px 10px;
   background-color: #383838;
   color: #f0f0f0;
   border: 1px solid #555;
   border-radius: 4px;
   outline: none;
-  min-height: 40px;
+  min-height: 32px; /* restored to smaller height */
+  max-height: 120px;
+  overflow-y: auto;
 }
+
 .custom-input[data-placeholder]:empty::before {
   content: attr(data-placeholder);
   color: #888;
   pointer-events: none;
 }
+
 #messageForm button {
-  padding: 10px 15px;
+  padding: 8px 15px;
   background-color: #585858;
   color: white;
   border: none;
