@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Socket.IO Chat</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chat App</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="chat-container">
     <div class="header-area">
-      <span id="userCountDisplay">0 Users Online</span>
+      <div class="left-header">
+        <strong>Chat Room</strong>
+      </div>
+
       <div class="right-header">
-        <input id="usernameInput" type="text" placeholder="Enter your name" />
-        <button id="joinBtn">Join Chat</button>
-        <button id="clearChatBtn" style="display:none;">Clear Chat</button>
+        <span id="userCountDisplay">0 Users Online</span>
+        <input id="usernameInput" type="text" placeholder="Enter name" />
+        <button id="joinBtn" type="button">Join</button>
+        <button id="clearChatBtn" type="button" style="display:none">Clear Chat</button>
+        <!-- Admin control panel button (shown when isAdmin) -->
+        <button id="adminPanelBtn" type="button" style="display:none">Admin Control Panel</button>
       </div>
     </div>
 
@@ -21,48 +27,94 @@
       <div id="messages"></div>
     </div>
 
-    <form id="messageForm">
+    <form id="messageForm" autocomplete="off">
       <div class="input-container">
         <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
       </div>
-      <button type="submit">Send</button>
+      <button id="sendBtn" type="submit">Send</button>
     </form>
   </div>
 
   <!-- DM Modal -->
-  <div class="modal" id="dmModal" style="display:none;">
+  <div id="dmModal" class="modal" style="display:none;">
     <div class="modal-content">
-      <button id="closeDmModal" class="modal-close">✖</button>
+      <button class="modal-close" id="dmCloseBtn">&times;</button>
       <h3>Select a user to DM</h3>
       <div id="dmUserList" class="dm-user-list"></div>
     </div>
   </div>
 
-  <!-- Clear Chat Confirmation Modal -->
-  <div class="modal" id="clearChatModal" style="display:none;">
+  <!-- Name error modal -->
+  <div id="nameErrorModal" class="modal" style="display:none;">
     <div class="modal-content">
-      <h3>Clear Chat Confirmation</h3>
-      <p>Are you sure you want to clear the chat?</p>
-      <button id="confirmClearBtn">Yes, clear</button>
-      <button id="cancelClearBtn">Cancel</button>
+      <button class="modal-close" id="nameErrorClose">&times;</button>
+      <p id="nameErrorText"></p>
     </div>
   </div>
 
-  <!-- Reserved Name Modal -->
-  <div class="modal" id="reservedNameModal" style="display:none;">
-    <div class="modal-content">
-      <h3>Name Reserved</h3>
-      <p>This name is reserved for staff. Please choose another.</p>
-      <button id="closeReservedName">OK</button>
-    </div>
-  </div>
+  <!-- Admin Panel Modal -->
+  <div id="adminModal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width:700px;">
+      <button class="modal-close" id="adminCloseBtn">&times;</button>
+      <h2>Admin Control Panel</h2>
 
-  <!-- Name In Use Modal -->
-  <div class="modal" id="nameInUseModal" style="display:none;">
-    <div class="modal-content">
-      <h3>Name Taken</h3>
-      <p>This name is already in use. Please choose another.</p>
-      <button id="closeNameInUse">OK</button>
+      <div class="admin-columns">
+        <div class="admin-column">
+          <h4>Online Users</h4>
+          <div id="adminUserList" class="admin-user-list"></div>
+        </div>
+
+        <div class="admin-column">
+          <h4>Actions</h4>
+
+          <div class="admin-action">
+            <label for="banUsernameInput">Ban username</label>
+            <input id="banUsernameInput" placeholder="username to ban" />
+            <button id="banUsernameBtn">Ban user</button>
+          </div>
+
+          <div class="admin-action">
+            <label for="unbanUsernameInput">Unban username</label>
+            <input id="unbanUsernameInput" placeholder="username to unban" />
+            <button id="unbanUsernameBtn">Unban</button>
+          </div>
+
+          <div class="admin-action">
+            <label for="banIpInput">Ban IP address</label>
+            <input id="banIpInput" placeholder="IP to ban (e.g. 1.2.3.4)" />
+            <button id="banIpBtn">Ban IP</button>
+          </div>
+
+          <div class="admin-action">
+            <label for="unbanIpInput">Unban IP</label>
+            <input id="unbanIpInput" placeholder="IP to unban" />
+            <button id="unbanIpBtn">Unban IP</button>
+          </div>
+
+          <div class="admin-action">
+            <label for="forceDisconnectInput">Force disconnect (username)</label>
+            <input id="forceDisconnectInput" placeholder="username to disconnect" />
+            <button id="forceDisconnectBtn">Disconnect</button>
+          </div>
+
+          <div class="admin-action">
+            <button id="adminClearHistoryBtn" class="danger">Clear Chat History</button>
+          </div>
+
+          <div class="admin-action">
+            <h4>Banned lists</h4>
+            <div>
+              <strong>User bans</strong>
+              <div id="bannedUserList" class="admin-ban-list"></div>
+            </div>
+            <div style="margin-top:8px;">
+              <strong>IP bans</strong>
+              <div id="bannedIpList" class="admin-ban-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
