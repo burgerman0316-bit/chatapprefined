@@ -1,23 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Chat App</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Socket.IO Chat</title>
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="chat-container">
     <div class="header-area">
-      <div class="left-header">
-        <strong>Chat Room</strong>
-      </div>
-
+      <span id="userCountDisplay">0 Users Online</span>
       <div class="right-header">
-        <span id="userCountDisplay">0 Users Online</span>
         <input id="usernameInput" type="text" placeholder="Enter your name" />
-        <button id="joinBtn">Join</button>
-        <button id="clearChatBtn" style="display:none;">Clear</button>
+        <button id="joinBtn">Join Chat</button>
+        <button id="clearChatBtn" style="display:none;">Clear Chat</button>
       </div>
     </div>
 
@@ -27,33 +23,31 @@
 
     <form id="messageForm">
       <div class="input-container">
-        <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message or command..."></div>
+        <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
       </div>
       <button type="submit">Send</button>
     </form>
   </div>
 
-  <!-- Generic custom modal -->
-  <div id="genericModal" class="modal" style="display:none">
+  <!-- Name Reserved / Name Taken Modal -->
+  <div id="nameModal" class="modal" style="display:none;">
     <div class="modal-content">
-      <button id="genericClose" class="modal-close">&times;</button>
-      <p id="genericText"></p>
-      <div style="text-align:center; margin-top:12px;">
-        <button id="genericOk">OK</button>
-      </div>
+      <button class="close-modal" id="closeNameModal">&times;</button>
+      <p id="nameModalText">This name is reserved or already in use.</p>
+      <button id="nameModalOkBtn">OK</button>
     </div>
   </div>
 
-  <!-- DM selection modal -->
-  <div id="dmModal" class="modal" style="display:none">
-    <div class="modal-content">
-      <button id="dmClose" class="modal-close">&times;</button>
-      <h3>Select user to DM</h3>
+  <!-- DM User Selection Modal -->
+  <div id="dmModal" class="modal" style="display:none;">
+    <div class="modal-content dm-content">
+      <button class="close-modal" id="closeDMModal">&times;</button>
+      <h3>Select a user to DM</h3>
       <div id="dmUserList" class="dm-user-list"></div>
     </div>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="chat.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="chat.js"></script>
 </body>
 </html>
