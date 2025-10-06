@@ -20,7 +20,9 @@ const userCountEl = document.getElementById('user-count');
 
 const adminPanelBtn = document.getElementById('adminPanelBtn');
 const clearChatBtn = document.getElementById('clearChatBtn');
-const adminUserList = document.getElementById('admin-user-list');
+const adminUserList = document.getElementById('admin-user-list'); 
+const adminModalEl = document.getElementById('adminPanelModal'); 
+
 
 let displayName = '';
 let isAdmin = false;
@@ -71,10 +73,22 @@ function updateUsers(userList) {
         // Add user to the Admin Panel list
         const adminLi = document.createElement('li');
         adminLi.textContent = user;
-        // Placeholder functionality
+        
+        // Admin Kick functionality
         adminLi.addEventListener('click', () => {
-             alert(`Admin action selected for ${user}. (Placeholder for ban logic)`);
+            if (user === displayName) {
+                 alert('You cannot kick yourself!');
+                 return;
+            }
+            if (confirm(`Are you sure you want to KICK "${user}" from the chat?`)) {
+                 socket.emit('admin:kick_user', { targetName: user, adminName: displayName });
+                 
+                 // Optionally close the modal after action
+                 const adminModal = bootstrap.Modal.getInstance(adminModalEl);
+                 if (adminModal) adminModal.hide();
+            }
         });
+        
         adminUserList.appendChild(adminLi);
     });
 }
@@ -105,12 +119,24 @@ messageForm.addEventListener('submit', e => {
         } else {
             appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg [username] [message]', timestamp: new Date() });
         }
+    } 
+    // Check for /clear command (Admin-only client-side check)
+    else if (content.toLowerCase() === '/clear') {
+        if (isAdmin) {
+             if (confirm('Are you sure you want to clear the chat history for everyone?')) {
+                socket.emit('admin:clear_history', { username: displayName });
+                messageInputDiv.innerText = ''; // Clear input
+             }
+        } else {
+            appendMessage({ username: 'System', content: 'You do not have permission to use the /clear command.', timestamp: new Date() });
+        }
+        
     } else {
         // Regular public message
         socket.emit('chat message', { username: displayName, content });
     }
 
-    messageInputDiv.innerText = ''; // Clear input
+    messageInputDiv.innerText = ''; // Clear input if not handled above
 });
 
 // 3. Enter key in input box
@@ -125,6 +151,9 @@ messageInputDiv.addEventListener('keydown', e => {
 clearChatBtn.addEventListener('click', () => {
     if (confirm('Are you sure you want to clear the chat history for everyone?')) {
         socket.emit('admin:clear_history', { username: displayName });
+        // Optionally close modal after sending command
+        const adminModal = bootstrap.Modal.getInstance(adminModalEl);
+        if (adminModal) adminModal.hide();
     }
 });
 
@@ -133,13 +162,14 @@ clearChatBtn.addEventListener('click', () => {
 // Shared function to handle successful login
 function handleSuccessfulLogin(data) {
     displayName = data.displayName;
-    isAdmin = data.isAdmin || false; // Ensure isAdmin is set
+    isAdmin = data.isAdmin || false; 
     displayNameEl.textContent = displayName;
     
     // Hide modal and show chat container
     myModal.hide(); 
     container.style.display = 'flex'; 
 
+    // FIX: Show/Hide Admin Button
     if (isAdmin) {
         adminPanelBtn.style.display = 'block';
     } else {
@@ -172,6 +202,12 @@ socket.on('chat history', history => {
 });
 socket.on('chat message', msg => appendMessage(msg));
 socket.on('private message', msg => appendMessage(msg));
+
+// Admin Events
+socket.on('admin:history_cleared', msg => {
+    messagesDiv.innerHTML = ''; // Physical UI clear
+    appendMessage(msg); // Add the system message that history was cleared
+});
 
 // System Alerts
 socket.on('system_error', msg => appendMessage({ username: 'System', content: `ERROR: ${msg}`, timestamp: new Date() }));
