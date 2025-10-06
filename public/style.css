@@ -47,6 +47,7 @@ body {
     color: #f0f0f0;
     border: 1px solid #555;
     border-radius: 4px;
+    height: 40px;
     width: 120px;
     flex-shrink: 0;
 }
@@ -320,6 +321,7 @@ body {
     cursor: text;
     pointer-events: none;
 }
+
 
 
 
