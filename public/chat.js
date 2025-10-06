@@ -39,7 +39,7 @@ function addMessage(username, content, timestamp, isSystem = false, isAdmin = fa
     const msgEl = document.createElement("div");
     msgEl.classList.add("msg");
 
-    const isOwn = username === currentUser.displayName || (currentUser.isAdmin && username === currentUser.name);
+    const isOwn = username === currentUser.displayName || username === currentUser.name;
 
     if (isOwn) {
         msgEl.classList.add("own");
@@ -73,7 +73,7 @@ function addMessage(username, content, timestamp, isSystem = false, isAdmin = fa
 
     messagesContainer.appendChild(msgEl);
 
-    // Call the auto-scroll function after adding the message
+    // Auto-scroll after DOM changes
     scrollToBottom();
 }
 
@@ -84,7 +84,7 @@ function addPlainText(content, timestamp) {
     plainEl.textContent = content;
     messagesContainer.appendChild(plainEl);
 
-    // Call the auto-scroll function after adding the message
+    // Auto-scroll after DOM changes
     scrollToBottom();
 }
 
@@ -94,25 +94,16 @@ messageForm.addEventListener('submit', (e) => {
     sendMessage();
 });
 
-// Function to handle auto-scrolling
+// Function to handle auto-scrolling (use requestAnimationFrame to ensure layout updated)
 function scrollToBottom() {
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    requestAnimationFrame(() => {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
 }
 
-// Handle key presses for sending messages and DM menu navigation
-messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        if (dmUserMenu.style.display === 'flex' && dmMenuHighlightedIndex !== -1) {
-            const buttons = dmUserMenu.querySelectorAll('button');
-            buttons[dmMenuHighlightedIndex].click();
-        } else {
-            sendMessage();
-        }
-    }
-});
-
+// Use keydown for Enter handling (more reliable than keypress)
 messageInput.addEventListener('keydown', (e) => {
+    // DM menu navigation handling
     if (dmUserMenu.style.display === 'flex') {
         const buttons = dmUserMenu.querySelectorAll('button');
         if (buttons.length > 0) {
@@ -120,16 +111,30 @@ messageInput.addEventListener('keydown', (e) => {
                 e.preventDefault();
                 dmMenuHighlightedIndex = (dmMenuHighlightedIndex + 1) % buttons.length;
                 updateDmMenuHighlight();
+                return;
             } else if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 dmMenuHighlightedIndex = (dmMenuHighlightedIndex - 1 + buttons.length) % buttons.length;
                 updateDmMenuHighlight();
+                return;
             } else if (e.key === 'Tab') {
                 e.preventDefault();
                 if (dmMenuHighlightedIndex !== -1) {
                     buttons[dmMenuHighlightedIndex].click();
                 }
+                return;
             }
+        }
+    }
+
+    // Enter to send (allow Shift+Enter for newline)
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (dmUserMenu.style.display === 'flex' && dmMenuHighlightedIndex !== -1) {
+            const buttons = dmUserMenu.querySelectorAll('button');
+            buttons[dmMenuHighlightedIndex].click();
+        } else {
+            sendMessage();
         }
     }
 });
@@ -270,18 +275,18 @@ function sendMessage() {
     if (text === "") return;
 
     if (text.startsWith("/msg ")) {
-        const commandParts = text.substring(5).match(/^(\S+)\s(.*)/s);
-
-        if (!commandParts || commandParts.length < 3) {
+        const rest = text.substring(5).trim();
+        const m = rest.match(/^(\S+)\s+([\s\S]+)$/);
+        if (!m) {
             addMessage("System Alert", "Invalid /msg command. Usage: /msg [username] [message]", new Date(), true);
             messageInput.textContent = "";
             return;
         }
+        const recipient = m[1];
+        const content = m[2];
 
-        const recipient = commandParts;
-        const content = commandParts;
-        
         const messageData = {
+            sender: currentUser.displayName,
             recipient: recipient,
             content: content,
             timestamp: new Date()
@@ -314,6 +319,8 @@ function autofillDMRecipient(username) {
         const newContent = `${prefix}${username} `;
         messageInput.textContent = newContent;
         setCursorToEnd(messageInput);
+        // Let input handlers pick up the change
+        messageInput.dispatchEvent(new Event('input', { bubbles: true }));
         hideDmUserMenu();
     }
 }
@@ -373,9 +380,9 @@ socket.on('chat message', (msg) => {
 });
 
 socket.on('private message', (msg) => {
-    const sender = msg.sender || msg.username;
+    const sender = msg.sender || msg.username || msg.from;
     const content = msg.content;
-    const isOwn = sender === currentUser.displayName;
+    const isOwn = sender === currentUser.displayName || sender === currentUser.name;
 
     addMessage(sender, content, msg.timestamp, false, false, true);
 });
@@ -387,7 +394,7 @@ socket.on('staff message', (msg) => {
 socket.on('chat history', (history) => {
     messagesContainer.innerHTML = '';
     history.forEach(msg => {
-        if (msg.isAdmin && msg.content.includes("Staff member")) {
+        if (msg.isAdmin && msg.content && msg.content.includes("Staff member")) {
             // For staff join/leave messages
             addPlainText(msg.content, msg.timestamp);
         } else if (msg.isAdmin) {
@@ -405,7 +412,8 @@ socket.on('chat history', (history) => {
 
 socket.on('user count', (data) => {
     userCountDisplay.textContent = `${data.count} Users Online`;
-    onlineUsers = data.userList;
+    // normalize to strings to ensure comparisons work
+    onlineUsers = Array.isArray(data.userList) ? data.userList.map(n => String(n)) : [];
 });
 
 socket.on('system_error', (message) => {
