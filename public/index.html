@@ -1,102 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Socket.IO Chat</title>
-<link rel="stylesheet" href="style.css">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Chat</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="container">
-    <div id="user-info">
-        <h2>Chat Info</h2>
-        <p>Welcome, <span id="display-name">Guest</span>!</p>
-        <p>Users Online: <span id="userCountDisplay">0</span></p>
-        <div id="user-list-container">
-            <h4>Online Users:</h4>
-            <ul id="user-list"></ul>
+    <div class="chat-container">
+        <div class="header-area">
+            <span id="userCountDisplay">0 Users Online</span>
+            <div class="right-header">
+                <input id="usernameInput" type="text" placeholder="Enter your name" />
+                <button id="joinBtn">Join Chat</button>
+                <button id="clearChatBtn" style="display:none;">Clear Chat</button>
+                <button id="adminPanelBtn" style="display:none;">Admin Control Panel</button>
+            </div>
         </div>
-        <p class="commands">**Commands:**</p>
-        <p class="commands">`/msg [user] [message]`</p>
-        <p class="commands">`/clear` (Mod only)</p>
 
-        <input id="usernameInput" placeholder="Enter your name" />
-        <button id="joinBtn">Join Chat</button>
-        <button id="clearChatBtn" style="display:none;">Clear Chat</button>
-        <button id="adminPanelBtn" style="display:none;">Admin Control Panel</button>
-    </div>
+        <div class="messages-area">
+            <div id="messages"></div>
+        </div>
 
-    <div id="chat-area">
-        <ul id="messages"></ul>
         <form id="messageForm">
-            <div id="messageInput" contenteditable="true" class="custom-input" data-placeholder="Type a message or command..."></div>
+            <div class="input-container">
+                <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
+            </div>
             <button type="submit">Send</button>
         </form>
     </div>
-</div>
 
-<!-- DM Modal -->
-<div class="modal" id="dmModal">
-    <div class="modal-content">
-        <h5>Select a user to DM</h5>
-        <button id="dmCloseBtn" class="close-btn">X</button>
-        <div id="dmUserList" class="modal-list"></div>
+    <!-- DM Modal -->
+    <div id="dmModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span id="dmModalClose" class="close-btn">&times;</span>
+            <h3>Select a user to DM</h3>
+            <div id="dmUserList" class="dm-user-list"></div>
+        </div>
     </div>
-</div>
 
-<!-- Name Error Modal -->
-<div class="modal" id="nameErrorModal">
-    <div class="modal-content">
-        <h5>Invalid Name</h5>
-        <p id="nameErrorText"></p>
-        <button id="nameErrorClose">Close</button>
-    </div>
-</div>
-
-<!-- Admin Panel Modal -->
-<div class="modal" id="adminModal">
-    <div class="modal-content">
-        <h5>Admin Panel</h5>
-        <button id="adminCloseBtn" class="close-btn">X</button>
-
-        <div>
-            <h6>Online Users</h6>
-            <div id="adminUserList" class="modal-list"></div>
-        </div>
-        <div>
-            <h6>Banned Usernames</h6>
-            <div id="bannedUserList" class="modal-list"></div>
-        </div>
-        <div>
-            <h6>Banned IPs</h6>
-            <div id="bannedIpList" class="modal-list"></div>
-        </div>
-
-        <div>
-            <input id="banUsernameInput" placeholder="Username to ban" />
-            <button id="banUsernameBtn">Ban User</button>
-            <input id="unbanUsernameInput" placeholder="Username to unban" />
-            <button id="unbanUsernameBtn">Unban User</button>
-        </div>
-        <div>
-            <input id="banIpInput" placeholder="IP to ban" />
-            <button id="banIpBtn">Ban IP</button>
-            <input id="unbanIpInput" placeholder="IP to unban" />
-            <button id="unbanIpBtn">Unban IP</button>
-        </div>
-        <div>
-            <input id="forceDisconnectInput" placeholder="Username to disconnect" />
-            <button id="forceDisconnectBtn">Disconnect User</button>
-        </div>
-        <div>
+    <!-- Admin Panel Modal -->
+    <div id="adminModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span id="adminModalClose" class="close-btn">&times;</span>
+            <h3>Admin Control Panel</h3>
             <button id="adminClearHistoryBtn">Clear Chat History</button>
+            <button id="adminBanUserBtn">Ban User</button>
+            <button id="adminHWBanBtn">Hardware Ban User</button>
+            <!-- Add more admin buttons here -->
         </div>
     </div>
-</div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="chat.js"></script>
+    <!-- Username/Reserved Name Modal -->
+    <div id="usernameModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <h3>Cannot use that name</h3>
+            <p id="usernameModalText">This username is reserved or already in use.</p>
+            <button id="usernameModalClose">OK</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="chat.js"></script>
 </body>
 </html>
