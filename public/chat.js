@@ -1,376 +1,182 @@
 const socket = io();
-const messagesContainer = document.getElementById("messages");
-const usernameInput = document.getElementById("usernameInput");
-const staffControlsDiv = document.getElementById("staffControls");
-const messageInput = document.getElementById("messageInput");
-const userCountDisplay = document.getElementById("userCountDisplay");
-const nameControlButton = document.getElementById("nameControlButton");
-const dmUserMenu = document.getElementById("dmUserMenu");
-const messageFormButton = document.querySelector('#messageForm button');
-const staffNameModal = document.getElementById("staffNameModal");
-const staffNameModalMessage = document.getElementById("staffNameModalMessage");
-const messageForm = document.getElementById('messageForm');
+const form = document.getElementById('form');
+const input = document.getElementById('input');
+const messages = document.getElementById('messages');
+const nameForm = document.getElementById('name-form');
+const nameInput = document.getElementById('name-input');
+const nameModal = new bootstrap.Modal(document.getElementById('nameModal'), { backdrop: 'static', keyboard: false });
+const userListElement = document.getElementById('user-list');
 
-let currentUser = {
-  name: null,         // secure/internal name (if used)
-  displayName: null,  // visible display name
-  isAdmin: false
-};
+let displayName = '';
+let secureName = '';
+let isAdmin = false;
 
-let isNameSet = false;
-let onlineUsers = [];
-let dmMenuHighlightedIndex = -1;
+// --- DOM Manipulation Functions ---
 
-// --- Utilities ---
-function getCursorPosition(element) {
-  const selection = window.getSelection();
-  if (selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0);
-    const preCaretRange = range.cloneRange();
-    preCaretRange.selectNodeContents(element);
-    preCaretRange.setEnd(range.startContainer, range.startOffset);
-    return preCaretRange.toString().length;
-  }
-  return 0;
-}
-
-function setCursorToEnd(element) {
-  const range = document.createRange();
-  const sel = window.getSelection();
-  range.selectNodeContents(element);
-  range.collapse(false);
-  sel.removeAllRanges();
-  sel.addRange(range);
-  element.focus();
-}
-
-function scrollToBottom() {
-  requestAnimationFrame(() => {
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  });
-}
-
-// --- UI adders ---
-function addMessage(username, content, timestamp, isSystem = false, isAdmin = false, isPrivate = false) {
-  const msgEl = document.createElement("div");
-  msgEl.classList.add("msg");
-
-  const isOwn = username === currentUser.displayName || username === currentUser.name;
-  msgEl.classList.add(isOwn ? "own" : "other");
-
-  if (isSystem) {
-    msgEl.classList.add("system-msg");
-    if (isAdmin) msgEl.classList.add("admin-system-msg");
-  } else if (isAdmin) {
-    msgEl.classList.add("admin-msg");
-  }
-
-  // CRITICAL: Ensure the private class is applied
-  if (isPrivate) msgEl.classList.add("private");
-
-  if (username && !isSystem) {
-    const headerEl = document.createElement("div");
-    headerEl.classList.add("msg-header");
-    // CRITICAL: Ensure the (Private) text is added
-    headerEl.textContent = isPrivate ? `(Private) ${username}` : username; 
-    msgEl.appendChild(headerEl);
-  }
-
-  const contentEl = document.createElement("div");
-  contentEl.textContent = content;
-  msgEl.appendChild(contentEl);
-
-  messagesContainer.appendChild(msgEl);
-  scrollToBottom();
-}
-
-function addPlainText(content, timestamp) {
-  const plainEl = document.createElement("div");
-  plainEl.classList.add("chat-plain");
-  plainEl.textContent = content;
-  messagesContainer.appendChild(plainEl);
-  scrollToBottom();
-}
-
-// --- Name handling ---
-function handleNameAction() {
-  const newName = usernameInput.value.trim();
-  if (!newName) {
-    addMessage("System Alert", "Please enter a username.", new Date(), true);
-    return;
-  }
-
-  if (!isNameSet) {
-    currentUser.name = newName;
-    socket.emit("check_staff_status", newName);
-  } else {
-    if (newName === currentUser.displayName) {
-      addMessage("System Alert", "Your new name must be different from your current display name.", new Date(), true);
-      return;
-    }
-    socket.emit("name_change_request", { oldName: currentUser.name, newName });
-  }
-}
-
-// --- DM menu highlight ---
-function updateDmMenuHighlight() {
-  const buttons = dmUserMenu.querySelectorAll('button');
-  buttons.forEach((btn, idx) => btn.classList.toggle('highlighted', idx === dmMenuHighlightedIndex));
-}
-
-function showDmUserMenu(searchTerm = "") {
-  dmUserMenu.innerHTML = "";
-  dmMenuHighlightedIndex = -1;
-  const filtered = onlineUsers
-    .filter(n => n && n.toLowerCase().includes(searchTerm.toLowerCase()) && n !== currentUser.displayName)
-    .sort((a,b)=>a.localeCompare(b))
-    .slice(0,3);
-
-  filtered.forEach(user => {
-    const btn = document.createElement('button');
-    btn.textContent = user;
-    btn.onclick = (e) => { e.preventDefault(); autofillDMRecipient(user); };
-    dmUserMenu.appendChild(btn);
-  });
-
-  dmUserMenu.style.display = filtered.length ? 'flex' : 'none';
-}
-
-function hideDmUserMenu() {
-  dmUserMenu.style.display = 'none';
-}
-
-// Autocomplete insertion: ensures exact displayName, caret at end, triggers input
-function autofillDMRecipient(username) {
-  const currentContent = messageInput.textContent;
-  const msgIndex = currentContent.lastIndexOf("/msg");
-  if (msgIndex !== -1) {
-    const prefix = currentContent.substring(0, msgIndex + 5); // includes "/msg "
-    const newContent = `${prefix}${username} `;
-    messageInput.textContent = newContent;
-    setCursorToEnd(messageInput);
-    messageInput.dispatchEvent(new Event('input', { bubbles: true }));
-    hideDmUserMenu();
-  }
-}
-
-// --- Message sending (fixed /msg parsing) ---
-function sendMessage() {
-  const text = messageInput.textContent.trim();
-  if (!isNameSet) {
-    addMessage("System Alert", "Please enter and set your username first.", new Date(), true);
-    return;
-  }
-  if (!text) return;
-
-  if (text.startsWith("/msg ")) {
-    const rest = text.substring(5).trim();
-    const m = rest.match(/^(\S+)\s+([\s\S]+)$/);
-    if (!m) {
-      addMessage("System Alert", "Invalid /msg command. Usage: /msg [username] [message]", new Date(), true);
-      messageInput.textContent = "";
-      return;
-    }
-    const recipient = m[1];
-    const content = m[2];
-
-    const messageData = {
-      sender: currentUser.displayName,
-      recipient,
-      content,
-      timestamp: new Date()
-    };
+// Renders a standard public message
+function appendMessage(msg) {
+    const item = document.createElement('li');
+    const timestamp = new Date(msg.timestamp).toLocaleTimeString();
     
-    // DEBUG: Log the emission of the private message
-    console.log(`[DM DEBUG] Sending private message to ${recipient}: ${content}`);
-    socket.emit("private message", messageData);
+    let usernameHtml = `<span class="username">${msg.username}</span>`;
     
-    // CRITICAL: Display the message on the SENDER's screen as private
-    addMessage(currentUser.displayName, content, new Date(), false, false, true);
+    // Add special styling for System and Admin messages
+    if (msg.isAdmin) {
+        item.classList.add('system-message');
+        usernameHtml = `<span class="username-admin">${msg.username}</span>`;
+    }
 
-  } else {
-    const messageData = {
-      username: currentUser.displayName,
-      content: text,
-      timestamp: new Date()
-    };
-    socket.emit("chat message", messageData);
-  }
-
-  messageInput.textContent = "";
-  messageInput.focus();
+    item.innerHTML = `
+        <div class="message-header">
+            ${usernameHtml}
+            <span class="timestamp">${timestamp}</span>
+        </div>
+        <div class="message-content">${msg.content}</div>
+    `;
+    
+    messages.appendChild(item);
+    window.scrollTo(0, document.body.scrollHeight);
 }
 
-// --- Input handlers: use keydown for reliability ---
-messageInput.addEventListener('keydown', (e) => {
-  // DM menu navigation
-  if (dmUserMenu.style.display === 'flex') {
-    const buttons = dmUserMenu.querySelectorAll('button');
-    if (buttons.length > 0) {
-      if (e.key === 'ArrowDown') { e.preventDefault(); dmMenuHighlightedIndex = (dmMenuHighlightedIndex + 1) % buttons.length; updateDmMenuHighlight(); return; }
-      if (e.key === 'ArrowUp')   { e.preventDefault(); dmMenuHighlightedIndex = (dmMenuHighlightedIndex - 1 + buttons.length) % buttons.length; updateDmMenuHighlight(); return; }
-      if (e.key === 'Tab')       { e.preventDefault(); if (dmMenuHighlightedIndex !== -1) buttons[dmMenuHighlightedIndex].click(); return; }
-    }
-  }
+// NEW: Renders a private message
+function appendPrivateMessage(msg) {
+    const item = document.createElement('li');
+    const sender = msg.sender || 'Unknown';
+    const content = msg.content;
+    const timestamp = new Date(msg.timestamp).toLocaleTimeString();
+    const isSender = (sender.toLowerCase() === displayName.toLowerCase());
 
-  // Enter to send (Shift+Enter for newline)
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    if (dmUserMenu.style.display === 'flex' && dmMenuHighlightedIndex !== -1) {
-      const buttons = dmUserMenu.querySelectorAll('button');
-      buttons[dmMenuHighlightedIndex].click();
+    // Determine the class for styling (used by style.css)
+    let cssClass = 'private-message';
+    if (isSender) {
+        cssClass += ' private-message-self';
     } else {
-      sendMessage();
+        cssClass += ' private-message-other';
     }
-  }
+    
+    // Determine the display name and recipient indicator
+    let nameDisplay;
+    if (isSender) {
+        // When sending: Show "You -> [Recipient]"
+        nameDisplay = `<span class="username">You</span> <span class="private-to">-> ${msg.recipient}</span>`;
+    } else {
+        // When receiving: Show "[Sender] -> You"
+        nameDisplay = `<span class="username">${sender}</span> <span class="private-to">-> You</span>`;
+    }
+    
+    item.classList.add(cssClass);
+
+    item.innerHTML = `
+        <div class="message-header">
+            ${nameDisplay}
+            <span class="private-indicator">(Private)</span>
+        </div>
+        <div class="message-content">${content}</div>
+        <span class="timestamp">${timestamp}</span>
+    `;
+
+    messages.appendChild(item);
+    window.scrollTo(0, document.body.scrollHeight);
+}
+
+// --- Event Handlers ---
+
+// Username submission handler
+nameForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = nameInput.value.trim();
+    if (name) {
+        socket.emit('check_staff_status', name);
+    }
 });
 
-messageInput.addEventListener('input', () => {
-  // show/hide DM menu based on cursor position after "/msg "
-  const text = messageInput.textContent;
-  const cursorPos = getCursorPosition(messageInput);
-  const before = text.substring(0, cursorPos);
-  const idx = before.lastIndexOf("/msg");
-  if (idx !== -1 && before.length >= idx + 5) {
-    const searchTerm = before.substring(idx + 5);
-    showDmUserMenu(searchTerm);
-  } else {
-    hideDmUserMenu();
-  }
+// Chat message submission handler (includes command parsing)
+form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message || !displayName) return;
+
+    if (message.startsWith('/msg ')) {
+        // Parse /msg [name] [message]
+        const parts = message.substring(5).trim().split(/\s+/);
+        const recipient = parts.shift();
+        const content = parts.join(' ');
+
+        if (recipient && content) {
+            socket.emit('private message', { recipient: recipient, content: content });
+            input.value = '';
+            return; // Exit as DM is handled
+        } else {
+            appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg [username] [message]', timestamp: new Date(), isAdmin: true });
+        }
+    } else if (message.startsWith('/clear')) {
+        if (isAdmin) {
+            socket.emit('admin:clear_history', { username: secureName });
+        } else {
+            appendMessage({ username: 'System', content: 'You do not have permission to use the /clear command.', timestamp: new Date(), isAdmin: true });
+        }
+    } else {
+        // Send a regular chat message
+        socket.emit('chat message', { username: secureName || displayName, content: message });
+    }
+
+    input.value = '';
 });
 
-// --- Socket listeners ---
-socket.on('name_accepted', (displayName) => {
-  currentUser.isAdmin = false;
-  currentUser.displayName = displayName;
-  currentUser.name = displayName;
-  isNameSet = true;
-  staffControlsDiv.style.display = 'none';
-  addPlainText(`${displayName} has joined the chat.`, new Date());
-  usernameInput.disabled = false;
-  nameControlButton.textContent = "Change Name";
-  messageInput.contentEditable = true;
-  messageFormButton.disabled = false;
-  messageInput.focus();
-  // Explicit register to ensure server map is in sync (optional; server already records on check_staff_status)
-  socket.emit('register', currentUser.displayName);
+// --- Socket Listeners ---
+
+socket.on('name_accepted', (name) => {
+    displayName = name;
+    secureName = name;
+    isAdmin = false;
+    document.getElementById('display-name').textContent = displayName;
+    nameModal.hide();
 });
 
-socket.on("staff_status_update", (data) => {
-  if (data.secureName === currentUser.name || data.displayName === currentUser.name) {
-    currentUser.isAdmin = true;
-    currentUser.displayName = data.displayName;
-    isNameSet = true;
-    staffControlsDiv.style.display = 'inline-block';
-    addMessage("System", `${data.displayName} has logged in.`, new Date(), true, true);
-    usernameInput.disabled = false;
-    usernameInput.value = data.displayName;
-    nameControlButton.textContent = "Change Name";
-    messageInput.contentEditable = true;
-    messageFormButton.disabled = false;
-    messageInput.focus();
-    socket.emit('register', currentUser.displayName);
-  }
+socket.on('staff_status_update', (data) => {
+    displayName = data.displayName;
+    secureName = data.secureName;
+    isAdmin = data.isAdmin;
+    document.getElementById('display-name').textContent = `${displayName} (MOD)`;
+    nameModal.hide();
 });
 
-socket.on('name_rejected', (reason) => {
-  showStaffNameModal(reason);
-  usernameInput.value = currentUser.displayName || '';
-  if (!isNameSet) {
-    currentUser.name = null;
-    currentUser.isAdmin = false;
-    currentUser.displayName = null;
-    messageInput.contentEditable = false;
-    messageFormButton.disabled = true;
-  }
-  staffControlsDiv.style.display = 'none';
+socket.on('name_rejected', (msg) => {
+    alert('Name Rejected: ' + msg);
 });
 
-socket.on('name_change_success', (data) => {
-  const oldName = data.oldDisplayName;
-  const newName = data.newDisplayName;
-  currentUser.name = data.newSecureName || newName;
-  currentUser.displayName = newName;
-  usernameInput.value = newName;
+socket.on('chat message', appendMessage);
 
-  if (!currentUser.isAdmin) {
-    addPlainText(`${oldName} is now known as ${newName}.`, data.timestamp);
-  } else {
-    addMessage("System", `${oldName} changed display name to ${newName}.`, data.timestamp, true, true);
-  }
-  addMessage("System Alert", `Name successfully changed to ${newName}!`, new Date(), true);
-  // update server mapping (optional)
-  socket.emit('register', currentUser.displayName);
+socket.on('private message', appendPrivateMessage); // NEW handler for private messages
+
+socket.on('system_error', (msg) => {
+    appendMessage({ username: 'System', content: `Error: ${msg}`, timestamp: new Date(), isAdmin: true });
 });
 
-socket.on('name_change_failed', (reason) => {
-  addMessage("System Alert", reason, new Date(), true);
-  usernameInput.value = currentUser.displayName;
-});
-
-// --- MESSAGE LISTENERS ---
-socket.on('chat message', (msg) => {
-  // DEBUG: Log public message reception
-  console.log(`[PUBLIC MESSAGE] Received: ${msg.username}: ${msg.content}`); 
-  addMessage(msg.username, msg.content, msg.timestamp, false, msg.isAdmin, false);
-});
-
-socket.on('private message', (msg) => {
-  const sender = msg.sender || msg.username || msg.from;
-  const content = msg.content;
-  // DEBUG: Log private message reception
-  console.warn(`[PRIVATE MESSAGE] Received from ${sender} (Target: ${msg.recipient || 'N/A'}): ${content}`); 
-  // CRITICAL: Call addMessage with isPrivate=true
-  addMessage(sender, content, msg.timestamp || new Date(), false, false, true);
-});
-
-// NEW LISTENER for server-side delivery confirmations/errors
-socket.on('system_alert', (message) => {
-  addMessage("System Alert", message, new Date(), true);
-});
-// --- END MESSAGE LISTENERS ---
-
-socket.on('staff message', (msg) => {
-  addMessage(msg.username, msg.content, msg.timestamp, true, msg.isAdmin, false);
+socket.on('system_alert', (msg) => {
+    appendMessage({ username: 'System', content: `Alert: ${msg}`, timestamp: new Date(), isAdmin: true });
 });
 
 socket.on('chat history', (history) => {
-  messagesContainer.innerHTML = '';
-  history.forEach(msg => {
-    if (msg.isAdmin && msg.content && msg.content.includes("Staff member")) {
-      addPlainText(msg.content, msg.timestamp);
-    } else if (msg.isAdmin) {
-      addMessage(msg.username, msg.content, msg.timestamp, true, true, false);
-    } else if (msg.username === "System") {
-      addPlainText(msg.content, msg.timestamp);
-    } else {
-      addMessage(msg.username, msg.content, msg.timestamp, false, false, false);
-    }
-  });
+    messages.innerHTML = ''; // Clear existing messages
+    history.forEach(appendMessage);
 });
 
 socket.on('user count', (data) => {
-  userCountDisplay.textContent = `${data.count} Users Online`;
-  onlineUsers = Array.isArray(data.userList) ? data.userList.map(n => String(n)) : [];
+    document.getElementById('user-count').textContent = data.count;
+    
+    userListElement.innerHTML = '';
+    data.userList.forEach(user => {
+        const li = document.createElement('li');
+        li.textContent = user;
+        if (user.toLowerCase() === displayName.toLowerCase()) {
+            li.classList.add('user-self');
+        }
+        userListElement.appendChild(li);
+    });
 });
 
-socket.on('system_error', (message) => {
-  addMessage("System Error", message, new Date(), true);
+// Show name modal on load
+document.addEventListener('DOMContentLoaded', () => {
+    nameModal.show();
 });
-
-// --- Modals and admin actions ---
-function showAdminModal() {
-  if (!currentUser.isAdmin) { addMessage("System Alert", "You must be staff to clear the chat.", new Date(), true); return; }
-  document.getElementById("adminModal").style.display = 'flex';
-}
-function hideAdminModal() { document.getElementById("adminModal").style.display = 'none'; }
-function showStaffNameModal(message) { staffNameModalMessage.textContent = message; staffNameModal.style.display = 'flex'; }
-function hideStaffNameModal() { staffNameModal.style.display = 'none'; }
-function confirmClear() {
-  hideAdminModal();
-  socket.emit("admin:clear_history", { username: currentUser.name, timestamp: new Date() });
-}
-
-// --- Form hookup & init ---
-messageForm.addEventListener('submit', (e) => { e.preventDefault(); sendMessage(); });
-document.addEventListener('DOMContentLoaded', () => { messageInput.contentEditable = false; messageFormButton.disabled = true; });
