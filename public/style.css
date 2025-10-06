@@ -1,38 +1,29 @@
-/* =======================
-   BASIC RESET
-======================= */
+/* Basic Reset */
 body {
   margin: 0;
-  padding: 0;
   font-family: Arial, sans-serif;
-  background-color: #000; /* Full black background */
+  background-color: #000;
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  overflow: hidden;
+  color: #f0f0f0;
 }
 
-/* =======================
-   CHAT CONTAINER
-======================= */
+/* Chat Container */
 .chat-container {
   width: 100%;
   max-width: 600px;
   height: 90vh;
   background: #1e1e1e;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   display: flex;
   flex-direction: column;
   border-radius: 8px;
   overflow: hidden;
-  color: #f0f0f0;
-  position: relative;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
 
-/* =======================
-   HEADER
-======================= */
+/* Header */
 .header-area {
   padding: 10px;
   background-color: #2c2c2c;
@@ -40,13 +31,12 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
 }
 
 .right-header {
   display: flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
 }
 
 #usernameInput {
@@ -55,18 +45,16 @@ body {
   color: #f0f0f0;
   border: 1px solid #555;
   border-radius: 4px;
-  width: 120px;
-  flex-shrink: 0;
+  width: 140px;
 }
 
 .header-area button {
   padding: 8px 15px;
   background-color: #585858;
-  color: white;
   border: none;
   border-radius: 20px;
+  color: white;
   cursor: pointer;
-  transition: background-color 0.3s;
 }
 
 .header-area button:hover {
@@ -81,9 +69,7 @@ body {
   background-color: #6d0600;
 }
 
-/* =======================
-   MESSAGES
-======================= */
+/* Messages Area */
 .messages-area {
   flex-grow: 1;
   overflow-y: auto;
@@ -93,84 +79,56 @@ body {
 #messages {
   display: flex;
   flex-direction: column;
-  list-style: none;
-  padding: 0;
-  margin: 0;
+  gap: 5px;
 }
 
 .msg {
-  margin-bottom: 10px;
-  max-width: 80%;
   padding: 8px 12px;
-  word-wrap: break-word;
+  max-width: 80%;
   border-radius: 10px;
   border: 1px solid transparent;
+  word-wrap: break-word;
+}
+
+.msg.own {
+  align-self: flex-end;
+  background-color: #4a4a4a;
+}
+
+.msg.other {
+  align-self: flex-start;
+  background-color: #2c2c2c;
 }
 
 .msg-header {
-  font-size: 0.8em;
-  margin-bottom: 3px;
   font-weight: bold;
-  color: #b0b0b0;
+  font-size: 0.85em;
+  margin-bottom: 4px;
 }
 
-.other {
-  align-self: flex-start;
-  background-color: #2c2c2c;
-  border-bottom-left-radius: 2px;
+.message-content {
+  white-space: pre-wrap;
 }
 
-.own {
-  align-self: flex-end;
-  background-color: #4a4a4a;
-  color: white;
-  border-bottom-right-radius: 2px;
+.timestamp {
+  font-size: 0.7em;
+  color: #888;
+  margin-top: 4px;
+  text-align: right;
 }
 
-/* =======================
-   ADMIN & SYSTEM MESSAGES
-======================= */
-.admin-msg {
-  background-color: #FFD700;
-  border: 1px solid #FFD700;
-  color: #333;
-  box-shadow: 0 0 5px rgba(255, 215, 0, 0.4);
+.msg.private {
+  background-color: #2b353d;
+  border: 1px solid #465a66;
 }
 
-.admin-msg .msg-header {
-  color: #806200;
-}
-
-.own.admin-msg {
-  border-bottom-right-radius: 2px;
-  border-bottom-left-radius: 10px;
-}
-
-.other.admin-msg {
-  border-bottom-left-radius: 2px;
-  border-bottom-right-radius: 10px;
-}
-
-.system-msg,
-.admin-system-msg {
-  align-self: center;
-  background: none;
+.system-msg {
+  text-align: center;
   font-style: italic;
   color: #888;
-  text-align: center;
-  padding: 5px;
-  border-radius: 0;
-  margin: 5px 0;
 }
 
-.admin-system-msg {
-  color: #ff6347;
-  font-weight: bold;
-}
-
-/* =======================
-   MESSAGE FORM
-======================= */
+/* Input area */
 #messageForm {
   display: flex;
   padding: 10px;
@@ -181,8 +139,6 @@ body {
 .input-container {
   flex-grow: 1;
   display: flex;
-  width: 100%;
-  position: relative;
 }
 
 .custom-input {
@@ -193,158 +149,110 @@ body {
   border: 1px solid #555;
   border-radius: 4px;
   margin-right: 8px;
-  outline: none;
-  box-sizing: border-box;
   min-height: 40px;
-  resize: none;
-  overflow-y: auto;
+  outline: none;
+  cursor: text;
+}
+
+.custom-input[data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: #888;
+  pointer-events: none;
 }
 
 #messageForm button {
   padding: 10px 15px;
+  border-radius: 20px;
+  border: none;
   background-color: #585858;
   color: white;
-  border: none;
-  border-radius: 20px;
   cursor: pointer;
-  transition: background-color 0.3s;
 }
 
 #messageForm button:hover {
   background-color: #4a4a4a;
 }
 
-/* =======================
-   PRIVATE MESSAGES
-======================= */
-.msg.private {
-  background-color: #31332c;
-  border: 1px solid #5a6646;
-}
-
-.msg.own.private {
-  background-color: #2b353d;
-  border: 1px solid #465a66;
-}
-
-.msg.private .msg-header,
-.msg.own.private .msg-header {
-  color: #b9b9b9;
-}
-
-/* =======================
-   MODALS
-======================= */
+/* Modals */
 .modal {
   position: fixed;
-  z-index: 1000;
-  left: 0;
-  top: 0;
+  top: 0; left:0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0,0,0,0.7);
   display: flex;
   justify-content: center;
   align-items: center;
   backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  z-index: 1000;
 }
 
 .modal-content {
   background-color: #2c2c2c;
-  padding: 25px 30px;
-  border: 1px solid #444;
-  width: 80%;
-  max-width: 400px;
   border-radius: 8px;
+  padding: 20px;
   text-align: center;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  color: white;
+  width: 90%;
+  max-width: 400px;
   position: relative;
-}
-
-.modal-content p {
-  margin-top: 0;
-  margin-bottom: 20px;
-  font-size: 1.1em;
   color: white;
 }
 
-/* Close (X) button */
-.modal-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: transparent;
-  color: white;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
+.modal-content p, .modal-content h3 {
+  margin: 10px 0;
 }
 
-/* Buttons inside modals */
 .modal-content button {
-  padding: 10px 20px;
-  color: white;
-  border: none;
+  padding: 8px 15px;
+  margin-top: 10px;
   border-radius: 20px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  margin: 5px;
-}
-
-.modal-content button:nth-child(2) {
-  background-color: #8d0801;
-}
-.modal-content button:nth-child(2):hover {
-  background-color: #6d0600;
-}
-
-#staffNameModal .modal-content button {
+  border: none;
   background-color: #585858;
+  color: white;
+  cursor: pointer;
 }
-#staffNameModal .modal-content button:hover {
+
+.modal-content button:hover {
   background-color: #4a4a4a;
 }
 
-/* =======================
-   DM USER LIST MODAL
-======================= */
-#dmUserModal .modal-content {
-  max-height: 60vh;
+.close-modal {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  color: white;
+  cursor: pointer;
+}
+
+.dm-user-list {
+  max-height: 200px;
   overflow-y: auto;
   text-align: left;
 }
 
-.dm-user-item {
-  background-color: #383838;
+.dm-user-list button {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
   color: white;
-  padding: 10px;
-  margin: 5px 0;
-  border-radius: 6px;
+  padding: 6px 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  border-radius: 6px;
+  text-align: left;
 }
 
-.dm-user-item:hover {
-  background-color: #4a4a4a;
+.dm-user-list button:hover {
+  background-color: #555;
 }
 
-/* =======================
-   PLACEHOLDER & DM TAG
-======================= */
-.custom-input[data-placeholder]:empty::before {
-  content: attr(data-placeholder);
-  color: #888;
-  cursor: text;
-  pointer-events: none;
-}
-
-.dm-tag {
-  background-color: rgba(0, 120, 255, 0.3);
-  border-radius: 5px;
-  padding: 3px 6px;
-  margin-right: 5px;
-  color: #add8ff;
-  display: inline-block;
+/* Highlight tag for DM target */
+.dm-highlight {
+  background-color: rgba(0, 123, 255, 0.3);
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin-right: 2px;
 }
