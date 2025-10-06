@@ -1,52 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Socket.IO Chat</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Socket.IO Chat</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div class="chat-container">
-  <div class="header-area">
-    <span id="userCountDisplay">0 Users Online</span>
-    <div class="right-header">
-      <input id="usernameInput" type="text" placeholder="Enter your name">
-      <button id="joinBtn">Join Chat</button>
-      <button id="clearChatBtn" style="display:none;">Clear Chat</button>
+  <div class="chat-container">
+    <div class="header-area">
+      <span id="userCountDisplay">0 Users Online</span>
+      <div class="right-header">
+        <input id="usernameInput" type="text" placeholder="Enter your name" />
+        <button id="joinBtn">Join Chat</button>
+        <button id="clearChatBtn" style="display:none;">Clear Chat</button>
+      </div>
+    </div>
+
+    <div class="messages-area">
+      <div id="messages"></div>
+    </div>
+
+    <form id="messageForm">
+      <div class="input-container">
+        <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
+      </div>
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <!-- Generic modal for warnings/errors -->
+  <div id="genericModal" class="modal" style="display:none">
+    <div class="modal-content">
+      <button id="closeGenericModal" class="close-btn">X</button>
+      <p id="genericModalText"></p>
     </div>
   </div>
 
-  <div class="messages-area">
-    <div id="messages"></div>
-  </div>
-
-  <form id="messageForm">
-    <div class="input-container">
-      <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
+  <!-- DM selection modal -->
+  <div id="dmModal" class="modal" style="display:none">
+    <div class="modal-content">
+      <button id="closeDmModal" class="close-btn">X</button>
+      <h3>Select user to DM</h3>
+      <div id="dmUserList" class="dm-user-menu"></div>
     </div>
-    <button type="submit">Send</button>
-  </form>
-</div>
-
-<!-- Generic modal for warnings -->
-<div id="genericModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <button id="closeGenericModal" class="close-btn">X</button>
-    <p id="genericModalText"></p>
   </div>
-</div>
 
-<!-- DM selection modal -->
-<div id="dmModal" class="modal" style="display:none;">
-  <div class="modal-content">
-    <button id="closeDmModal" class="close-btn">X</button>
-    <h3>Select a user to DM</h3>
-    <div id="dmUserList" class="dm-user-menu"></div>
-  </div>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="chat.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="chat.js"></script>
 </body>
 </html>
