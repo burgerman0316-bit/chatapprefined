@@ -1,8 +1,10 @@
 /* Basic Reset */
-body {
+body, html {
     margin: 0;
+    padding: 0;
     font-family: Arial, sans-serif;
-    background-color: #212121;
+    background-color: #000 !important; /* Black background */
+    color: #f0f0f0;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -14,23 +16,23 @@ body {
     width: 100%;
     max-width: 600px;
     height: 90vh;
-    background: #1e1e1e;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    background-color: #000 !important;
+    color: #f0f0f0;
     display: flex;
     flex-direction: column;
     border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     overflow: hidden;
-    color: #f0f0f0;
     position: relative;
 }
 
-/* Header/Controls Area */
+/* Header */
 .header-area {
     padding: 10px;
-    background-color: #2c2c2c;
+    background-color: #1a1a1a;
     border-bottom: 1px solid #444;
     display: flex;
-    justify-content: space-between; /* pushes left and right sides apart */
+    justify-content: space-between; /* left/right alignment */
     align-items: center;
     flex-wrap: wrap;
 }
@@ -43,36 +45,37 @@ body {
 
 #usernameInput {
     padding: 8px;
-    background-color: #383838;
-    color: #f0f0f0;
-    border: 1px solid #555;
+    background-color: #111 !important;
+    color: #f0f0f0 !important;
+    border: 1px solid #555 !important;
     border-radius: 4px;
-    width: 120px;
-    flex-shrink: 0;
+    width: 140px;
 }
 
+/* Header buttons */
 .header-area button {
     padding: 8px 15px;
-    background-color: #585858;
-    color: white;
-    border: none;
+    background-color: #222 !important;
+    color: #fff !important;
+    border: 1px solid #555 !important;
     border-radius: 20px;
     cursor: pointer;
     transition: background-color 0.3s;
 }
 
 .header-area button:hover {
-    background-color: #4a4a4a;
+    background-color: #333 !important;
 }
 
 #clearChatBtn {
-    background-color: #8d0801;
+    background-color: #8d0801 !important;
 }
 
 #clearChatBtn:hover {
-    background-color: #6d0600;
+    background-color: #6d0600 !important;
 }
 
+/* Messages */
 .messages-area {
     flex-grow: 1;
     overflow-y: auto;
@@ -87,6 +90,7 @@ body {
     margin: 0;
 }
 
+/* Chat bubbles */
 .msg {
     margin-bottom: 10px;
     max-width: 80%;
@@ -105,13 +109,13 @@ body {
 
 .other {
     align-self: flex-start;
-    background-color: #2c2c2c;
+    background-color: #1a1a1a;
     border-bottom-left-radius: 2px;
 }
 
 .own {
     align-self: flex-end;
-    background-color: #4a4a4a;
+    background-color: #222;
     color: white;
     border-bottom-right-radius: 2px;
 }
@@ -121,20 +125,6 @@ body {
     border: 1px solid #FFD700;
     color: #333;
     box-shadow: 0 0 5px rgba(255, 215, 0, 0.4);
-}
-
-.admin-msg .msg-header {
-    color: #806200;
-}
-
-.own.admin-msg {
-    border-bottom-right-radius: 2px;
-    border-bottom-left-radius: 10px;
-}
-
-.other.admin-msg {
-    border-bottom-left-radius: 2px;
-    border-bottom-right-radius: 10px;
 }
 
 .system-msg, .admin-system-msg {
@@ -153,10 +143,11 @@ body {
     font-weight: bold;
 }
 
+/* Input area */
 #messageForm {
     display: flex;
     padding: 10px;
-    background-color: #2c2c2c;
+    background-color: #1a1a1a;
     border-top: 1px solid #444;
 }
 
@@ -170,154 +161,47 @@ body {
 .custom-input {
     flex-grow: 1;
     padding: 10px;
-    background-color: #383838;
-    color: #f0f0f0;
-    border: 1px solid #555;
+    background-color: #111 !important;
+    color: #f0f0f0 !important;
+    border: 1px solid #555 !important;
     border-radius: 4px;
     margin-right: 8px;
     outline: none;
     cursor: text;
-    box-sizing: border-box;
     min-height: 40px;
 }
 
 #messageForm button {
     padding: 10px 15px;
-    background-color: #585858;
-    color: white;
-    border: none;
+    background-color: #222 !important;
+    color: #fff !important;
+    border: 1px solid #555 !important;
     border-radius: 20px;
     cursor: pointer;
 }
 
 #messageForm button:hover {
-    background-color: #4a4a4a;
+    background-color: #333 !important;
 }
 
-.chat-plain {
-  font-size: 0.9em;
-  color: #888;
-  text-align: center;
-  font-style: italic;
-  margin: 10px 0;
-}
-
-/* DM User Menu */
-.dm-user-menu {
-    position: absolute;
-    bottom: 45px;
-    background-color: #2c2c2c;
-    border: 1px solid #444;
-    border-radius: 8px;
-    max-height: 150px;
-    overflow-y: auto;
-    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    min-width: 150px;
-    padding: 5px;
-}
-
-.dm-user-menu button {
-    background-color: transparent;
-    border: none;
-    color: white;
-    text-align: left;
-    padding: 8px 12px;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: background-color 0.2s;
-    font-size: 14px;
-}
-
-.dm-user-menu button.highlighted, .dm-user-menu button:hover {
-    background-color: #555;
-}
-
-/* Style for private messages */
-.msg.private {
-    background-color: #31332c;
-    border: 1px solid #5a6646;
-}
-
-.msg.own.private {
-    background-color: #2b353d;
-    border: 1px solid #465a66;
-}
-
-.msg.private .msg-header, .msg.own.private .msg-header {
-    color: #b9b9b9;
-}
-
-/* Modal Styles */
-.modal {
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-}
-
+/* Bootstrap Modal Dark Override */
 .modal-content {
-    background-color: #2c2c2c;
-    padding: 25px 30px;
-    border: 1px solid #444;
-    width: 80%;
-    max-width: 400px;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    color: white;
+    background-color: #111 !important;
+    color: #f0f0f0 !important;
 }
 
-.modal-content p {
-    margin-top: 0;
-    margin-bottom: 20px;
-    font-size: 1.1em;
-    color: white;
+.modal-content input {
+    background-color: #222 !important;
+    color: #f0f0f0 !important;
+    border-color: #555 !important;
 }
 
-/* Style for all buttons inside the modal-content */
 .modal-content button {
-    padding: 10px 20px;
-    color: white;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    margin: 5px;
+    background-color: #222 !important;
+    color: #fff !important;
+    border-color: #555 !important;
 }
 
-/* Specific button styles within admin modal */
-.modal-content button:nth-child(2) {
-    background-color: #8d0801;
+.modal-content button:hover {
+    background-color: #333 !important;
 }
-.modal-content button:nth-child(2):hover {
-    background-color: #6d0600;
-}
-
-/* Specific button styles within staff name modal */
-#staffNameModal .modal-content button {
-    background-color: #585858; /* Gray color */
-}
-
-#staffNameModal .modal-content button:hover {
-    background-color: #4a4a4a;
-}
-
-/* New CSS to handle the placeholder */
-.custom-input[data-placeholder]:empty::before {
-    content: attr(data-placeholder);
-    color: #888;
-    cursor: text;
-    pointer-events: none;
-}
-
