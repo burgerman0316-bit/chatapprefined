@@ -1,137 +1,145 @@
 const socket = io();
 
 // DOM elements
-const nameForm = document.getElementById('name-form');
-const nameInput = document.getElementById('name-input');
-const messages = document.getElementById('messages');
-const form = document.getElementById('form');
-const input = document.getElementById('input');
+const usernameInput = document.getElementById('usernameInput');
+const joinBtn = document.getElementById('joinBtn');
+const clearChatBtn = document.getElementById('clearChatBtn');
+const userCountDisplay = document.getElementById('userCountDisplay');
+
+const messagesDiv = document.getElementById('messages');
+const messageForm = document.getElementById('messageForm');
+const messageInputDiv = document.getElementById('messageInput');
 
 let displayName = '';
 let secureName = '';
 let isAdmin = false;
 
-// ------------ Utility / DOM append functions ------------
+// ========== Utility / Append functions ==========
 
-// Append a public chat message
 function appendMessage(msg) {
-    const item = document.createElement('div');
-    item.classList.add('msg');
-    if (msg.isAdmin) {
-        item.classList.add('system-msg');
-    }
-    // Determine own vs other
-    if (!msg.isAdmin) {
-        if (msg.username && displayName && msg.username.toLowerCase() === displayName.toLowerCase()) {
-            item.classList.add('own');
-        } else {
-            item.classList.add('other');
-        }
-    }
-    const timestamp = new Date(msg.timestamp).toLocaleTimeString();
-    const header = `<div class="msg-header">${msg.username}${msg.isAdmin ? ' (Admin)' : ''}</div>`;
-    const body = `<div class="message-content">${msg.content}</div>`;
-    const foot = `<div class="timestamp">${timestamp}</div>`;
-    item.innerHTML = `${header}${body}${foot}`;
-    messages.appendChild(item);
-    messages.scrollTop = messages.scrollHeight;
+  const item = document.createElement('div');
+  item.classList.add('msg');
+  if (!msg.isAdmin) {
+    if (msg.username && displayName && msg.username.toLowerCase() === displayName.toLowerCase()) {
+      item.classList.add('own');
+    } else {
+      item.classList.add('other');
+    }
+  }
+  const header = `<div class="msg-header">${msg.username}${msg.isAdmin ? ' (Admin)' : ''}</div>`;
+  const body = `<div class="message-content">${msg.content}</div>`;
+  const foot = `<div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
+  item.innerHTML = header + body + foot;
+  messagesDiv.appendChild(item);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// Append a private message (sender & recipient see it)
 function appendPrivateMessage(msg) {
-    const item = document.createElement('div');
-    item.classList.add('msg', 'private');
+  const item = document.createElement('div');
+  item.classList.add('msg', 'private');
 
-    const sender = msg.sender || 'Unknown';
-    const recipient = msg.recipient || '';
-    const content = msg.content;
-    const timestamp = new Date(msg.timestamp).toLocaleTimeString();
-    const isSender = (sender.toLowerCase() === displayName.toLowerCase());
+  const sender = msg.sender || 'Unknown';
+  const recipient = msg.recipient || '';
+  const content = msg.content;
+  const timestamp = new Date(msg.timestamp).toLocaleTimeString();
+  const isSender = (sender.toLowerCase() === displayName.toLowerCase());
 
-    if (isSender) {
-        item.classList.add('own');
-    } else {
-        item.classList.add('other');
-    }
+  if (isSender) {
+    item.classList.add('own');
+  } else {
+    item.classList.add('other');
+  }
 
-    let headerText;
-    if (isSender) {
-        headerText = `You → ${recipient}`;
-    } else {
-        headerText = `${sender} → You`;
-    }
+  let headerText;
+  if (isSender) {
+    headerText = `You → ${recipient}`;
+  } else {
+    headerText = `${sender} → You`;
+  }
 
-    const header = `<div class="msg-header">${headerText} <span class="private-indicator">(Private)</span></div>`;
-    const body = `<div class="message-content">${content}</div>`;
-    const foot = `<div class="timestamp">${timestamp}</div>`;
+  const header = `<div class="msg-header">${headerText} <span class="private-indicator">(Private)</span></div>`;
+  const body = `<div class="message-content">${content}</div>`;
+  const foot = `<div class="timestamp">${timestamp}</div>`;
 
-    item.innerHTML = `${header}${body}${foot}`;
-
-    messages.appendChild(item);
-    messages.scrollTop = messages.scrollHeight;
+  item.innerHTML = header + body + foot;
+  messagesDiv.appendChild(item);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// ------------ Event handlers & socket communication ------------
+// ========== Event wiring ==========
 
-// Name submission
-if (nameForm) {
-    nameForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const name = nameInput.value.trim();
-        if (name) {
-            socket.emit('check_staff_status', name);
-        }
-    });
-}
-
-// Message send
-if (form) {
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const message = input.value.trim();
-        if (!message || !displayName) return;
-
-        if (message.startsWith('/msg ')) {
-            // parse /msg
-            const parts = message.substring(5).trim().split(/\s+/);
-            const recipient = parts.shift();
-            const content = parts.join(' ');
-            if (recipient && content) {
-                socket.emit('private message', { recipient, content });
-                input.value = '';
-                return;
-            } else {
-                appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg [username] [message]', timestamp: new Date(), isAdmin: true });
-                input.value = '';
-                return;
-            }
-        }
-
-        // regular chat message
-        socket.emit('chat message', { username: secureName || displayName, content: message });
-        input.value = '';
-    });
-}
-
-// Socket listeners
-
-socket.on('name_accepted', (name) => {
-    displayName = name;
-    secureName = name;
-    isAdmin = false;
-    // optionally update UI display name ...
+joinBtn.addEventListener('click', () => {
+  const name = usernameInput.value.trim();
+  if (name) {
+    socket.emit('check_staff_status', name);
+  }
 });
 
-socket.on('staff_status_update', (data) => {
-    displayName = data.displayName;
-    secureName = data.secureName;
-    isAdmin = data.isAdmin;
-    // optionally update UI display name ...
+socket.on('name_accepted', name => {
+  displayName = name;
+  secureName = name;
+  usernameInput.disabled = true;
+  joinBtn.disabled = true;
 });
 
-socket.on('name_rejected', (msg) => {
-    alert('Name rejected: ' + msg);
+socket.on('staff_status_update', data => {
+  displayName = data.displayName;
+  secureName = data.secureName;
+  isAdmin = data.isAdmin;
+  usernameInput.disabled = true;
+  joinBtn.disabled = true;
+  clearChatBtn.style.display = isAdmin ? 'inline-block' : 'none';
 });
 
-socket.on('chat message', (msg) => {
-    appendMessage(msg);
+socket.on('name_rejected', msg => {
+  alert('Name rejected: ' + msg);
+});
+
+socket.on('chat message', msg => {
+  appendMessage(msg);
+});
+
+socket.on('private message', msg => {
+  appendPrivateMessage(msg);
+});
+
+socket.on('chat history', history => {
+  messagesDiv.innerHTML = '';
+  history.forEach(item => appendMessage(item));
+});
+
+socket.on('user count', data => {
+  userCountDisplay.textContent = `${data.count} Users Online`;
+});
+
+socket.on('system_error', msg => {
+  appendMessage({ username: 'System', content: `Error: ${msg}`, timestamp: new Date(), isAdmin: true });
+});
+socket.on('system_alert', msg => {
+  appendMessage({ username: 'System', content: `Alert: ${msg}`, timestamp: new Date(), isAdmin: true });
+});
+
+messageForm.addEventListener('submit', e => {
+  e.preventDefault();
+  const content = messageInputDiv.innerText.trim();
+  if (!content || !displayName) return;
+
+  if (content.startsWith('/msg ')) {
+    const parts = content.substring(5).trim().split(/\s+/);
+    const recipient = parts.shift();
+    const msg = parts.join(' ');
+    if (recipient && msg) {
+      socket.emit('private message', { recipient, content: msg });
+      messageInputDiv.innerText = '';
+      return;
+    } else {
+      appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg [username] [message]', timestamp: new Date(), isAdmin: true });
+      messageInputDiv.innerText = '';
+      return;
+    }
+  }
+
+  // regular message
+  socket.emit('chat message', { username: secureName || displayName, content });
+  messageInputDiv.innerText = '';
+});
