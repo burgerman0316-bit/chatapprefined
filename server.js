@@ -23,7 +23,7 @@ const STAFF_LIST = [
 const chatHistory = [];
 const namesInUse = new Set();
 const socketsMap = new Map();
-const usernamesMap = new Map(); // New map for username to socket ID lookup
+const usernamesMap = new Map(); // Map: lowercased display name -> socket ID
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
@@ -155,39 +155,54 @@ io.on('connection', (socket) => {
     }
   });
 
-  // *** PRIVATE MESSAGE HANDLER ***
+  // *** PRIVATE MESSAGE HANDLER FIX ***
   socket.on('private message', (msg) => {
     const senderDisplayName = socketsMap.get(socket.id);
     if (!senderDisplayName) {
-        console.log(`[DM DEBUG] Sender socket ID ${socket.id} not found in socketsMap.`);
+        socket.emit('system_error', 'You must set a name before sending a private message.');
         return;
     }
 
-    const recipientLower = msg.recipient.toLowerCase();
+    const recipientName = String(msg.recipient || '').trim();
+    const content = String(msg.content || '').trim();
+
+    if (!recipientName || !content) {
+        socket.emit('system_error', 'Invalid /msg command. Usage: /msg [username] [message]');
+        return;
+    }
+    
+    // Check if sending to self
+    if (recipientName.toLowerCase() === senderDisplayName.toLowerCase()) {
+        socket.emit('system_alert', `You cannot send a private message to yourself.`);
+        return;
+    }
+
+    const recipientLower = recipientName.toLowerCase();
+    // Look up the recipient's socket ID using their lowercased display name
     const recipientSocketId = usernamesMap.get(recipientLower);
 
-    console.log(`[DM DEBUG] Attempting DM from ${senderDisplayName} to ${msg.recipient}`);
+    console.log(`[DM DEBUG] Attempting DM from ${senderDisplayName} to ${recipientName}`);
     
     if (recipientSocketId) {
       const messageData = {
         sender: senderDisplayName,
-        recipient: msg.recipient,
-        content: msg.content,
+        recipient: recipientName,
+        content: content,
         timestamp: new Date()
       };
       
-      console.log(`[DM DEBUG] SUCCESS: Targeting recipient ${msg.recipient} with Socket ID ${recipientSocketId}`);
+      console.log(`[DM DEBUG] SUCCESS: Targeting recipient ${recipientName} with Socket ID ${recipientSocketId}`);
 
       // Send ONLY to the recipient
       io.to(recipientSocketId).emit('private message', messageData);
       
-      // OPTIONAL: Send a silent system alert back to the sender just to confirm delivery (client needs to handle 'system_alert')
-      socket.emit('system_alert', `Private message sent to ${msg.recipient}.`);
+      // Send system alert back to the sender just to confirm delivery
+      socket.emit('system_alert', `Private message sent to ${recipientName}.`);
 
     } else {
-      console.log(`[DM DEBUG] FAIL: Recipient ${msg.recipient} not found in usernamesMap or is offline.`);
+      console.log(`[DM DEBUG] FAIL: Recipient ${recipientName} not found or is offline.`);
       // Send error back ONLY to the sender
-      socket.emit('system_error', `User '${msg.recipient}' not found or not online.`);
+      socket.emit('system_error', `User '${recipientName}' not found or not online.`);
     }
   });
   // *** END PRIVATE MESSAGE HANDLER ***
@@ -208,8 +223,7 @@ io.on('connection', (socket) => {
       // 2. Push the system message to the new, empty history
       pushHistory(clearMsg);
       
-      // 3. CRITICAL FIX: Emit the 'chat history' event to all clients.
-      // The client's 'chat history' listener clears the client DOM before repopulating.
+      // 3. FIX: Emit the 'chat history' event to all clients. This forces clients to clear and redraw.
       io.emit('chat history', chatHistory);
 
     } else {
