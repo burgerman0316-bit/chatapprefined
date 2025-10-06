@@ -88,15 +88,12 @@ io.on('connection', socket => {
     if (namesInUse.has(lower)) {
         const existingSocketId = usernamesMap.get(lower);
 
-        // If the name is taken AND the name is NOT associated with the current socket ID
-        // (i.e., someone else is logged in, or the stale socket is gone), reject.
         if (existingSocketId && existingSocketId !== socket.id) {
              socket.emit('name_in_use_modal', 'Someone is already using that name.');
              return;
         }
         
-        // If the name IS associated with this login attempt (from a refresh), 
-        // we proactively remove the old state to avoid conflict with the disconnect handler.
+        // Proactively remove the old state for the same user trying to reconnect
         namesInUse.delete(lower);
         usernamesMap.delete(lower);
     }
@@ -104,7 +101,6 @@ io.on('connection', socket => {
     // 2. Clear any old, stale name mappings for this new socket ID
     const oldName = socketsMap.get(socket.id);
     if (oldName) {
-        // If an old name was found, it should have been cleaned above, but safe to clean here too
         namesInUse.delete(oldName.toLowerCase()); 
         usernamesMap.delete(oldName.toLowerCase());
         socketsMap.delete(socket.id); 
@@ -215,7 +211,9 @@ io.on('connection', socket => {
       return;
     }
 
-    chatHistory.length = 0;
+    // CRITICAL: Clear the server's master history array
+    chatHistory.length = 0; 
+    
     const clearMsg = {
       username: 'System',
       content: `Moderator ${info.username} cleared chat history.`,
@@ -224,6 +222,7 @@ io.on('connection', socket => {
     };
     pushHistory(clearMsg);
     
+    // Broadcast the command to ALL clients to clear their UI
     io.emit('admin:history_cleared', clearMsg);
   });
   
@@ -270,8 +269,6 @@ io.on('connection', socket => {
 
     const lower = name.toLowerCase();
     
-    // Only delete the name if it is still mapped to this specific socket ID.
-    // This handles the case where the user re-logged in before the old socket disconnected.
     if (usernamesMap.get(lower) === socket.id) {
         namesInUse.delete(lower);
         usernamesMap.delete(lower);
