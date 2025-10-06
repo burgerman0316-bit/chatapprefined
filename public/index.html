@@ -7,19 +7,27 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- 🟢 Floating header in the top-right -->
+  <div class="header-area">
+    <span id="userCountDisplay">0 Users Online</span>
+    <input id="usernameInput" type="text" placeholder="Enter your name" />
+    <button id="joinBtn">Join Chat</button>
+    <button id="clearChatBtn" style="display: none;">Clear Chat</button>
+  </div>
+
+  <!-- 🟣 Main Chat Box -->
   <div class="chat-container">
-    <div class="header-area">
-      <span id="userCountDisplay">0 Users Online</span>
-      <input id="usernameInput" type="text" placeholder="Enter your name" />
-      <button id="joinBtn">Join Chat</button>
-      <button id="clearChatBtn" style="display: none;">Clear Chat</button>
-    </div>
     <div class="messages-area">
       <div id="messages"></div>
     </div>
+
+    <!-- 🟠 Message Input -->
     <form id="messageForm">
       <div class="input-container">
-        <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
+        <div id="messageInput" 
+             class="custom-input" 
+             contenteditable="true" 
+             data-placeholder="Type a message..."></div>
       </div>
       <button type="submit">Send</button>
     </form>
