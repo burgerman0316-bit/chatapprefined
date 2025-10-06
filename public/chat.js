@@ -1,6 +1,5 @@
 const socket = io();
 
-// DOM Elements
 const usernameInput = document.getElementById('usernameInput');
 const joinBtn = document.getElementById('joinBtn');
 const clearChatBtn = document.getElementById('clearChatBtn');
@@ -12,16 +11,11 @@ const messageInputDiv = document.getElementById('messageInput');
 const staffNameModal = document.getElementById('staffNameModal');
 const staffModalCloseBtn = document.getElementById('staffModalCloseBtn');
 
-const dmModal = document.getElementById('dmModal');
-const dmCloseBtn = document.getElementById('dmCloseBtn');
-const dmUserList = document.getElementById('dmUserList');
-
 let displayName = '';
 let secureName = '';
 let isAdmin = false;
-let dmTarget = null;
 
-// ========== FUNCTIONS ==========
+// Append message
 function appendMessage(msg) {
   const item = document.createElement('div');
   item.classList.add('msg');
@@ -39,34 +33,7 @@ function appendMessage(msg) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-function showStaffModal() {
-  staffNameModal.style.display = 'flex';
-}
-
-function showDmModal(users) {
-  dmUserList.innerHTML = '';
-  users.forEach(u => {
-    if(u.toLowerCase() === displayName.toLowerCase()) return;
-    const btn = document.createElement('button');
-    btn.innerText = u;
-    btn.addEventListener('click', () => {
-      dmTarget = u;
-      messageInputDiv.innerHTML = `<span class="highlighted">${u}:</span>&nbsp;`;
-      dmModal.style.display = 'none';
-      placeCaretAtEnd(messageInputDiv);
-    });
-    dmUserList.appendChild(btn);
-  });
-  dmModal.style.display = 'flex';
-}
-
-function placeCaretAtEnd(el) {
-  el.focus();
-  document.getSelection().collapse(el, el.childNodes.length);
-}
-
-// ========== EVENT LISTENERS ==========
-
+// EVENTS
 joinBtn.addEventListener('click', () => {
   const name = usernameInput.value.trim();
   if(!name) return;
@@ -83,25 +50,40 @@ clearChatBtn.addEventListener('click', () => {
 
 messageForm.addEventListener('submit', e => {
   e.preventDefault();
-  let content = messageInputDiv.innerText.trim();
-  if(!content) return;
+  const content = messageInputDiv.innerText.trim();
+  if(!content || !displayName) return;
 
-  if(dmTarget && content.startsWith(`${dmTarget}:`)) {
-    // Send private message
-    socket.emit('private message', { recipient: dmTarget, content: content.replace(`${dmTarget}:`, '').trim() });
+  if(content.startsWith('/msg ')) {
+    appendMessage({ username: 'System', content: 'Private messaging currently not enabled.', timestamp: new Date(), isSystem: true });
     messageInputDiv.innerText = '';
-    dmTarget = null;
     return;
   }
 
-  if(content.startsWith('/msg')) {
-    socket.emit('request_user_list');
-    return;
-  }
-
-  // Regular message
   socket.emit('chat message', { username: secureName || displayName, content });
   messageInputDiv.innerText = '';
 });
 
-dmCloseBtn.addEventListener('click', ()
+// SOCKET LISTENERS
+socket.on('name_accepted', name => {
+  displayName = name;
+  secureName = name;
+  usernameInput.disabled = true;
+  joinBtn.disabled = true;
+});
+
+socket.on('name_rejected', msg => {
+  staffNameModal.style.display = 'flex';
+});
+
+socket.on('staff_status_update', data => {
+  displayName = data.displayName;
+  secureName = data.secureName;
+  isAdmin = data.isAdmin;
+  usernameInput.disabled = true;
+  joinBtn.disabled = true;
+  clearChatBtn.style.display = isAdmin ? 'inline-block' : 'none';
+});
+
+socket.on('chat message', msg => appendMessage(msg));
+socket.on('chat history', history => { messagesDiv.innerHTML=''; history.forEach(m=>appendMessage(m)); });
+socket.on('user count', data => userCountDisplay.textContent = `${data.count} Users Online`);
