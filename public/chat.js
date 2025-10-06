@@ -278,8 +278,8 @@ function sendMessage() {
             return;
         }
 
-        const recipient = commandParts;
-        const content = commandParts;
+        const recipient = commandParts[1]; // Corrected: Access the recipient by index 1
+        const content = commandParts[2];   // Corrected: Access the content by index 2
         
         const messageData = {
             recipient: recipient,
@@ -287,8 +287,11 @@ function sendMessage() {
             timestamp: new Date()
         };
         socket.emit("private message", messageData);
+        // Display the private message to the sender
+        addMessage(currentUser.displayName, content, new Date(), false, false, true);
 
     } else {
+        // Send a public message
         const messageData = {
             username: currentUser.displayName,
             content: text,
