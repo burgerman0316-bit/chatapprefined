@@ -1,51 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Socket.IO Chat</title>
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="chat-container">
+<div class="chat-container">
     <div class="header-area">
-      <span id="userCountDisplay">0 Users Online</span>
-      <div class="right-header">
-        <input id="usernameInput" type="text" placeholder="Enter your name" />
-        <button id="joinBtn">Join Chat</button>
-        <button id="clearChatBtn" style="display:none;">Clear Chat</button>
-      </div>
+        <span id="userCountDisplay">0 Users Online</span>
+        <div class="right-header">
+            <input id="usernameInput" type="text" placeholder="Enter your name">
+            <button id="joinBtn">Join Chat</button>
+            <button id="clearChatBtn" style="display:none">Clear Chat</button>
+        </div>
     </div>
 
     <div class="messages-area">
-      <div id="messages"></div>
+        <div id="messages"></div>
     </div>
 
     <form id="messageForm">
-      <div class="input-container">
-        <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
-      </div>
-      <button type="submit">Send</button>
+        <div class="input-container">
+            <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
+        </div>
+        <button type="submit">Send</button>
     </form>
-  </div>
+</div>
 
-  <!-- Name Reserved / Name Taken Modal -->
-  <div id="nameModal" class="modal" style="display:none;">
+<!-- DM Modal -->
+<div id="dmModal" class="modal">
     <div class="modal-content">
-      <button class="close-modal" id="closeNameModal">&times;</button>
-      <p id="nameModalText">This name is reserved or already in use.</p>
-      <button id="nameModalOkBtn">OK</button>
+        <button id="dmCloseBtn" class="close-btn">×</button>
+        <h3>Select a user to message</h3>
+        <div id="dmUserList" class="dm-user-list"></div>
     </div>
-  </div>
-
-  <!-- DM User Selection Modal -->
-  <div id="dmModal" class="modal" style="display:none;">
-    <div class="modal-content dm-content">
-      <button class="close-modal" id="closeDMModal">&times;</button>
-      <h3>Select a user to DM</h3>
-      <div id="dmUserList" class="dm-user-list"></div>
-    </div>
-  </div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="chat.js"></script>
