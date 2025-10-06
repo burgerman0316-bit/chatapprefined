@@ -155,13 +155,19 @@ io.on('connection', (socket) => {
     }
   });
 
+  // *** UPDATED PRIVATE MESSAGE HANDLER WITH DEBUGGING AND CORRECT TARGETING ***
   socket.on('private message', (msg) => {
     const senderDisplayName = socketsMap.get(socket.id);
-    if (!senderDisplayName) return;
+    if (!senderDisplayName) {
+        console.log(`[DM DEBUG] Sender socket ID ${socket.id} not found in socketsMap.`);
+        return;
+    }
 
-    // Use the new map for a direct, efficient lookup
-    const recipientSocketId = usernamesMap.get(msg.recipient.toLowerCase());
+    const recipientLower = msg.recipient.toLowerCase();
+    const recipientSocketId = usernamesMap.get(recipientLower);
 
+    console.log(`[DM DEBUG] Attempting DM from ${senderDisplayName} to ${msg.recipient}`);
+    
     if (recipientSocketId) {
       const messageData = {
         sender: senderDisplayName,
@@ -170,18 +176,21 @@ io.on('connection', (socket) => {
         timestamp: new Date()
       };
       
-      // *** FIX: Send ONLY to the recipient's socket ID ***
+      console.log(`[DM DEBUG] SUCCESS: Targeting recipient ${msg.recipient} with Socket ID ${recipientSocketId}`);
+
+      // Send ONLY to the recipient
       io.to(recipientSocketId).emit('private message', messageData);
       
-      // *** REMOVED: socket.emit('private message', messageData); ***
-      // The client already displays the message locally as soon as it sends it.
-      // Sending it back causes a duplicate.
+      // OPTIONAL: Send a silent system alert back to the sender just to confirm delivery (client needs to handle 'system_alert')
+      socket.emit('system_alert', `Private message sent to ${msg.recipient}.`);
 
     } else {
+      console.log(`[DM DEBUG] FAIL: Recipient ${msg.recipient} not found in usernamesMap or is offline.`);
       // Send error back ONLY to the sender
       socket.emit('system_error', `User '${msg.recipient}' not found or not online.`);
     }
   });
+  // *** END UPDATED PRIVATE MESSAGE HANDLER ***
 
   socket.on('admin:clear_history', (data) => {
     const info = getStaffDisplayInfo(data.username);
