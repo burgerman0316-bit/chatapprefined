@@ -1,72 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Socket.IO Chat</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Socket.IO Chat</title>
+<link rel="stylesheet" href="style.css">
+<script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-    <!-- Overlay to block UI before login -->
-    <div id="overlay"></div>
+<div id="overlay"></div>
 
-    <!-- Chat Container -->
-    <div id="container">
-        <div id="user-info">
-            <h2>Chat Info</h2>
-            <p>Welcome, <span id="display-name">Guest</span>!</p>
-            <p>Users Online: <span id="user-count">0</span></p>
-            <div id="user-list-container">
-                <h4>Online Users:</h4>
-                <ul id="user-list"></ul>
+<!-- Login Modal -->
+<div class="modal" id="loginModal">
+    <div class="modal-content">
+        <h3>Enter Your Name</h3>
+        <input type="text" id="usernameInput" placeholder="Username">
+        <button id="joinBtn">Join Chat</button>
+    </div>
+</div>
+
+<!-- DM Modal -->
+<div class="modal" id="dmModal">
+    <div class="modal-content">
+        <h3>Select a user to DM</h3>
+        <button class="closeBtn">&times;</button>
+        <ul id="dmUserList"></ul>
+    </div>
+</div>
+
+<!-- Admin Modal -->
+<div class="modal" id="adminModal">
+    <div class="modal-content">
+        <h3>Admin Controls</h3>
+        <button class="closeBtn">&times;</button>
+        <button id="clearChatBtn">Clear Chat</button>
+        <button id="hardwareBanBtn">Hardware Ban User</button>
+        <ul id="adminUserList"></ul>
+    </div>
+</div>
+
+<!-- Chat container -->
+<div id="container">
+    <div id="user-info">
+        <h2>Chat Info</h2>
+        <p>Welcome, <span id="displayName">Guest</span>!</p>
+        <p>Users Online: <span id="user-count">0</span></p>
+    </div>
+
+    <div id="chat-area">
+        <ul id="messages"></ul>
+        <div id="messageForm">
+            <div class="input-container">
+                <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
             </div>
-            <p class="commands">**Commands:**</p>
-            <p class="commands">`/msg [user] [message]`</p>
-            <p class="commands">`/clear` (Mod only)</p>
-            <button id="adminPanelBtn" style="display:none;">Admin Control Panel</button>
-            <button id="clearChatBtn" style="display:none;">Clear Chat</button>
-        </div>
-        <div id="chat-area">
-            <ul id="messages"></ul>
-            <div id="messageForm">
-                <div class="input-container">
-                    <div id="messageInput" contenteditable="true" data-placeholder="Type a message or command..."></div>
-                </div>
-                <button id="sendBtn">Send</button>
-            </div>
+            <button id="sendBtn">Send</button>
         </div>
     </div>
 
-    <!-- Login Modal -->
-    <div class="modal" id="loginModal">
-        <div class="modal-content">
-            <h3>Enter Your Name</h3>
-            <input type="text" id="usernameInput" placeholder="Username" />
-            <button id="joinBtn">Join Chat</button>
-        </div>
-    </div>
+    <button id="adminPanelBtn" style="display:none;">Admin Control Panel</button>
+</div>
 
-    <!-- DM Modal -->
-    <div class="modal" id="dmModal">
-        <div class="modal-content">
-            <button class="closeModal" id="dmCloseBtn">X</button>
-            <h3>Select User to DM</h3>
-            <ul id="dmUserList"></ul>
-        </div>
-    </div>
-
-    <!-- Admin Panel Modal -->
-    <div class="modal" id="adminPanelModal">
-        <div class="modal-content">
-            <button class="closeModal" id="adminCloseBtn">X</button>
-            <h3>Admin Controls</h3>
-            <button id="clearHistoryAdmin">Clear Chat History</button>
-            <button id="hardwareBanBtn">Hardware Ban User</button>
-            <ul id="adminUserList"></ul>
-        </div>
-    </div>
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="chat.js"></script>
+<script src="chat.js"></script>
 </body>
 </html>
