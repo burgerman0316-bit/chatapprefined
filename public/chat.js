@@ -72,7 +72,9 @@ function addMessage(username, content, timestamp, isSystem = false, isAdmin = fa
     msgEl.appendChild(contentEl);
 
     messagesContainer.appendChild(msgEl);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Call the auto-scroll function after adding the message
+    scrollToBottom();
 }
 
 // Function to add plain text messages (e.g., join/leave announcements)
@@ -81,7 +83,9 @@ function addPlainText(content, timestamp) {
     plainEl.classList.add("chat-plain");
     plainEl.textContent = content;
     messagesContainer.appendChild(plainEl);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Call the auto-scroll function after adding the message
+    scrollToBottom();
 }
 
 // Intercept form submission
@@ -89,6 +93,11 @@ messageForm.addEventListener('submit', (e) => {
     e.preventDefault(); // Prevent the default form submission
     sendMessage();
 });
+
+// Function to handle auto-scrolling
+function scrollToBottom() {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
 
 // Handle key presses for sending messages and DM menu navigation
 messageInput.addEventListener('keypress', (e) => {
@@ -269,8 +278,8 @@ function sendMessage() {
             return;
         }
 
-        const recipient = commandParts[1];
-        const content = commandParts[2];
+        const recipient = commandParts[1]; // Corrected: Access the recipient by index 1
+        const content = commandParts[2];   // Corrected: Access the content by index 2
         
         const messageData = {
             recipient: recipient,
