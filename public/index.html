@@ -1,66 +1,69 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Socket.IO Chat</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Socket.IO Chat</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="chat-container">
-        <div class="header-area">
-            <span id="userCountDisplay">0 Users Online</span>
-            <div class="right-header">
-                <input id="usernameInput" type="text" placeholder="Enter your name" />
-                <button id="joinBtn">Join Chat</button>
-                <button id="clearChatBtn" style="display:none;">Clear Chat</button>
-                <button id="adminPanelBtn" style="display:none;">Admin Control Panel</button>
-            </div>
-        </div>
+  <div class="chat-container">
 
-        <div class="messages-area">
-            <div id="messages"></div>
-        </div>
-
-        <form id="messageForm">
-            <div class="input-container">
-                <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
-            </div>
-            <button type="submit">Send</button>
-        </form>
+    <!-- Header / Controls -->
+    <div class="header-area">
+      <input type="text" id="usernameInput" placeholder="Enter your name">
+      <div class="right-header">
+        <button id="joinBtn">Join Chat</button>
+        <button id="openAdminPanelBtn" style="display:none;">Admin Panel</button>
+      </div>
     </div>
 
-    <!-- DM Modal -->
-    <div id="dmModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span id="dmModalClose" class="close-btn">&times;</span>
-            <h3>Select a user to DM</h3>
-            <div id="dmUserList" class="dm-user-list"></div>
-        </div>
+    <!-- Messages -->
+    <div class="messages-area">
+      <div id="messages"></div>
     </div>
 
-    <!-- Admin Panel Modal -->
-    <div id="adminModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <span id="adminModalClose" class="close-btn">&times;</span>
-            <h3>Admin Control Panel</h3>
-            <button id="adminClearHistoryBtn">Clear Chat History</button>
-            <button id="adminBanUserBtn">Ban User</button>
-            <button id="adminHWBanBtn">Hardware Ban User</button>
-            <!-- Add more admin buttons here -->
-        </div>
-    </div>
+    <!-- Message input -->
+    <form id="messageForm">
+      <div class="input-container">
+        <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
+        <button type="submit">Send</button>
+      </div>
+    </form>
 
-    <!-- Username/Reserved Name Modal -->
-    <div id="usernameModal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <h3>Cannot use that name</h3>
-            <p id="usernameModalText">This username is reserved or already in use.</p>
-            <button id="usernameModalClose">OK</button>
-        </div>
-    </div>
+  </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="chat.js"></script>
+  <!-- Private Message Modal -->
+  <div id="dmModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <button class="close-btn">&times;</button>
+      <h3>Select a user to message</h3>
+      <div id="dmUserList" class="scroll-list"></div>
+    </div>
+  </div>
+
+  <!-- Admin Panel Modal -->
+  <div id="adminPanelModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <button class="close-btn">&times;</button>
+      <h3>Admin Controls</h3>
+      <button id="panelClearChatBtn">Clear Chat</button>
+      <button id="panelBanUserBtn">Ban User</button>
+      <button id="panelHWBanBtn">Hardware Ban User</button>
+      <!-- add more admin controls here -->
+    </div>
+  </div>
+
+  <!-- Staff / Name Reserved Modal -->
+  <div id="nameReservedModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h3>Name Reserved</h3>
+      <p>This name is reserved for staff or already in use.</p>
+      <button class="close-btn">Close</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="chat.js"></script>
 </body>
 </html>
