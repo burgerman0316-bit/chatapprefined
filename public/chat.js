@@ -1,132 +1,181 @@
+// Import the Bootstrap namespace to use its functions
+const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
+
+// Socket connection
 const socket = io();
 
 // Elements
-const usernameInput = document.getElementById('usernameInput');
-const joinBtn = document.getElementById('joinBtn');
-const displayNameEl = document.getElementById('displayName');
+const nameForm = document.getElementById('name-form');
+const nameInput = document.getElementById('name-input');
+const container = document.getElementById('container'); // Main chat container
+
+const displayNameEl = document.getElementById('display-name');
 const messagesDiv = document.getElementById('messages');
 const messageInputDiv = document.getElementById('messageInput');
-const sendBtn = document.getElementById('sendBtn');
-const container = document.getElementById('container');
-const overlay = document.getElementById('overlay');
-const loginModal = document.getElementById('loginModal');
+const sendBtn = document.querySelector('#messageForm button');
+const messageForm = document.getElementById('messageForm');
 
-const dmModal = document.getElementById('dmModal');
-const dmUserList = document.getElementById('dmUserList');
+const userListEl = document.getElementById('user-list');
+const userCountEl = document.getElementById('user-count');
 
-const adminModal = document.getElementById('adminModal');
 const adminPanelBtn = document.getElementById('adminPanelBtn');
 const clearChatBtn = document.getElementById('clearChatBtn');
-const hardwareBanBtn = document.getElementById('hardwareBanBtn');
-const adminUserList = document.getElementById('adminUserList');
+const adminUserList = document.getElementById('admin-user-list');
 
 let displayName = '';
 let isAdmin = false;
-let privateRecipient = '';
 
-// Utility
+// --- Initial Setup ---
+// Show the login modal immediately upon load
+document.addEventListener('DOMContentLoaded', () => {
+    myModal.show();
+});
+
+// Utility: Appends a message to the chat
 function appendMessage(msg) {
     const item = document.createElement('li');
     item.classList.add('msg');
+    const timestamp = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    if (msg.isPrivate) {
-        item.classList.add('other');
-        item.innerHTML = `<strong>${msg.sender} → ${msg.recipient}:</strong> ${msg.content}`;
-    } else if (msg.username === displayName) {
-        item.classList.add('own');
-        item.innerHTML = `<strong>You:</strong> ${msg.content}`;
-    } else if (msg.username === 'System') {
+    if (msg.username === 'System') {
         item.classList.add('system');
         item.textContent = msg.content;
+    } else if (msg.username === displayName) {
+        item.classList.add('own');
+        item.innerHTML = `<strong>You:</strong> ${msg.content} <span class="text-muted small">${timestamp}</span>`;
     } else {
+        // Fallback for others and private messages
         item.classList.add('other');
-        item.innerHTML = `<strong>${msg.username}:</strong> ${msg.content}`;
+        const nameDisplay = msg.isPrivate ? `${msg.sender} → ${msg.recipient}` : msg.username;
+        item.innerHTML = `<strong>${nameDisplay}:</strong> ${msg.content} <span class="text-muted small">${timestamp}</span>`;
     }
 
     messagesDiv.appendChild(item);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// Login
-joinBtn.addEventListener('click', () => {
-    const name = usernameInput.value.trim();
+// Utility: Updates the online user list
+function updateUsers(userList) {
+    userCountEl.textContent = userList.length;
+    userListEl.innerHTML = '';
+    adminUserList.innerHTML = ''; // For Admin Panel list
+
+    userList.forEach(user => {
+        const li = document.createElement('li');
+        li.textContent = user;
+        li.title = `Click to send private message to ${user}`;
+        
+        // Add user to the main list
+        userListEl.appendChild(li);
+
+        // Add user to the Admin Panel list
+        const adminLi = document.createElement('li');
+        adminLi.textContent = user;
+        // Placeholder functionality
+        adminLi.addEventListener('click', () => {
+             alert(`Admin action selected for ${user}. (Placeholder for ban logic)`);
+        });
+        adminUserList.appendChild(adminLi);
+    });
+}
+
+// --- Event Listeners ---
+
+// 1. Handle Login Form Submission
+nameForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = nameInput.value.trim();
     if (!name) return;
     socket.emit('check_staff_status', name);
 });
 
-// Enter to send message
-messageInputDiv.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendBtn.click();
-    }
-});
-
-// Send message
-sendBtn.addEventListener('click', () => {
+// 2. Handle Message Form Submission
+messageForm.addEventListener('submit', e => {
+    e.preventDefault();
     const content = messageInputDiv.innerText.trim();
     if (!content) return;
 
-    if (privateRecipient) {
-        socket.emit('private message', { recipient: privateRecipient, content });
-        privateRecipient = '';
-        messageInputDiv.innerText = '';
-        return;
+    // Check for /msg command
+    if (content.startsWith('/msg ')) {
+        const parts = content.split(' ');
+        const recipient = parts[1];
+        const dmContent = parts.slice(2).join(' ');
+        if (recipient && dmContent) {
+            socket.emit('private message', { recipient: recipient, content: dmContent });
+        } else {
+            appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg [username] [message]', timestamp: new Date() });
+        }
+    } else {
+        // Regular public message
+        socket.emit('chat message', { username: displayName, content });
     }
 
-    socket.emit('chat message', { username: displayName, content });
-    messageInputDiv.innerText = '';
+    messageInputDiv.innerText = ''; // Clear input
 });
 
-// Socket events
-socket.on('name_accepted', name => {
-    displayName = name;
-    displayNameEl.textContent = displayName;
-    loginModal.style.display = 'none';
-    overlay.style.display = 'none';
-    container.style.pointerEvents = 'auto';
+// 3. Enter key in input box
+messageInputDiv.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        messageForm.dispatchEvent(new Event('submit'));
+    }
 });
 
-socket.on('staff_status_update', data => {
+// 4. Admin: Clear Chat Button
+clearChatBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to clear the chat history for everyone?')) {
+        socket.emit('admin:clear_history', { username: displayName });
+    }
+});
+
+// --- Socket Events ---
+
+// Shared function to handle successful login
+function handleSuccessfulLogin(data) {
     displayName = data.displayName;
-    isAdmin = data.isAdmin;
+    isAdmin = data.isAdmin || false; // Ensure isAdmin is set
     displayNameEl.textContent = displayName;
-    loginModal.style.display = 'none';
-    overlay.style.display = 'none';
-    container.style.pointerEvents = 'auto';
+    
+    // Hide modal and show chat container
+    myModal.hide(); 
+    container.style.display = 'flex'; 
 
-    if (isAdmin) adminPanelBtn.style.display = 'inline-block';
+    if (isAdmin) {
+        adminPanelBtn.style.display = 'block';
+    } else {
+        adminPanelBtn.style.display = 'none';
+    }
+}
+
+// Login Success for normal user
+socket.on('name_accepted', name => {
+    handleSuccessfulLogin({ displayName: name, isAdmin: false });
 });
 
+// Login Success for staff
+socket.on('staff_status_update', data => {
+    handleSuccessfulLogin(data);
+});
+
+// Login Errors
 socket.on('staff_name_reserved_modal', msg => {
     alert(msg);
 });
-
 socket.on('name_in_use_modal', msg => {
     alert(msg);
 });
 
+// Chat Events
+socket.on('chat history', history => {
+    messagesDiv.innerHTML = ''; // Clear existing
+    history.forEach(msg => appendMessage(msg));
+});
 socket.on('chat message', msg => appendMessage(msg));
 socket.on('private message', msg => appendMessage(msg));
 
-// Admin Panel
-adminPanelBtn.addEventListener('click', () => {
-    adminModal.style.display = 'flex';
-});
+// System Alerts
+socket.on('system_error', msg => appendMessage({ username: 'System', content: `ERROR: ${msg}`, timestamp: new Date() }));
+socket.on('system_alert', msg => appendMessage({ username: 'System', content: msg, timestamp: new Date() }));
 
-// Close modals
-document.querySelectorAll('.closeBtn').forEach(btn => {
-    btn.addEventListener('click', e => {
-        e.target.closest('.modal').style.display = 'none';
-    });
-});
-
-// Clear chat
-clearChatBtn.addEventListener('click', () => {
-    socket.emit('admin:clear_history', { username: displayName });
-});
-
-// Dummy hardware ban (open modal and pick user)
-hardwareBanBtn.addEventListener('click', () => {
-    alert('Select a user to hardware ban (functionality placeholder).');
-});
+// User List Update
+socket.on('user count', data => updateUsers(data.userList));
