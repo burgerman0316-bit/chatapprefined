@@ -35,16 +35,12 @@ function isNameReserved(name) {
     if (!name) return false;
     const lower = name.trim().toLowerCase();
 
-    // Block only display names, not login names
     if (STAFF_LIST.some(s => s.displayName.toLowerCase() === lower)) {
-        return true; // reserved
+        return true; 
     }
-
-    // Also block banned names
     if (BANNED_NAMES.some(b => lower.includes(b.toLowerCase()))) {
         return true;
     }
-
     return false;
 }
 
@@ -75,11 +71,10 @@ function broadcastUserCount() {
 io.on('connection', socket => {
   console.log('Client connected:', socket.id);
 
-  // Send existing chat history
   socket.emit('chat history', chatHistory);
   broadcastUserCount();
 
-  // Name check
+  // Name check (FIXED REFRESH BUG LOGIC)
   socket.on('check_staff_status', enteredName => {
     const name = (enteredName || '').trim();
     const lower = name.toLowerCase();
@@ -89,17 +84,39 @@ io.on('connection', socket => {
       return;
     }
 
+    // 1. Check if the name is already in use
     if (namesInUse.has(lower)) {
-      socket.emit('name_in_use_modal', 'Someone is already using that name.');
-      return;
+        const existingSocketId = usernamesMap.get(lower);
+
+        // If the name is taken AND the name is NOT associated with the current socket ID
+        // (i.e., someone else is logged in, or the stale socket is gone), reject.
+        if (existingSocketId && existingSocketId !== socket.id) {
+             socket.emit('name_in_use_modal', 'Someone is already using that name.');
+             return;
+        }
+        
+        // If the name IS associated with this login attempt (from a refresh), 
+        // we proactively remove the old state to avoid conflict with the disconnect handler.
+        namesInUse.delete(lower);
+        usernamesMap.delete(lower);
     }
 
+    // 2. Clear any old, stale name mappings for this new socket ID
+    const oldName = socketsMap.get(socket.id);
+    if (oldName) {
+        // If an old name was found, it should have been cleaned above, but safe to clean here too
+        namesInUse.delete(oldName.toLowerCase()); 
+        usernamesMap.delete(oldName.toLowerCase());
+        socketsMap.delete(socket.id); 
+    }
+    
+    // 3. Reserved names check
     if (isNameReserved(name)) {
       socket.emit('staff_name_reserved_modal', 'That name is reserved for staff.');
       return;
     }
 
-    // Check if this is a staff login
+    // 4. Staff Login Logic
     const staffInfo = STAFF_LIST.find(s => s.loginName === name);
     if (staffInfo) {
       namesInUse.add(name.toLowerCase());
@@ -114,14 +131,13 @@ io.on('connection', socket => {
         timestamp: new Date(),
         isAdmin: true
       };
-      // Send the public message through the normal channel so history is updated
       pushHistory(publicMsg);
       io.emit('chat message', publicMsg);
       broadcastUserCount();
       return;
     }
 
-    // Normal user
+    // 5. Normal User Login Logic
     namesInUse.add(lower);
     socketsMap.set(socket.id, name);
     usernamesMap.set(name.toLowerCase(), socket.id);
@@ -184,10 +200,8 @@ io.on('connection', socket => {
         timestamp: new Date(),
         isPrivate: true
       };
-      // send to recipient
       io.to(recSocketId).emit('private message', messageData);
-      // send copy to sender
-      socket.emit('private message', messageData);
+      socket.emit('private message', messageData); // Send copy to sender
     } else {
       socket.emit('system_error', `User '${recipient}' not found or offline.`);
     }
@@ -210,7 +224,6 @@ io.on('connection', socket => {
     };
     pushHistory(clearMsg);
     
-    // Send explicit command to all clients to clear their UI
     io.emit('admin:history_cleared', clearMsg);
   });
   
@@ -233,10 +246,8 @@ io.on('connection', socket => {
           return;
       }
       
-      // 1. Notify the target user (before they disconnect)
       io.to(targetSocketId).emit('system_error', `You have been KICKED by Moderator ${info.username}.`);
       
-      // 2. Broadcast a message to the public chat
       const kickMsg = {
         username: 'System',
         content: `Moderator ${info.username} has kicked ${targetName} from the chat.`,
@@ -246,23 +257,25 @@ io.on('connection', socket => {
       pushHistory(kickMsg);
       io.emit('chat message', kickMsg);
       
-      // 3. Find and forcibly disconnect the user's socket
       const targetSocket = io.sockets.sockets.get(targetSocketId);
       if (targetSocket) {
           targetSocket.disconnect(true);
       }
   });
 
-  // Disconnect
+  // Disconnect (FIXED REFRESH BUG LOGIC)
   socket.on('disconnect', () => {
     const name = socketsMap.get(socket.id);
     if (!name) return;
 
     const lower = name.toLowerCase();
-    if (namesInUse.has(lower)) {
-      namesInUse.delete(lower);
+    
+    // Only delete the name if it is still mapped to this specific socket ID.
+    // This handles the case where the user re-logged in before the old socket disconnected.
+    if (usernamesMap.get(lower) === socket.id) {
+        namesInUse.delete(lower);
+        usernamesMap.delete(lower);
     }
-    usernamesMap.delete(lower);
     socketsMap.delete(socket.id);
 
     const leaveMsg = {
