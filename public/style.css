@@ -1,316 +1,170 @@
-/* Basic Reset */
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background-color: #121212;
+/* --- General Layout --- */
+body { margin: 0; padding-bottom: 3rem; font-family: sans-serif; background: #f7f7f7; }
+
+#container {
     display: flex;
-    justify-content: center;
-    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
     height: 100vh;
 }
 
-/* Chat Container */
-.chat-container {
-    width: 100%;
-    max-width: 600px;
-    height: 90vh;
-    background: #1e1e1e;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    display: flex;
-    flex-direction: column;
-    border-radius: 8px;
-    overflow: hidden;
-    color: #f0f0f0;
-    position: relative;
+#user-info {
+    width: 250px;
+    padding: 15px;
+    background: #e9e9e9;
+    border-right: 1px solid #ccc;
+    height: 100%;
+    position: sticky;
+    top: 0;
 }
 
-/* Header/Controls Area */
-.header-area {
-    padding: 10px;
-    background-color: #2c2c2c;
-    border-bottom: 1px solid #444;
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex-wrap: wrap;
+#user-list-container {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #ccc;
 }
 
-#usernameInput {
-    padding: 8px;
-    background-color: #383838;
-    color: #f0f0f0;
-    border: 1px solid #555;
-    border-radius: 4px;
-    width: 120px;
-    flex-shrink: 0;
-    margin-left: auto;
+#user-list {
+    list-style: none;
+    padding: 0;
+    font-size: 0.9em;
 }
 
-.header-area button {
-    padding: 8px 15px;
-    background-color: #585858;
-    color: white;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+#user-list li {
+    margin-bottom: 4px;
+    color: #333;
 }
 
-.header-area button:hover {
-    background-color: #4a4a4a;
+.user-self {
+    font-weight: bold;
+    color: #0056b3 !important; /* Blue for your own name */
 }
 
-#clearChatBtn {
-    background-color: #8d0801;
-}
-
-#clearChatBtn:hover {
-    background-color: #6d0600;
-}
-
-.messages-area {
+#chat-area {
     flex-grow: 1;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     padding: 10px;
 }
 
-#messages {
+/* --- Input Form --- */
+#form {
+    background: #fff;
+    padding: 0.5rem;
+    position: fixed;
+    bottom: 0;
+    width: calc(100% - 250px); /* Adjust width for sidebar */
+    max-width: 950px;
     display: flex;
-    flex-direction: column;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+
+#form input {
+    border: 1px solid #ccc;
+    padding: 0.5rem;
+    flex-grow: 1;
+    border-radius: 4px;
+    margin-right: 0.5rem;
+}
+
+#form button {
+    background: #007bff;
+    border: none;
+    padding: 0.5rem 1rem;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* --- Message List --- */
+#messages {
     list-style: none;
     padding: 0;
     margin: 0;
-}
-
-.msg {
-    margin-bottom: 10px;
-    max-width: 80%;
-    padding: 8px 12px;
-    word-wrap: break-word;
-    border-radius: 10px;
-    border: 1px solid transparent;
-}
-
-.msg-header {
-    font-size: 0.8em;
-    margin-bottom: 3px;
-    font-weight: bold;
-    color: #b0b0b0;
-}
-
-.other {
-    align-self: flex-start;
-    background-color: #2c2c2c;
-    border-bottom-left-radius: 2px;
-}
-
-.own {
-    align-self: flex-end;
-    background-color: #4a4a4a;
-    color: white;
-    border-bottom-right-radius: 2px;
-}
-
-.admin-msg {
-    background-color: #FFD700;
-    border: 1px solid #FFD700;
-    color: #333;
-    box-shadow: 0 0 5px rgba(255, 215, 0, 0.4);
-}
-
-.admin-msg .msg-header {
-    color: #806200;
-}
-
-.own.admin-msg {
-    border-bottom-right-radius: 2px;
-    border-bottom-left-radius: 10px;
-}
-
-.other.admin-msg {
-    border-bottom-left-radius: 2px;
-    border-bottom-right-radius: 10px;
-}
-
-.system-msg, .admin-system-msg {
-    align-self: center;
-    background: none;
-    font-style: italic;
-    color: #888;
-    text-align: center;
-    padding: 5px;
-    border-radius: 0;
-    margin: 5px 0;
-}
-.admin-system-msg {
-    color: #ff6347;
-    font-weight: bold;
-}
-
-#messageForm {
-    display: flex;
-    padding: 10px;
-    background-color: #2c2c2c;
-    border-top: 1px solid #444;
-}
-
-.input-container {
     flex-grow: 1;
     display: flex;
-    width: 100%;
-    position: relative;
+    flex-direction: column; /* Stacks messages vertically */
 }
 
-.custom-input {
-    flex-grow: 1;
-    padding: 10px;
-    background-color: #383838;
-    color: #f0f0f0;
-    border: 1px solid #555;
-    border-radius: 4px;
-    margin-right: 8px;
-    outline: none;
-    cursor: text;
-    box-sizing: border-box;
-    min-height: 40px;
-}
-
-#messageForm button {
-    padding: 10px 15px;
-    background-color: #585858;
-    color: white;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-}
-
-#messageForm button:hover {
-    background-color: #4a4a4a;
-}
-
-.chat-plain {
-  font-size: 0.9em;
-  color: #888;
-  text-align: center;
-  font-style: italic;
-  margin: 10px 0;
-}
-
-/* DM User Menu */
-.dm-user-menu {
-    position: absolute;
-    bottom: 45px;
-    background-color: #2c2c2c;
-    border: 1px solid #444;
-    border-radius: 8px;
-    max-height: 150px;
-    overflow-y: auto;
-    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    min-width: 150px;
-    padding: 5px;
-}
-
-.dm-user-menu button {
-    background-color: transparent;
-    border: none;
-    color: white;
-    text-align: left;
-    padding: 8px 12px;
-    cursor: pointer;
+#messages li {
+    padding: 8px 10px;
     border-radius: 6px;
-    transition: background-color 0.2s;
-    font-size: 14px;
+    margin-bottom: 5px;
+    word-wrap: break-word;
+    max-width: 75%;
+    align-self: flex-start; /* Default alignment (public/other) */
+    background: #fff;
+    border: 1px solid #eee;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.05);
 }
 
-.dm-user-menu button.highlighted, .dm-user-menu button:hover {
-    background-color: #555;
-}
-
-/* Style for private messages */
-.msg.private {
-    background-color: #31332c;
-    border: 1px solid #5a6646;
-}
-
-.msg.own.private {
-    background-color: #2b353d;
-    border: 1px solid #465a66;
-}
-
-.msg.private .msg-header, .msg.own.private .msg-header {
-    color: #b9b9b9;
-}
-
-/* Modal Styles */
-.modal {
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+.message-header {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    align-items: baseline;
+    margin-bottom: 3px;
 }
 
-.modal-content {
-    background-color: #2c2c2c;
-    padding: 25px 30px;
-    border: 1px solid #444;
-    width: 80%;
-    max-width: 400px;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    color: white;
+.username {
+    font-weight: bold;
+    color: #333;
+    margin-right: 8px;
 }
 
-.modal-content p {
-    margin-top: 0;
-    margin-bottom: 20px;
-    font-size: 1.1em;
-    color: white;
+.username-admin {
+    font-weight: bold;
+    color: #cc0000; /* Red for Admin/System */
+    margin-right: 8px;
 }
 
-/* Style for all buttons inside the modal-content */
-.modal-content button {
-    padding: 10px 20px;
-    color: white;
+.timestamp {
+    font-size: 0.75em;
+    color: #999;
+    margin-left: auto;
+}
+
+.system-message {
+    background: #fff3cd;
+    color: #664d03;
+    border-left: 5px solid #ffc300;
+    font-style: italic;
+}
+
+/* --- Private Message Styling (The Fix Visuals) --- */
+
+.private-message {
+    padding: 10px 15px;
+    margin: 5px 0;
+    border-radius: 12px;
+    max-width: 60%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    margin: 5px;
 }
 
-/* Specific button styles within admin modal */
-.modal-content button:nth-child(2) {
-    background-color: #8d0801;
-}
-.modal-content button:nth-child(2):hover {
-    background-color: #6d0600;
-}
-
-/* Specific button styles within staff name modal */
-#staffNameModal .modal-content button {
-    background-color: #585858; /* Gray color */
+/* Sent Private Message (RHS bubble, Green) */
+.private-message-self {
+    background-color: #dcf8c6; /* Light green bubble */
+    align-self: flex-end; /* Push to the right */
+    margin-left: auto;
 }
 
-#staffNameModal .modal-content button:hover {
-    background-color: #4a4a4a;
+/* Received Private Message (LHS bubble, Gray) */
+.private-message-other {
+    background-color: #f0f0f0; /* Light gray bubble */
+    align-self: flex-start; /* Stay on the left */
+    margin-right: auto;
 }
 
-/* New CSS to handle the placeholder */
-.custom-input[data-placeholder]:empty::before {
-    content: attr(data-placeholder);
-    color: #888;
-    cursor: text;
-    pointer-events: none;
+.private-indicator {
+    font-weight: bold;
+    color: #990000; /* Dark Red/Maroon for Private tag */
+    margin-left: 8px;
+    font-size: 0.8em;
+}
+
+.private-to {
+    color: #444;
+    font-size: 0.9em;
+    font-style: italic;
+    margin-left: 5px;
 }
