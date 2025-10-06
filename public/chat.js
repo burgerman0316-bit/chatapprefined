@@ -1,157 +1,132 @@
 const socket = io();
 
-// DOM Elements
-const usernameModal = document.getElementById('usernameModal');
+// Elements
 const usernameInput = document.getElementById('usernameInput');
 const joinBtn = document.getElementById('joinBtn');
-const usernameError = document.getElementById('usernameError');
-const usernameClose = document.getElementById('usernameClose');
+const displayNameEl = document.getElementById('displayName');
+const messagesDiv = document.getElementById('messages');
+const messageInputDiv = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
+const container = document.getElementById('container');
+const overlay = document.getElementById('overlay');
+const loginModal = document.getElementById('loginModal');
 
 const dmModal = document.getElementById('dmModal');
 const dmUserList = document.getElementById('dmUserList');
-const dmClose = document.getElementById('dmClose');
 
 const adminModal = document.getElementById('adminModal');
 const adminPanelBtn = document.getElementById('adminPanelBtn');
-const adminClose = document.getElementById('adminClose');
-const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-
-const chatMessages = document.getElementById('chat-messages');
-const messageInput = document.getElementById('messageInput');
-const sendBtn = document.getElementById('sendBtn');
+const clearChatBtn = document.getElementById('clearChatBtn');
+const hardwareBanBtn = document.getElementById('hardwareBanBtn');
+const adminUserList = document.getElementById('adminUserList');
 
 let displayName = '';
-let secureName = '';
 let isAdmin = false;
-let dmRecipient = null;
+let privateRecipient = '';
 
-// Show username modal
-usernameModal.style.display = 'flex';
+// Utility
+function appendMessage(msg) {
+    const item = document.createElement('li');
+    item.classList.add('msg');
 
-// ========== Username logic ==========
+    if (msg.isPrivate) {
+        item.classList.add('other');
+        item.innerHTML = `<strong>${msg.sender} → ${msg.recipient}:</strong> ${msg.content}`;
+    } else if (msg.username === displayName) {
+        item.classList.add('own');
+        item.innerHTML = `<strong>You:</strong> ${msg.content}`;
+    } else if (msg.username === 'System') {
+        item.classList.add('system');
+        item.textContent = msg.content;
+    } else {
+        item.classList.add('other');
+        item.innerHTML = `<strong>${msg.username}:</strong> ${msg.content}`;
+    }
+
+    messagesDiv.appendChild(item);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+
+// Login
 joinBtn.addEventListener('click', () => {
     const name = usernameInput.value.trim();
-    if (name) {
-        socket.emit('check_staff_status', name);
+    if (!name) return;
+    socket.emit('check_staff_status', name);
+});
+
+// Enter to send message
+messageInputDiv.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendBtn.click();
     }
 });
 
-usernameClose.addEventListener('click', () => {
-    usernameModal.style.display = 'none';
+// Send message
+sendBtn.addEventListener('click', () => {
+    const content = messageInputDiv.innerText.trim();
+    if (!content) return;
+
+    if (privateRecipient) {
+        socket.emit('private message', { recipient: privateRecipient, content });
+        privateRecipient = '';
+        messageInputDiv.innerText = '';
+        return;
+    }
+
+    socket.emit('chat message', { username: displayName, content });
+    messageInputDiv.innerText = '';
 });
 
+// Socket events
 socket.on('name_accepted', name => {
     displayName = name;
-    secureName = name;
-    usernameModal.style.display = 'none';
-});
-
-socket.on('staff_name_reserved_modal', msg => {
-    usernameError.textContent = msg;
-});
-
-socket.on('name_in_use_modal', msg => {
-    usernameError.textContent = msg;
+    displayNameEl.textContent = displayName;
+    loginModal.style.display = 'none';
+    overlay.style.display = 'none';
+    container.style.pointerEvents = 'auto';
 });
 
 socket.on('staff_status_update', data => {
     displayName = data.displayName;
-    secureName = data.secureName;
     isAdmin = data.isAdmin;
-    usernameModal.style.display = 'none';
+    displayNameEl.textContent = displayName;
+    loginModal.style.display = 'none';
+    overlay.style.display = 'none';
+    container.style.pointerEvents = 'auto';
+
     if (isAdmin) adminPanelBtn.style.display = 'inline-block';
 });
 
-// ========== Chat message display ==========
-function appendMessage(msg) {
-    const div = document.createElement('div');
-    if (msg.isPrivate) {
-        div.classList.add('message', msg.sender === displayName ? 'own' : 'other');
-        div.textContent = `(Private) ${msg.sender} → ${msg.recipient}: ${msg.content}`;
-    } else if (msg.username === 'System') {
-        div.classList.add('message', 'system');
-        div.textContent = msg.content;
-    } else {
-        div.classList.add('message', msg.username === displayName ? 'own' : 'other');
-        div.textContent = `${msg.username}: ${msg.content}`;
-    }
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-socket.on('chat message', appendMessage);
-socket.on('private message', appendMessage);
-socket.on('chat history', history => {
-    chatMessages.innerHTML = '';
-    history.forEach(appendMessage);
+socket.on('staff_name_reserved_modal', msg => {
+    alert(msg);
 });
 
-// ========== Sending messages ==========
-function sendMessage() {
-    const content = messageInput.innerText.trim();
-    if (!content) return;
-
-    // Check for DM trigger
-    if (content.startsWith('/msg')) {
-        showDMModal();
-        messageInput.innerText = '';
-        return;
-    }
-
-    const payload = { username: secureName || displayName, content };
-    socket.emit('chat message', payload);
-    messageInput.innerText = '';
-}
-
-sendBtn.addEventListener('click', sendMessage);
-
-// Press enter to send
-messageInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        sendMessage();
-    }
+socket.on('name_in_use_modal', msg => {
+    alert(msg);
 });
 
-// ========== DM Modal ==========
-function showDMModal() {
-    socket.emit('request_user_list');
-    dmModal.style.display = 'flex';
-}
+socket.on('chat message', msg => appendMessage(msg));
+socket.on('private message', msg => appendMessage(msg));
 
-// Close DM modal
-dmClose.addEventListener('click', () => {
-    dmModal.style.display = 'none';
-});
-
-// Populate DM users list dynamically
-socket.on('user count', data => {
-    dmUserList.innerHTML = '';
-    data.userList.forEach(user => {
-        if (user !== displayName) {
-            const li = document.createElement('li');
-            li.textContent = user;
-            li.addEventListener('click', () => {
-                dmRecipient = user;
-                messageInput.innerText = `[${user}]: `;
-                dmModal.style.display = 'none';
-            });
-            dmUserList.appendChild(li);
-        }
-    });
-});
-
-// ========== Admin Modal ==========
+// Admin Panel
 adminPanelBtn.addEventListener('click', () => {
     adminModal.style.display = 'flex';
 });
 
-adminClose.addEventListener('click', () => {
-    adminModal.style.display = 'none';
+// Close modals
+document.querySelectorAll('.closeBtn').forEach(btn => {
+    btn.addEventListener('click', e => {
+        e.target.closest('.modal').style.display = 'none';
+    });
 });
 
-// Clear history
-clearHistoryBtn.addEventListener('click', () => {
-    if (!isAdmin) return;
+// Clear chat
+clearChatBtn.addEventListener('click', () => {
     socket.emit('admin:clear_history', { username: displayName });
+});
+
+// Dummy hardware ban (open modal and pick user)
+hardwareBanBtn.addEventListener('click', () => {
+    alert('Select a user to hardware ban (functionality placeholder).');
 });
