@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chat App</title>
+<title>Socket.IO Chat</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,10 +24,26 @@
   <form id="messageForm">
     <div class="input-container">
       <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
-      <div class="dm-user-menu" style="display:none;"></div>
     </div>
     <button type="submit">Send</button>
   </form>
+</div>
+
+<!-- Generic modal for warnings -->
+<div id="genericModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <button id="closeGenericModal" class="close-btn">X</button>
+    <p id="genericModalText"></p>
+  </div>
+</div>
+
+<!-- DM selection modal -->
+<div id="dmModal" class="modal" style="display:none;">
+  <div class="modal-content">
+    <button id="closeDmModal" class="close-btn">X</button>
+    <h3>Select a user to DM</h3>
+    <div id="dmUserList" class="dm-user-menu"></div>
+  </div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
