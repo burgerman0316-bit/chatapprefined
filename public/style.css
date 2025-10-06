@@ -1,4 +1,4 @@
-/* --- General Layout --- */
+/* --- 1. General Structural Reset --- */
 body { 
     margin: 0; 
     padding-bottom: 3rem; 
@@ -10,16 +10,15 @@ body {
     display: flex;
     max-width: 1200px;
     margin: 0 auto;
-    /* Use min-height 100vh to allow scrolling beyond 100vh */
     min-height: 100vh; 
 }
 
+/* --- 2. Sidebar/User List --- */
 #user-info {
     width: 250px;
     padding: 15px;
     background: #e9e9e9;
     border-right: 1px solid #ccc;
-    /* Use height: 100vh to make it stick to the screen size */
     height: 100vh; 
     position: sticky;
     top: 0;
@@ -44,23 +43,22 @@ body {
 
 .user-self {
     font-weight: bold;
-    color: #0056b3 !important; /* Blue for your own name */
+    color: #0056b3 !important;
 }
 
 #chat-area {
     flex-grow: 1;
-    display: flex;
-    flex-direction: column;
     padding: 10px;
+    /* Revert to default flow, not flex, for traditional list look */
 }
 
-/* --- Input Form --- */
+/* --- 3. Input Form --- */
 #form {
     background: #fff;
     padding: 0.5rem;
     position: fixed;
     bottom: 0;
-    /* Ensure the form sits correctly next to the sidebar */
+    /* Calculate position based on the 1200px max-width container and 250px sidebar */
     left: calc(50% - 600px + 250px); 
     width: calc(100% - 250px); 
     max-width: 950px;
@@ -86,21 +84,19 @@ body {
     cursor: pointer;
 }
 
-/* --- Message List (Revert to Original Look) --- */
-
-/* Removed flex-direction: column from #messages to allow original list item flow */
+/* --- 4. Message List (Original Look) --- */
 #messages {
-    list-style-type: none; /* Only remove bullet points */
+    list-style-type: none; 
     padding: 0;
     margin: 0;
 }
 
-/* Public messages use the original styling - no aggressive bubble formatting */
+/* The core public message item */
 #messages li {
-    padding: 5px 0;
+    padding: 5px 0; /* Minimal padding */
     margin-bottom: 0;
     word-wrap: break-word;
-    border-bottom: 1px dotted #ccc;
+    border-bottom: 1px dotted #ccc; /* Simple separator line */
 }
 
 .message-header {
@@ -117,19 +113,18 @@ body {
 
 .username-admin {
     font-weight: bold;
-    color: #cc0000; /* Red for Admin/System */
+    color: #cc0000;
     margin-right: 8px;
 }
 
 .timestamp {
     font-size: 0.75em;
     color: #999;
-    margin-left: 8px; /* Original spacing */
+    margin-left: 8px;
 }
 
 .message-content {
     margin-top: 2px;
-    padding-left: 5px; /* Slight indentation for content */
 }
 
 .system-message {
@@ -140,29 +135,29 @@ body {
 }
 
 
-/* --- Private Message Styling (The Bubble Fix) --- */
+/* --- 5. Private Message Styling (The Specific Fix) --- */
 
-/* Private messages break the list flow with specific styling */
+/* DM items must override the public style to be a bubble */
 .private-message {
     padding: 10px 15px;
-    margin: 5px 0;
+    margin: 8px 0; /* Add margin to separate the bubbles from the text list */
     border-radius: 12px;
     max-width: 60%;
     box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     border: none;
     list-style-type: none;
-    /* This makes DMs float like a bubble in the original list flow */
+    /* CRITICAL: Allows the item to use margin-left/right: auto for floating */
     display: block; 
 }
 
-/* Sent Private Message (RHS bubble, Green) */
+/* Sent DM (RHS bubble, Green) */
 .private-message-self {
     background-color: #dcf8c6; 
     margin-left: auto;
     margin-right: 0; 
 }
 
-/* Received Private Message (LHS bubble, Gray) */
+/* Received DM (LHS bubble, Gray) */
 .private-message-other {
     background-color: #f0f0f0; 
     margin-right: auto;
