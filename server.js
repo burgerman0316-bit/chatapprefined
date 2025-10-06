@@ -25,9 +25,11 @@ const namesInUse = new Set();
 const socketsMap = new Map();
 const usernamesMap = new Map(); // Map: lowercased display name -> socket ID
 
+// --- Setup Static Files ---
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
+// --- Utility Functions ---
 function isNameReserved(name) {
   if (!name) return false;
   const check = name.trim().toLowerCase();
@@ -58,6 +60,7 @@ function broadcastUserCount() {
   io.emit('user count', { count: namesInUse.size, userList });
 }
 
+// --- Socket.IO Handlers ---
 io.on('connection', (socket) => {
   console.log('socket connected:', socket.id);
   socket.emit('chat history', chatHistory);
@@ -146,6 +149,7 @@ io.on('connection', (socket) => {
         return;
       }
       const staffInfo = getStaffDisplayInfo(msg.username);
+      // Regular messages are NOT marked as isPrivate
       const messageData = { username: staffInfo.username, content: msg.content, timestamp: new Date(), isAdmin: staffInfo.isAdmin, secureName: staffInfo.secureName };
       pushHistory(messageData);
       io.emit('chat message', messageData);
@@ -155,7 +159,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // *** PRIVATE MESSAGE HANDLER FIX ***
+  // --- PRIVATE MESSAGE HANDLER (FIXED) ---
   socket.on('private message', (msg) => {
     const senderDisplayName = socketsMap.get(socket.id);
     if (!senderDisplayName) {
@@ -178,39 +182,34 @@ io.on('connection', (socket) => {
     }
 
     const recipientLower = recipientName.toLowerCase();
-    // Look up the recipient's socket ID using their lowercased display name
     const recipientSocketId = usernamesMap.get(recipientLower);
-
-    console.log(`[DM DEBUG] Attempting DM from ${senderDisplayName} to ${recipientName}`);
-    
+       
     if (recipientSocketId) {
       const messageData = {
         sender: senderDisplayName,
         recipient: recipientName,
         content: content,
-        timestamp: new Date()
+        timestamp: new Date(),
+        isPrivate: true // <-- CRITICAL FLAG for client styling
       };
       
-      console.log(`[DM DEBUG] SUCCESS: Targeting recipient ${recipientName} with Socket ID ${recipientSocketId}`);
-
-      // Send ONLY to the recipient
+      // 1. Send ONLY to the recipient
       io.to(recipientSocketId).emit('private message', messageData);
       
-      // Send system alert back to the sender just to confirm delivery
-      socket.emit('system_alert', `Private message sent to ${recipientName}.`);
+      // 2. Send a copy back to the sender so they see it
+      socket.emit('private message', messageData);
 
     } else {
-      console.log(`[DM DEBUG] FAIL: Recipient ${recipientName} not found or is offline.`);
       // Send error back ONLY to the sender
       socket.emit('system_error', `User '${recipientName}' not found or not online.`);
     }
   });
-  // *** END PRIVATE MESSAGE HANDLER ***
+  // --- END PRIVATE MESSAGE HANDLER ---
 
+  // --- ADMIN CLEAR HISTORY (FIXED) ---
   socket.on('admin:clear_history', (data) => {
     const info = getStaffDisplayInfo(data.username);
     if (info.isAdmin) {
-      // 1. Clear the server-side history array
       chatHistory.length = 0;
       
       const clearMsg = {
@@ -220,17 +219,16 @@ io.on('connection', (socket) => {
         isAdmin: true
       };
       
-      // 2. Push the system message to the new, empty history
       pushHistory(clearMsg);
       
-      // 3. FIX: Emit the 'chat history' event to all clients. This forces clients to clear and redraw.
+      // FIX: Emit the 'chat history' event to all clients to clear and redraw
       io.emit('chat history', chatHistory);
 
     } else {
       socket.emit('system_error', 'Unauthorized: Admin privileges required to clear history.');
     }
   });
-
+// ... (disconnect handler and server listen call)
   socket.on('disconnect', () => {
     const nameToRemove = socketsMap.get(socket.id);
     if (!nameToRemove) return;
