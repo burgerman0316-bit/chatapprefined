@@ -29,11 +29,40 @@
     </form>
   </div>
 
-  <div class="modal" id="staffNameModal" style="display:none;">
+  <!-- DM Modal -->
+  <div class="modal" id="dmModal" style="display:none;">
+    <div class="modal-content">
+      <button id="closeDmModal" class="modal-close">✖</button>
+      <h3>Select a user to DM</h3>
+      <div id="dmUserList" class="dm-user-list"></div>
+    </div>
+  </div>
+
+  <!-- Clear Chat Confirmation Modal -->
+  <div class="modal" id="clearChatModal" style="display:none;">
+    <div class="modal-content">
+      <h3>Clear Chat Confirmation</h3>
+      <p>Are you sure you want to clear the chat?</p>
+      <button id="confirmClearBtn">Yes, clear</button>
+      <button id="cancelClearBtn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Reserved Name Modal -->
+  <div class="modal" id="reservedNameModal" style="display:none;">
     <div class="modal-content">
       <h3>Name Reserved</h3>
-      <p>This name is reserved for staff. Please choose another name.</p>
-      <button id="staffModalCloseBtn">OK</button>
+      <p>This name is reserved for staff. Please choose another.</p>
+      <button id="closeReservedName">OK</button>
+    </div>
+  </div>
+
+  <!-- Name In Use Modal -->
+  <div class="modal" id="nameInUseModal" style="display:none;">
+    <div class="modal-content">
+      <h3>Name Taken</h3>
+      <p>This name is already in use. Please choose another.</p>
+      <button id="closeNameInUse">OK</button>
     </div>
   </div>
 
