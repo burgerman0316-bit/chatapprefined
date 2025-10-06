@@ -169,11 +169,16 @@ io.on('connection', (socket) => {
         content: msg.content,
         timestamp: new Date()
       };
-      // Send to recipient
+      
+      // *** FIX: Send ONLY to the recipient's socket ID ***
       io.to(recipientSocketId).emit('private message', messageData);
-      // Send back to sender
-      socket.emit('private message', messageData);
+      
+      // *** REMOVED: socket.emit('private message', messageData); ***
+      // The client already displays the message locally as soon as it sends it.
+      // Sending it back causes a duplicate.
+
     } else {
+      // Send error back ONLY to the sender
       socket.emit('system_error', `User '${msg.recipient}' not found or not online.`);
     }
   });
