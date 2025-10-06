@@ -74,7 +74,7 @@ io.on('connection', socket => {
   socket.emit('chat history', chatHistory);
   broadcastUserCount();
 
-  // Name check (FIXED REFRESH BUG LOGIC)
+  // Name check 
   socket.on('check_staff_status', enteredName => {
     const name = (enteredName || '').trim();
     const lower = name.toLowerCase();
@@ -93,7 +93,7 @@ io.on('connection', socket => {
              return;
         }
         
-        // Proactively remove the old state for the same user trying to reconnect
+        // Proactively remove the old state for the same user trying to reconnect (refresh fix)
         namesInUse.delete(lower);
         usernamesMap.delete(lower);
     }
@@ -206,8 +206,13 @@ io.on('connection', socket => {
   // Clear history (admin only)
   socket.on('admin:clear_history', data => {
     const info = getStaffDisplayInfo(data.username);
+    
+    // --- START LOGGING FOR DEBUG ---
+    console.log(`[ADMIN DEBUG] Attempting to clear history by: ${data.username} (Is Admin: ${info.isAdmin})`);
+    
     if (!info.isAdmin) {
       socket.emit('system_error', 'Unauthorized: Admin privileges required.');
+      console.log(`[ADMIN DEBUG] History clear DENIED for ${data.username}.`);
       return;
     }
 
@@ -224,6 +229,9 @@ io.on('connection', socket => {
     
     // Broadcast the command to ALL clients to clear their UI
     io.emit('admin:history_cleared', clearMsg);
+    
+    console.log(`[ADMIN DEBUG] History cleared and 'admin:history_cleared' broadcast sent.`);
+    // --- END LOGGING FOR DEBUG ---
   });
   
   // Kick User (admin only)
@@ -262,7 +270,7 @@ io.on('connection', socket => {
       }
   });
 
-  // Disconnect (FIXED REFRESH BUG LOGIC)
+  // Disconnect 
   socket.on('disconnect', () => {
     const name = socketsMap.get(socket.id);
     if (!name) return;
