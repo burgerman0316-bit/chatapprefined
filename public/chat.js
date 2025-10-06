@@ -65,12 +65,14 @@ function addMessage(username, content, timestamp, isSystem = false, isAdmin = fa
     msgEl.classList.add("admin-msg");
   }
 
+  // CRITICAL: Ensure the private class is applied
   if (isPrivate) msgEl.classList.add("private");
 
   if (username && !isSystem) {
     const headerEl = document.createElement("div");
     headerEl.classList.add("msg-header");
-    headerEl.textContent = isPrivate ? `(Private) ${username}` : username;
+    // CRITICAL: Ensure the (Private) text is added
+    headerEl.textContent = isPrivate ? `(Private) ${username}` : username; 
     msgEl.appendChild(headerEl);
   }
 
@@ -178,8 +180,12 @@ function sendMessage() {
       content,
       timestamp: new Date()
     };
-    // debug: console.log('emit private message', messageData);
+    
+    // DEBUG: Log the emission of the private message
+    console.log(`[DM DEBUG] Sending private message to ${recipient}: ${content}`);
     socket.emit("private message", messageData);
+    
+    // CRITICAL: Display the message on the SENDER's screen as private
     addMessage(currentUser.displayName, content, new Date(), false, false, true);
 
   } else {
@@ -302,15 +308,27 @@ socket.on('name_change_failed', (reason) => {
   usernameInput.value = currentUser.displayName;
 });
 
+// --- MESSAGE LISTENERS ---
 socket.on('chat message', (msg) => {
+  // DEBUG: Log public message reception
+  console.log(`[PUBLIC MESSAGE] Received: ${msg.username}: ${msg.content}`); 
   addMessage(msg.username, msg.content, msg.timestamp, false, msg.isAdmin, false);
 });
 
 socket.on('private message', (msg) => {
   const sender = msg.sender || msg.username || msg.from;
   const content = msg.content;
+  // DEBUG: Log private message reception
+  console.warn(`[PRIVATE MESSAGE] Received from ${sender} (Target: ${msg.recipient || 'N/A'}): ${content}`); 
+  // CRITICAL: Call addMessage with isPrivate=true
   addMessage(sender, content, msg.timestamp || new Date(), false, false, true);
 });
+
+// NEW LISTENER for server-side delivery confirmations/errors
+socket.on('system_alert', (message) => {
+  addMessage("System Alert", message, new Date(), true);
+});
+// --- END MESSAGE LISTENERS ---
 
 socket.on('staff message', (msg) => {
   addMessage(msg.username, msg.content, msg.timestamp, true, msg.isAdmin, false);
