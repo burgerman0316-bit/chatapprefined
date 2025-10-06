@@ -34,7 +34,7 @@ body {
 }
 
 #user-info h2 { 
-    color: #fff; /* Pure white */
+    color: #fff; /* Pure white text for "Chat Info" */
 }
 
 #user-list {
@@ -43,7 +43,7 @@ body {
     margin: 0;
 }
 
-/* New: Style for user list items */
+/* Style for user list items */
 #user-list li {
     padding: 3px 0;
     cursor: pointer;
