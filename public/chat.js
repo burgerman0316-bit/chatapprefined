@@ -287,7 +287,8 @@ function sendMessage() {
             timestamp: new Date()
         };
         socket.emit("private message", messageData);
-        // Display the private message to the sender
+
+        // Also display the private message to the sender
         addMessage(currentUser.displayName, content, new Date(), false, false, true);
 
     } else {
