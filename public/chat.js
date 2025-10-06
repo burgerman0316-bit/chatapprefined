@@ -1,5 +1,6 @@
 const socket = io();
 
+// DOM Elements
 const usernameInput = document.getElementById('usernameInput');
 const joinBtn = document.getElementById('joinBtn');
 const clearChatBtn = document.getElementById('clearChatBtn');
@@ -8,113 +9,80 @@ const messagesDiv = document.getElementById('messages');
 const messageForm = document.getElementById('messageForm');
 const messageInputDiv = document.getElementById('messageInput');
 
-let displayName = '';
-let isAdmin = false;
-let currentDM = null;
+const nameModal = document.getElementById('nameModal');
+const nameModalText = document.getElementById('nameModalText');
+const nameModalOkBtn = document.getElementById('nameModalOkBtn');
+const closeNameModal = document.getElementById('closeNameModal');
 
-// ---------- Append functions ----------
+const dmModal = document.getElementById('dmModal');
+const closeDMModal = document.getElementById('closeDMModal');
+const dmUserList = document.getElementById('dmUserList');
+
+let displayName = '';
+let secureName = '';
+let isAdmin = false;
+let dmTarget = null;
+
+// Utility
 function appendMessage(msg) {
   const item = document.createElement('div');
-  if (msg.system) {
-    item.className = msg.isAdmin ? 'admin-system-msg' : 'system-msg';
+  if(msg.isSystem){
+    item.classList.add('system-msg');
     item.textContent = msg.content;
   } else {
     item.classList.add('msg');
-    item.classList.add(msg.isAdmin ? 'admin-msg' : (msg.username === displayName ? 'own' : 'other'));
-    item.innerHTML = `
-      <div class="msg-header">${msg.username}${msg.isPrivate ? ' (Private)' : ''}</div>
-      <div class="message-content">${msg.content}</div>
-      <div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>
-    `;
+    item.classList.add(msg.isPrivate ? 'private' : msg.username.toLowerCase() === displayName.toLowerCase() ? 'own' : 'other');
+    const header = document.createElement('div');
+    header.classList.add('msg-header');
+    header.textContent = msg.username + (msg.isAdmin ? ' (Admin)' : '') + (msg.isPrivate ? ' (Private)' : '');
+    const body = document.createElement('div');
+    body.classList.add('message-content');
+    body.textContent = msg.content;
+    item.appendChild(header);
+    item.appendChild(body);
   }
   messagesDiv.appendChild(item);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-function appendPrivateMessage(msg) {
-  const item = document.createElement('div');
-  item.classList.add('msg', 'private');
-  item.classList.add(msg.sender === displayName ? 'own' : 'other');
-
-  const head = msg.sender === displayName ? `You → ${msg.recipient}` : `${msg.sender} → You`;
-  item.innerHTML = `
-    <div class="msg-header">${head} <span class="private-indicator">(Private)</span></div>
-    <div class="message-content">${msg.content}</div>
-    <div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>
-  `;
-  messagesDiv.appendChild(item);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+function showNameModal(text) {
+  nameModalText.textContent = text;
+  nameModal.style.display = 'flex';
 }
 
-// ---------- Modal creation ----------
-function showModal(message) {
-  const modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.innerHTML = `
-    <div class="modal-content">
-      <button class="modal-close">&times;</button>
-      <p>${message}</p>
-      <button id="closeModalBtn">OK</button>
-    </div>`;
-  document.body.appendChild(modal);
-  modal.querySelector('.modal-close').onclick = modal.querySelector('#closeModalBtn').onclick = () => modal.remove();
-}
-
-function openDMUserModal(userList) {
-  const modal = document.createElement('div');
-  modal.className = 'modal';
-  const listHTML = userList
-    .filter(u => u !== displayName)
-    .map(u => `<div class="dm-user-item">${u}</div>`)
-    .join('');
-  modal.innerHTML = `
-    <div class="modal-content" id="dmUserModal">
-      <button class="modal-close">&times;</button>
-      <h3>Select a user to DM</h3>
-      ${listHTML || '<p>No other users online</p>'}
-    </div>`;
-  document.body.appendChild(modal);
-
-  modal.querySelector('.modal-close').onclick = () => modal.remove();
-  modal.querySelectorAll('.dm-user-item').forEach(item => {
-    item.onclick = () => {
-      currentDM = item.textContent;
-      modal.remove();
-      setDMTag(currentDM);
-    };
-  });
-}
-
-function setDMTag(name) {
-  messageInputDiv.innerHTML = `<span class="dm-tag">${name}:</span>&nbsp;`;
-  placeCaretAtEnd(messageInputDiv);
-}
-
-function placeCaretAtEnd(el) {
-  const range = document.createRange();
-  const sel = window.getSelection();
-  range.selectNodeContents(el);
-  range.collapse(false);
-  sel.removeAllRanges();
-  sel.addRange(range);
-}
-
-// ---------- Event listeners ----------
-joinBtn.onclick = () => {
+// Events
+joinBtn.addEventListener('click', () => {
   const name = usernameInput.value.trim();
-  if (name) socket.emit('check_staff_status', name);
-};
+  if(!name) return;
+  socket.emit('check_staff_status', name);
+});
 
-socket.on('name_rejected', msg => showModal(msg));
+nameModalOkBtn.addEventListener('click', () => {
+  nameModal.style.display = 'none';
+});
+
+closeNameModal.addEventListener('click', () => {
+  nameModal.style.display = 'none';
+});
+
+closeDMModal.addEventListener('click', () => {
+  dmModal.style.display = 'none';
+});
 
 socket.on('name_accepted', name => {
   displayName = name;
+  secureName = name;
   usernameInput.disabled = true;
   joinBtn.disabled = true;
 });
 
+socket.on('name_rejected', msg => {
+  showNameModal(msg);
+});
+
 socket.on('staff_status_update', data => {
   displayName = data.displayName;
+  secureName = data.secureName;
   isAdmin = data.isAdmin;
   usernameInput.disabled = true;
   joinBtn.disabled = true;
@@ -122,42 +90,59 @@ socket.on('staff_status_update', data => {
 });
 
 socket.on('chat message', appendMessage);
-socket.on('private message', appendPrivateMessage);
+socket.on('private message', appendMessage);
+
+socket.on('chat history', history => {
+  messagesDiv.innerHTML = '';
+  history.forEach(appendMessage);
+});
 
 socket.on('user count', data => {
   userCountDisplay.textContent = `${data.count} Users Online`;
-  socket.userList = data.userList;
 });
 
-socket.on('system_error', showModal);
-
-// ---------- Send logic ----------
+// Send messages
 messageForm.addEventListener('submit', e => {
   e.preventDefault();
-  const text = messageInputDiv.innerText.trim();
-  if (!text || !displayName) return;
+  const content = messageInputDiv.innerText.trim();
+  if(!content || !displayName) return;
 
-  if (text === '/msg') {
-    openDMUserModal(socket.userList || []);
-    messageInputDiv.innerText = '';
+  if(dmTarget){
+    socket.emit('private message', {recipient: dmTarget, content});
+    messageInputDiv.innerHTML = '';
+    dmTarget = null;
     return;
   }
 
-  if (currentDM) {
-    socket.emit('private message', { recipient: currentDM, content: text });
-    currentDM = null;
-    messageInputDiv.innerText = '';
+  if(content.startsWith('/msg ')){
+    dmModal.style.display = 'flex';
+    socket.emit('get_users');
     return;
   }
 
-  socket.emit('chat message', { username: displayName, content: text });
-  messageInputDiv.innerText = '';
+  socket.emit('chat message', {username: secureName || displayName, content});
+  messageInputDiv.innerHTML = '';
 });
 
-// Enter sends, Shift+Enter = newline
+// Fetch online users for DM modal
+socket.on('users_list', users => {
+  dmUserList.innerHTML = '';
+  users.filter(u => u !== displayName).forEach(u => {
+    const btn = document.createElement('button');
+    btn.textContent = u;
+    btn.addEventListener('click', () => {
+      dmTarget = u;
+      messageInputDiv.innerHTML = `<span class="dm-highlight">${u}:</span> `;
+      dmModal.style.display = 'none';
+    });
+    dmUserList.appendChild(btn);
+  });
+});
+
+// Pressing Enter sends message
 messageInputDiv.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
+  if(e.key === 'Enter' && !e.shiftKey){
     e.preventDefault();
-    messageForm.dispatchEvent(new Event('submit', { cancelable: true }));
+    messageForm.dispatchEvent(new Event('submit'));
   }
 });
