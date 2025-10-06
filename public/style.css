@@ -8,7 +8,7 @@ body {
   height: 100vh;
 }
 
-/* Main chat container */
+/* 🟣 Chat container centered */
 .chat-container {
   width: 100%;
   max-width: 600px;
@@ -23,31 +23,37 @@ body {
   position: relative;
 }
 
-/* Header area (top bar) */
+/* 🟢 Floating top-right header */
 .header-area {
-  padding: 10px;
-  background-color: #2c2c2c;
-  border-bottom: 1px solid #444;
+  position: absolute;
+  top: 10px;
+  right: 10px;
   display: flex;
-  gap: 10px; /* spacing between items */
+  gap: 10px;
   align-items: center;
+  background-color: rgba(44, 44, 44, 0.9);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  z-index: 10;
 }
 
 #userCountDisplay {
-  margin-right: 8px; /* space between label and input */
+  color: #ccc;
+  font-size: 0.9em;
 }
 
 #usernameInput {
-  padding: 8px;
+  padding: 6px 8px;
   background-color: #383838;
   color: #f0f0f0;
   border: 1px solid #555;
   border-radius: 4px;
-  width: 150px;
+  width: 130px;
 }
 
 .header-area button {
-  padding: 8px 15px;
+  padding: 6px 12px;
   background-color: #585858;
   color: white;
   border: none;
@@ -66,7 +72,7 @@ body {
   background-color: #6d0600;
 }
 
-/* Message area */
+/* 🟤 Message area */
 .messages-area {
   flex-grow: 1;
   overflow-y: auto;
@@ -79,6 +85,7 @@ body {
   gap: 5px;
 }
 
+/* Message bubble styling */
 .msg {
   margin-bottom: 10px;
   max-width: 80%;
@@ -135,14 +142,14 @@ body {
   color: #c0c0c0;
 }
 
-/* Input area (bottom form) */
+/* 🟠 Bottom input area */
 #messageForm {
   display: flex;
   align-items: center;
   padding: 10px;
   background-color: #2c2c2c;
   border-top: 1px solid #444;
-  gap: 10px; /* spacing between input and button */
+  gap: 10px; /* space between input and button */
 }
 
 .input-container {
@@ -157,7 +164,7 @@ body {
   border: 1px solid #555;
   border-radius: 4px;
   outline: none;
-  min-height: 32px; /* restored to smaller height */
+  min-height: 32px;
   max-height: 120px;
   overflow-y: auto;
 }
@@ -175,6 +182,7 @@ body {
   border: none;
   border-radius: 20px;
   cursor: pointer;
+  transition: background-color 0.3s;
 }
 #messageForm button:hover {
   background-color: #4a4a4a;
