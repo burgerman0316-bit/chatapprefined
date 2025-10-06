@@ -1,3 +1,5 @@
+// chat.js - Full and Corrected Script
+
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
 
@@ -7,7 +9,7 @@ const socket = io();
 // Elements
 const nameForm = document.getElementById('name-form');
 const nameInput = document.getElementById('name-input');
-const container = document.getElementById('container'); 
+const container = document.getElementById('container'); // Main chat container
 
 const displayNameEl = document.getElementById('display-name');
 const messagesDiv = document.getElementById('messages');
@@ -28,6 +30,7 @@ let isAdmin = false;
 
 // --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Show the login modal immediately upon load
     if (!document.getElementById('container').style.display || document.getElementById('container').style.display === 'none') {
         myModal.show();
     }
@@ -46,6 +49,7 @@ function appendMessage(msg) {
         item.classList.add('own');
         item.innerHTML = `<strong>You:</strong> ${msg.content} <span class="text-muted small">${timestamp}</span>`;
     } else {
+        // Fallback for others and private messages
         item.classList.add('other');
         const nameDisplay = msg.isPrivate ? `${msg.sender} → ${msg.recipient}` : msg.username;
         item.innerHTML = `<strong>${nameDisplay}:</strong> ${msg.content} <span class="text-muted small">${timestamp}</span>`;
@@ -59,19 +63,22 @@ function appendMessage(msg) {
 function updateUsers(userList) {
     userCountEl.textContent = userList.length;
     userListEl.innerHTML = '';
-    adminUserList.innerHTML = ''; 
+    adminUserList.innerHTML = ''; // For Admin Panel list
 
     userList.forEach(user => {
         const li = document.createElement('li');
         li.textContent = user;
         li.title = `Click to send private message to ${user}`;
         
+        // Add user to the main list
         userListEl.appendChild(li);
 
+        // Add user to the Admin Panel list
         if (isAdmin) {
              const adminLi = document.createElement('li');
              adminLi.textContent = user;
              
+             // Admin Kick functionality
              adminLi.addEventListener('click', () => {
                  if (user === displayName) {
                       alert('You cannot kick yourself!');
@@ -79,6 +86,7 @@ function updateUsers(userList) {
                  }
                  if (confirm(`Are you sure you want to KICK "${user}" from the chat?`)) {
                       socket.emit('admin:kick_user', { targetName: user, adminName: displayName });
+                      
                       const adminModal = bootstrap.Modal.getInstance(adminModalEl);
                       if (adminModal) adminModal.hide();
                  }
@@ -99,17 +107,17 @@ nameForm.addEventListener('submit', e => {
     socket.emit('check_staff_status', name);
 });
 
-// 2. Handle Message Form Submission (FIXED CLEAR COMMAND)
+// 2. Handle Message Form Submission (FIXED CLEAR COMMAND LOGIC)
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
     const content = messageInputDiv.innerText.trim();
     
-    // CRITICAL: Clear input box immediately for clean user experience
+    // CRITICAL: Clear input box immediately 
     messageInputDiv.innerText = ''; 
     
     if (!content) return;
 
-    // Check for /msg command
+    // Check for commands
     if (content.startsWith('/msg ')) {
         const parts = content.split(' ');
         const recipient = parts[1];
@@ -120,7 +128,6 @@ messageForm.addEventListener('submit', e => {
             appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg [username] [message]', timestamp: new Date() });
         }
     } 
-    // Check for /clear command
     else if (content.toLowerCase() === '/clear') {
         if (isAdmin) {
              if (confirm('Are you sure you want to clear the chat history for everyone?')) {
@@ -170,10 +177,12 @@ function handleSuccessfulLogin(data) {
     }
 }
 
-// Login Success handlers
+// Login Success for normal user
 socket.on('name_accepted', name => {
     handleSuccessfulLogin({ displayName: name, isAdmin: false });
 });
+
+// Login Success for staff
 socket.on('staff_status_update', data => {
     handleSuccessfulLogin(data);
 });
@@ -194,9 +203,9 @@ socket.on('chat history', history => {
 socket.on('chat message', msg => appendMessage(msg));
 socket.on('private message', msg => appendMessage(msg));
 
-// Admin Events (CRITICAL: This clears the UI for all clients)
+// Admin Events (CRITICAL: This handles the history clear command broadcast)
 socket.on('admin:history_cleared', msg => {
-    messagesDiv.innerHTML = ''; // Clears the entire message list
+    messagesDiv.innerHTML = ''; // Clears the entire message list for the client
     appendMessage(msg);         // Adds the system message about the clear
 });
 
