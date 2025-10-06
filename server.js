@@ -92,4 +92,17 @@ io.on('connection', socket => {
     io.emit('chat history', chatHistory);
   });
 
-  socket
+  socket.on('disconnect', () => {
+    const name = socketsMap.get(socket.id);
+    if (!name) return;
+    namesInUse.delete(name.toLowerCase());
+    usernamesMap.delete(name.toLowerCase());
+    socketsMap.delete(socket.id);
+    const leaveMsg = { username: 'System', content: `${name} left the chat.`, timestamp: new Date(), isAdmin: false };
+    pushHistory(leaveMsg);
+    io.emit('chat message', leaveMsg);
+    broadcastUserCount();
+  });
+});
+
+server.listen(process.env.PORT || 3000, () => console.log('Server running'));
