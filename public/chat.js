@@ -1,4 +1,4 @@
-// chat.js - Full and Corrected Script
+// chat.js - Full and Corrected Script with Debug Logging
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
@@ -12,7 +12,7 @@ const nameInput = document.getElementById('name-input');
 const container = document.getElementById('container'); // Main chat container
 
 const displayNameEl = document.getElementById('display-name');
-const messagesDiv = document.getElementById('messages');
+const messagesDiv = document.getElementById('messages'); // The <ul> element
 const messageInputDiv = document.getElementById('messageInput');
 const messageForm = document.getElementById('messageForm');
 
@@ -132,6 +132,7 @@ messageForm.addEventListener('submit', e => {
         if (isAdmin) {
              if (confirm('Are you sure you want to clear the chat history for everyone?')) {
                 socket.emit('admin:clear_history', { username: displayName });
+                console.log(`[CLIENT DEBUG] Sent 'admin:clear_history' command via input as ${displayName}.`); // LOG 1
              }
         } else {
             appendMessage({ username: 'System', content: 'You do not have permission to use the /clear command.', timestamp: new Date() });
@@ -154,6 +155,7 @@ messageInputDiv.addEventListener('keydown', e => {
 clearChatBtn.addEventListener('click', () => {
     if (confirm('Are you sure you want to clear the chat history for everyone?')) {
         socket.emit('admin:clear_history', { username: displayName });
+        console.log(`[CLIENT DEBUG] Sent 'admin:clear_history' command via button as ${displayName}.`); // LOG 1
         const adminModal = bootstrap.Modal.getInstance(adminModalEl);
         if (adminModal) adminModal.hide();
     }
@@ -205,8 +207,18 @@ socket.on('private message', msg => appendMessage(msg));
 
 // Admin Events (CRITICAL: This handles the history clear command broadcast)
 socket.on('admin:history_cleared', msg => {
-    messagesDiv.innerHTML = ''; // Clears the entire message list for the client
-    appendMessage(msg);         // Adds the system message about the clear
+    console.log(`[CLIENT DEBUG] Received 'admin:history_cleared' broadcast.`); // LOG 3
+    
+    // Explicitly check for the element before manipulation
+    const messagesElement = document.getElementById('messages');
+    
+    if (messagesElement) {
+        messagesElement.innerHTML = ''; // Clears the entire message list for the client
+        appendMessage(msg);             // Adds the system message about the clear
+        console.log(`[CLIENT DEBUG] UI cleared successfully.`);
+    } else {
+        console.error("[CLIENT DEBUG] ERROR: Could not find #messages element to clear UI.");
+    }
 });
 
 // System Alerts
