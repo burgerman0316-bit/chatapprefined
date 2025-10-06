@@ -5,16 +5,14 @@ const usernameInput = document.getElementById('usernameInput');
 const joinBtn = document.getElementById('joinBtn');
 const clearChatBtn = document.getElementById('clearChatBtn');
 const adminPanelBtn = document.getElementById('adminPanelBtn');
-
+const userCountDisplay = document.getElementById('userCountDisplay');
 const messagesDiv = document.getElementById('messages');
 const messageForm = document.getElementById('messageForm');
 const messageInputDiv = document.getElementById('messageInput');
-const userCountDisplay = document.getElementById('userCountDisplay');
 
-// Modals
 const dmModal = document.getElementById('dmModal');
-const dmUserList = document.getElementById('dmUserList');
 const dmCloseBtn = document.getElementById('dmCloseBtn');
+const dmUserList = document.getElementById('dmUserList');
 
 const nameErrorModal = document.getElementById('nameErrorModal');
 const nameErrorText = document.getElementById('nameErrorText');
@@ -22,71 +20,79 @@ const nameErrorClose = document.getElementById('nameErrorClose');
 
 const adminModal = document.getElementById('adminModal');
 const adminCloseBtn = document.getElementById('adminCloseBtn');
-
-// Admin modal elements
 const adminUserList = document.getElementById('adminUserList');
 const bannedUserList = document.getElementById('bannedUserList');
 const bannedIpList = document.getElementById('bannedIpList');
 
+// Admin buttons
+const adminClearHistoryBtn = document.getElementById('adminClearHistoryBtn');
 const banUsernameInput = document.getElementById('banUsernameInput');
 const banUsernameBtn = document.getElementById('banUsernameBtn');
 const unbanUsernameInput = document.getElementById('unbanUsernameInput');
 const unbanUsernameBtn = document.getElementById('unbanUsernameBtn');
-
 const banIpInput = document.getElementById('banIpInput');
 const banIpBtn = document.getElementById('banIpBtn');
 const unbanIpInput = document.getElementById('unbanIpInput');
 const unbanIpBtn = document.getElementById('unbanIpBtn');
-
 const forceDisconnectInput = document.getElementById('forceDisconnectInput');
 const forceDisconnectBtn = document.getElementById('forceDisconnectBtn');
-
-const adminClearHistoryBtn = document.getElementById('adminClearHistoryBtn');
 
 let displayName = '';
 let secureName = '';
 let isAdmin = false;
-let dmRecipient = null; // currently selected DM recipient
+let dmTarget = null;
 
-// =======================
-// Message append helpers
-// =======================
+// ====== MESSAGE APPEND ======
 function appendMessage(msg) {
     const item = document.createElement('div');
     item.classList.add('msg');
 
-    if (msg.isSystem) {
+    if(msg.isSystem) {
         item.classList.add('system');
-        item.innerHTML = msg.content;
-    } else if (msg.isPrivate) {
-        item.classList.add('private');
-        if (msg.sender.toLowerCase() === displayName.toLowerCase()) {
-            item.classList.add('own');
-            item.innerHTML = `<div class="msg-header">You → ${msg.recipient}</div><div class="message-content">${msg.content}</div><div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
-        } else {
-            item.classList.add('other');
-            item.innerHTML = `<div class="msg-header">${msg.sender} → You</div><div class="message-content">${msg.content}</div><div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
-        }
+        item.textContent = msg.content;
     } else {
-        if (msg.username.toLowerCase() === displayName.toLowerCase()) {
+        if(msg.isPrivate) item.classList.add('private');
+
+        if(msg.username.toLowerCase() === displayName.toLowerCase()) {
             item.classList.add('own');
         } else {
             item.classList.add('other');
         }
-        item.innerHTML = `<div class="msg-header">${msg.username}</div><div class="message-content">${msg.content}</div><div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
+
+        const header = document.createElement('div');
+        header.className = 'msg-header';
+        header.textContent = msg.username + (msg.isAdmin ? ' (Admin)' : '') + (msg.isPrivate ? ' (Private)' : '');
+        const body = document.createElement('div');
+        body.className = 'message-content';
+        body.textContent = msg.content;
+        const foot = document.createElement('div');
+        foot.className = 'timestamp';
+        foot.textContent = new Date(msg.timestamp).toLocaleTimeString();
+
+        item.appendChild(header);
+        item.appendChild(body);
+        item.appendChild(foot);
     }
 
     messagesDiv.appendChild(item);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// =======================
-// Join / Name handling
-// =======================
+// ====== MODAL HELPERS ======
+function showModal(modal) {
+    modal.style.display = 'flex';
+}
+
+function hideModal(modal) {
+    modal.style.display = 'none';
+}
+
+// ====== USER JOIN ======
 joinBtn.addEventListener('click', () => {
     const name = usernameInput.value.trim();
-    if (!name) return;
-    socket.emit('check_staff_status', name);
+    if(name) {
+        socket.emit('check_staff_status', name);
+    }
 });
 
 socket.on('name_accepted', name => {
@@ -108,159 +114,131 @@ socket.on('staff_status_update', data => {
 
 socket.on('name_rejected', msg => {
     nameErrorText.textContent = msg;
-    nameErrorModal.style.display = 'flex';
+    showModal(nameErrorModal);
 });
 
-// =======================
-// Message handling
-// =======================
+// ====== CHAT MESSAGES ======
+socket.on('chat message', msg => appendMessage(msg));
+socket.on('private message', msg => appendMessage(msg));
+socket.on('chat history', history => {
+    messagesDiv.innerHTML = '';
+    history.forEach(m => appendMessage(m));
+});
+socket.on('user count', data => {
+    userCountDisplay.textContent = `${data.count} Users Online`;
+});
+
+// ====== MESSAGE SEND ======
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
-    sendMessage();
-});
+    const content = messageInputDiv.innerText.trim();
+    if(!content || !displayName) return;
 
-function sendMessage() {
-    if (!displayName) return;
-
-    let content = messageInputDiv.innerText.trim();
-    if (!content) return;
-
-    // Check for DM highlight
-    if (dmRecipient && content.startsWith(`${dmRecipient}:`)) {
-        const msgContent = content.substring(dmRecipient.length + 1).trim();
-        if (msgContent) {
-            socket.emit('private message', { recipient: dmRecipient, content: msgContent });
+    if(content.startsWith('/msg ')) {
+        const rest = content.substring(5).trim();
+        if(!rest) {
+            // show DM modal
+            socket.emit('request_user_list');
+            return;
         }
-        dmRecipient = null;
-        messageInputDiv.innerHTML = '';
-        return;
     }
 
-    // Check for /msg command to trigger DM modal
-    if (content.startsWith('/msg')) {
-        // Open DM modal
-        updateDmUserList();
-        dmModal.style.display = 'flex';
-        return;
+    let finalMsg = content;
+    let privateData = null;
+    if(dmTarget) {
+        privateData = { recipient: dmTarget, content };
+        finalMsg = `[DM to ${dmTarget}]: ${content}`;
+        dmTarget = null;
     }
 
-    // Regular message
-    socket.emit('chat message', { username: secureName || displayName, content });
-    messageInputDiv.innerHTML = '';
-}
+    socket.emit(privateData ? 'private message' : 'chat message', privateData || { username: secureName || displayName, content: finalMsg });
+    messageInputDiv.innerText = '';
+});
 
-// Enter sends message, Shift+Enter newline
+// ====== ENTER KEY SEND ======
 messageInputDiv.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if(e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        sendMessage();
+        messageForm.dispatchEvent(new Event('submit'));
     }
 });
 
-// =======================
-// DM modal handling
-// =======================
+// ====== DM MODAL ======
 dmCloseBtn.addEventListener('click', () => {
-    dmModal.style.display = 'none';
+    hideModal(dmModal);
+    messageInputDiv.innerText = '';
 });
 
-function updateDmUserList() {
+socket.on('user_list', list => {
     dmUserList.innerHTML = '';
-    socket.emit('request_user_list', null);
-}
-
-socket.on('user list', list => {
     list.forEach(user => {
-        if (user.toLowerCase() === displayName.toLowerCase()) return; // don't DM self
+        if(user.toLowerCase() === displayName.toLowerCase()) return;
         const btn = document.createElement('button');
         btn.textContent = user;
         btn.addEventListener('click', () => {
-            dmRecipient = user;
-            dmModal.style.display = 'none';
-            messageInputDiv.innerHTML = `<span style="background:rgba(0,123,255,0.3); padding:2px 4px; border-radius:4px;">${user}:</span> `;
-            placeCaretAtEnd(messageInputDiv);
-            messageInputDiv.focus();
+            dmTarget = user;
+            hideModal(dmModal);
+            messageInputDiv.innerText = `[${user}]: `;
         });
         dmUserList.appendChild(btn);
     });
+    showModal(dmModal);
 });
 
-// =======================
-// Name error modal
-// =======================
-nameErrorClose.addEventListener('click', () => {
-    nameErrorModal.style.display = 'none';
+// ====== NAME ERROR MODAL ======
+nameErrorClose.addEventListener('click', () => hideModal(nameErrorModal));
+
+// ====== ADMIN PANEL ======
+adminPanelBtn.addEventListener('click', () => {
+    socket.emit('request_admin_data');
+    showModal(adminModal);
 });
+adminCloseBtn.addEventListener('click', () => hideModal(adminModal));
 
-// =======================
-// Utility
-// =======================
-function placeCaretAtEnd(el) {
-    el.focus();
-    if (typeof window.getSelection != "undefined"
-        && typeof document.createRange != "undefined") {
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        range.collapse(false);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-    }
-}
+// ====== ADMIN BUTTONS ======
+adminClearHistoryBtn.addEventListener('click', () => socket.emit('admin:clear_history', { username: displayName }));
 
-// =======================
-// Admin panel
-// =======================
-adminPanelBtn.addEventListener('click', () => { adminModal.style.display = 'flex'; });
-adminCloseBtn.addEventListener('click', () => { adminModal.style.display = 'none'; });
-
-// Button events
-clearChatBtn.addEventListener('click', () => { socket.emit('admin:clear_history', { username: displayName }); });
-adminClearHistoryBtn.addEventListener('click', () => { socket.emit('admin:clear_history', { username: displayName }); });
 banUsernameBtn.addEventListener('click', () => {
     const u = banUsernameInput.value.trim();
-    if (u) socket.emit('admin:ban_user', { username: u });
+    if(u) socket.emit('admin:ban_user', u);
 });
 unbanUsernameBtn.addEventListener('click', () => {
     const u = unbanUsernameInput.value.trim();
-    if (u) socket.emit('admin:unban_user', { username: u });
+    if(u) socket.emit('admin:unban_user', u);
 });
 banIpBtn.addEventListener('click', () => {
     const ip = banIpInput.value.trim();
-    if (ip) socket.emit('admin:ban_ip', { ip });
+    if(ip) socket.emit('admin:ban_ip', ip);
 });
 unbanIpBtn.addEventListener('click', () => {
     const ip = unbanIpInput.value.trim();
-    if (ip) socket.emit('admin:unban_ip', { ip });
+    if(ip) socket.emit('admin:unban_ip', ip);
 });
 forceDisconnectBtn.addEventListener('click', () => {
     const u = forceDisconnectInput.value.trim();
-    if (u) socket.emit('admin:disconnect_user', { username: u });
+    if(u) socket.emit('admin:force_disconnect', u);
 });
 
-// =======================
-// Socket event listeners
-// =======================
-socket.on('chat message', msg => { appendMessage(msg); });
-socket.on('private message', msg => { appendMessage(msg); });
-socket.on('system_message', msg => { appendMessage({ content: msg, isSystem:true }); });
-socket.on('user count', data => { userCountDisplay.textContent = `${data.count} Users Online`; });
-socket.on('update_admin_lists', data => {
-    bannedUserList.innerHTML = '';
-    data.userBans.forEach(u => { const div = document.createElement('div'); div.textContent = u; bannedUserList.appendChild(div); });
-
-    bannedIpList.innerHTML = '';
-    data.ipBans.forEach(ip => { const div = document.createElement('div'); div.textContent = ip; bannedIpList.appendChild(div); });
-
+// ====== RECEIVE ADMIN DATA ======
+socket.on('admin_data', data => {
     adminUserList.innerHTML = '';
     data.onlineUsers.forEach(u => {
-        const div = document.createElement('div');
-        div.classList.add('admin-user-item');
-        div.textContent = u;
-        const btn = document.createElement('button');
-        btn.textContent = 'Kick';
-        btn.addEventListener('click', () => { socket.emit('admin:disconnect_user', { username: u }); });
-        div.appendChild(btn);
-        adminUserList.appendChild(div);
+        const li = document.createElement('div');
+        li.textContent = u;
+        adminUserList.appendChild(li);
+    });
+
+    bannedUserList.innerHTML = '';
+    data.bannedUsers.forEach(u => {
+        const li = document.createElement('div');
+        li.textContent = u;
+        bannedUserList.appendChild(li);
+    });
+
+    bannedIpList.innerHTML = '';
+    data.bannedIps.forEach(ip => {
+        const li = document.createElement('div');
+        li.textContent = ip;
+        bannedIpList.appendChild(li);
     });
 });
