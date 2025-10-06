@@ -1,45 +1,31 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>8th Grade Chat App</title>
-    <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat App</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="chat-container">
-        <div class="header-area">
-            <span id="userCountDisplay" class="user-count-badge">0 Users Online</span>
-            <input type="text" id="usernameInput" placeholder="Enter your name">
-            <button id="nameControlButton" onclick="handleNameAction()">Join Chat</button>
-            <div id="staffControls" class="staff-controls" style="display: none;">
-                <button id="clearChatBtn" onclick="showAdminModal()">Clear History</button>
-            </div>
-        </div>
-
-        <div class="messages-area">
-            <div id="messages"></div>
-        </div>
-
-        <form id="messageForm" onsubmit="sendMessage(); return false;">
-            <div class="input-container">
-                <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
-                <div id="dmUserMenu" class="dm-user-menu" style="display: none;"></div>
-            </div>
-            <button>Send</button>
-        </form>
+  <div class="chat-container">
+    <div class="header-area">
+      <span id="userCountDisplay">0 Users Online</span>
+      <input id="usernameInput" type="text" placeholder="Enter your name" />
+      <button id="joinBtn">Join Chat</button>
+      <button id="clearChatBtn" style="display: none;">Clear Chat</button>
     </div>
-
-    <div id="adminModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <p>Are you sure you want to clear the entire chat history?</p>
-            <button onclick="confirmClear()">Yes, Clear</button>
-            <button onclick="hideAdminModal()">Cancel</button>
-        </div>
+    <div class="messages-area">
+      <div id="messages"></div>
     </div>
+    <form id="messageForm">
+      <div class="input-container">
+        <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
+      </div>
+      <button type="submit">Send</button>
+    </form>
+  </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="chat.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="chat.js"></script>
 </body>
 </html>
