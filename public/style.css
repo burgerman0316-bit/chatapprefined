@@ -1,21 +1,15 @@
-/* ==========================
-   Basic Reset & Page Layout
-========================== */
-body, html {
+/* Basic Reset */
+body {
     margin: 0;
-    padding: 0;
     font-family: Arial, sans-serif;
-    background-color: #000; /* Page background black */
-    color: #f0f0f0;
+    background-color: #000000;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
 }
 
-/* ==========================
-   Chat Container
-========================== */
+/* Chat Container */
 .chat-container {
     width: 100%;
     max-width: 600px;
@@ -26,22 +20,19 @@ body, html {
     flex-direction: column;
     border-radius: 8px;
     overflow: hidden;
-    position: relative;
     color: #f0f0f0;
+    position: relative;
 }
 
-/* ==========================
-   Header Area
-========================== */
+/* Header/Controls Area */
 .header-area {
     padding: 10px;
     background-color: #2c2c2c;
     border-bottom: 1px solid #444;
     display: flex;
-    gap: 8px;
+    justify-content: space-between; /* pushes left and right sides apart */
     align-items: center;
     flex-wrap: wrap;
-    justify-content: space-between; /* Left info, right name input */
 }
 
 .right-header {
@@ -56,7 +47,7 @@ body, html {
     color: #f0f0f0;
     border: 1px solid #555;
     border-radius: 4px;
-    width: 140px;
+    width: 120px;
     flex-shrink: 0;
 }
 
@@ -82,9 +73,6 @@ body, html {
     background-color: #6d0600;
 }
 
-/* ==========================
-   Messages Area
-========================== */
 .messages-area {
     flex-grow: 1;
     overflow-y: auto;
@@ -99,9 +87,6 @@ body, html {
     margin: 0;
 }
 
-/* ==========================
-   Chat Messages
-========================== */
 .msg {
     margin-bottom: 10px;
     max-width: 80%;
@@ -131,23 +116,6 @@ body, html {
     border-bottom-right-radius: 2px;
 }
 
-/* Private messages */
-.msg.private {
-    background-color: #31332c;
-    border: 1px solid #5a6646;
-}
-
-.msg.own.private {
-    background-color: #2b353d;
-    border: 1px solid #465a66;
-}
-
-.msg.private .msg-header,
-.msg.own.private .msg-header {
-    color: #b9b9b9;
-}
-
-/* Admin messages */
 .admin-msg {
     background-color: #FFD700;
     border: 1px solid #FFD700;
@@ -169,9 +137,7 @@ body, html {
     border-bottom-right-radius: 10px;
 }
 
-/* System messages */
-.system-msg,
-.admin-system-msg {
+.system-msg, .admin-system-msg {
     align-self: center;
     background: none;
     font-style: italic;
@@ -187,9 +153,6 @@ body, html {
     font-weight: bold;
 }
 
-/* ==========================
-   Message Input Area
-========================== */
 #messageForm {
     display: flex;
     padding: 10px;
@@ -214,17 +177,10 @@ body, html {
     margin-right: 8px;
     outline: none;
     cursor: text;
+    box-sizing: border-box;
     min-height: 40px;
 }
 
-/* Placeholder text */
-.custom-input[data-placeholder]:empty::before {
-    content: attr(data-placeholder);
-    color: #888;
-    pointer-events: none;
-}
-
-/* Send button */
 #messageForm button {
     padding: 10px 15px;
     background-color: #585858;
@@ -238,9 +194,15 @@ body, html {
     background-color: #4a4a4a;
 }
 
-/* ==========================
-   DM User Menu
-========================== */
+.chat-plain {
+  font-size: 0.9em;
+  color: #888;
+  text-align: center;
+  font-style: italic;
+  margin: 10px 0;
+}
+
+/* DM User Menu */
 .dm-user-menu {
     position: absolute;
     bottom: 45px;
@@ -249,7 +211,7 @@ body, html {
     border-radius: 8px;
     max-height: 150px;
     overflow-y: auto;
-    box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
     z-index: 10;
     display: flex;
     flex-direction: column;
@@ -265,4 +227,96 @@ body, html {
     padding: 8px 12px;
     cursor: pointer;
     border-radius: 6px;
-    transition: background
+    transition: background-color 0.2s;
+    font-size: 14px;
+}
+
+.dm-user-menu button.highlighted, .dm-user-menu button:hover {
+    background-color: #555;
+}
+
+/* Style for private messages */
+.msg.private {
+    background-color: #31332c;
+    border: 1px solid #5a6646;
+}
+
+.msg.own.private {
+    background-color: #2b353d;
+    border: 1px solid #465a66;
+}
+
+.msg.private .msg-header, .msg.own.private .msg-header {
+    color: #b9b9b9;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: #2c2c2c;
+    padding: 25px 30px;
+    border: 1px solid #444;
+    width: 80%;
+    max-width: 400px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    color: white;
+}
+
+.modal-content p {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.1em;
+    color: white;
+}
+
+/* Style for all buttons inside the modal-content */
+.modal-content button {
+    padding: 10px 20px;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin: 5px;
+}
+
+/* Specific button styles within admin modal */
+.modal-content button:nth-child(2) {
+    background-color: #8d0801;
+}
+.modal-content button:nth-child(2):hover {
+    background-color: #6d0600;
+}
+
+/* Specific button styles within staff name modal */
+#staffNameModal .modal-content button {
+    background-color: #585858; /* Gray color */
+}
+
+#staffNameModal .modal-content button:hover {
+    background-color: #4a4a4a;
+}
+
+/* New CSS to handle the placeholder */
+.custom-input[data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: #888;
+    cursor: text;
+    pointer-events: none;
+}
