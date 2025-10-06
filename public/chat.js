@@ -30,7 +30,10 @@ let isAdmin = false;
 // --- Initial Setup ---
 // Show the login modal immediately upon load
 document.addEventListener('DOMContentLoaded', () => {
-    myModal.show();
+    // If the modal isn't already visible (e.g., from a previous session state), show it
+    if (!document.getElementById('container').style.display || document.getElementById('container').style.display === 'none') {
+        myModal.show();
+    }
 });
 
 // Utility: Appends a message to the chat
@@ -70,26 +73,28 @@ function updateUsers(userList) {
         // Add user to the main list
         userListEl.appendChild(li);
 
-        // Add user to the Admin Panel list
-        const adminLi = document.createElement('li');
-        adminLi.textContent = user;
-        
-        // Admin Kick functionality
-        adminLi.addEventListener('click', () => {
-            if (user === displayName) {
-                 alert('You cannot kick yourself!');
-                 return;
-            }
-            if (confirm(`Are you sure you want to KICK "${user}" from the chat?`)) {
-                 socket.emit('admin:kick_user', { targetName: user, adminName: displayName });
-                 
-                 // Optionally close the modal after action
-                 const adminModal = bootstrap.Modal.getInstance(adminModalEl);
-                 if (adminModal) adminModal.hide();
-            }
-        });
-        
-        adminUserList.appendChild(adminLi);
+        // Add user to the Admin Panel list (only if admin panel button is visible)
+        if (isAdmin) {
+             const adminLi = document.createElement('li');
+             adminLi.textContent = user;
+             
+             // Admin Kick functionality
+             adminLi.addEventListener('click', () => {
+                 if (user === displayName) {
+                      alert('You cannot kick yourself!');
+                      return;
+                 }
+                 if (confirm(`Are you sure you want to KICK "${user}" from the chat?`)) {
+                      socket.emit('admin:kick_user', { targetName: user, adminName: displayName });
+                      
+                      // Optionally close the modal after action
+                      const adminModal = bootstrap.Modal.getInstance(adminModalEl);
+                      if (adminModal) adminModal.hide();
+                 }
+             });
+             
+             adminUserList.appendChild(adminLi);
+        }
     });
 }
 
@@ -125,7 +130,6 @@ messageForm.addEventListener('submit', e => {
         if (isAdmin) {
              if (confirm('Are you sure you want to clear the chat history for everyone?')) {
                 socket.emit('admin:clear_history', { username: displayName });
-                messageInputDiv.innerText = ''; // Clear input
              }
         } else {
             appendMessage({ username: 'System', content: 'You do not have permission to use the /clear command.', timestamp: new Date() });
@@ -136,7 +140,7 @@ messageForm.addEventListener('submit', e => {
         socket.emit('chat message', { username: displayName, content });
     }
 
-    messageInputDiv.innerText = ''; // Clear input if not handled above
+    messageInputDiv.innerText = ''; // Clear input
 });
 
 // 3. Enter key in input box
@@ -151,7 +155,7 @@ messageInputDiv.addEventListener('keydown', e => {
 clearChatBtn.addEventListener('click', () => {
     if (confirm('Are you sure you want to clear the chat history for everyone?')) {
         socket.emit('admin:clear_history', { username: displayName });
-        // Optionally close modal after sending command
+        // Close modal after sending command
         const adminModal = bootstrap.Modal.getInstance(adminModalEl);
         if (adminModal) adminModal.hide();
     }
@@ -169,7 +173,7 @@ function handleSuccessfulLogin(data) {
     myModal.hide(); 
     container.style.display = 'flex'; 
 
-    // FIX: Show/Hide Admin Button
+    // FIX: Show/Hide Admin Button (Must be 'block' for button)
     if (isAdmin) {
         adminPanelBtn.style.display = 'block';
     } else {
