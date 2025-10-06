@@ -9,14 +9,13 @@ const userCountDisplay = document.getElementById('userCountDisplay');
 const messagesDiv = document.getElementById('messages');
 const messageForm = document.getElementById('messageForm');
 const messageInputDiv = document.getElementById('messageInput');
-const dmUserMenu = document.querySelector('.dm-user-menu');
+const dmMenu = document.querySelector('.dm-user-menu');
 
 let displayName = '';
 let secureName = '';
 let isAdmin = false;
-const usernamesMap = new Map(); // lowercase username -> socket id
 
-// ========== Utility / Append functions ==========
+// ================= Utility Functions =================
 
 function appendMessage(msg) {
   const item = document.createElement('div');
@@ -49,7 +48,7 @@ function appendPrivateMessage(msg) {
   if (isSender) item.classList.add('own');
   else item.classList.add('other');
 
-  const headerText = isSender ? `You → ${recipient}` : `${sender} → You`;
+  let headerText = isSender ? `You → ${recipient}` : `${sender} → You`;
   const header = `<div class="msg-header">${headerText} <span class="private-indicator">(Private)</span></div>`;
   const body = `<div class="message-content">${content}</div>`;
   const foot = `<div class="timestamp">${timestamp}</div>`;
@@ -59,14 +58,13 @@ function appendPrivateMessage(msg) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// ========== Event wiring ==========
+// ================= Event Handlers =================
 
 joinBtn.addEventListener('click', () => {
   const name = usernameInput.value.trim();
   if (name) socket.emit('check_staff_status', name);
 });
 
-// Socket listeners
 socket.on('name_accepted', name => {
   displayName = name;
   secureName = name;
@@ -87,76 +85,70 @@ socket.on('name_rejected', msg => alert('Name rejected: ' + msg));
 
 socket.on('chat message', msg => appendMessage(msg));
 socket.on('private message', msg => appendPrivateMessage(msg));
+
 socket.on('chat history', history => {
   messagesDiv.innerHTML = '';
   history.forEach(item => appendMessage(item));
 });
 
-socket.on('user count', data => userCountDisplay.textContent = `${data.count} Users Online`);
+socket.on('user count', data => {
+  userCountDisplay.textContent = `${data.count} Users Online`;
+});
+
 socket.on('system_error', msg => appendMessage({ username: 'System', content: `Error: ${msg}`, timestamp: new Date(), isAdmin: true }));
 socket.on('system_alert', msg => appendMessage({ username: 'System', content: `Alert: ${msg}`, timestamp: new Date(), isAdmin: true }));
 
-// ========== Handle message input ==========
+// ================= Enter Key Handling =================
+
+messageInputDiv.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    messageForm.dispatchEvent(new Event('submit', { cancelable: true }));
+  }
+});
+
+// ================= DM Menu Handling =================
+
+messageInputDiv.addEventListener('input', () => {
+  const text = messageInputDiv.innerText.trim();
+
+  // Only show DM menu if typing "/msg "
+  if (text.startsWith('/msg ')) {
+    const parts = text.substring(5).split(/\s+/);
+    const search = parts[0] || '';
+
+    // Get all users from #messages div (or your own user list if available)
+    const users = Array.from(document.querySelectorAll('.msg .msg-header'))
+      .map(h => h.textContent.replace(/ \(Admin\)/, '').split(' → ')[0])
+      .filter(u => u && u.toLowerCase() !== displayName.toLowerCase());
+
+    const matches = users.filter(u => u.toLowerCase().includes(search.toLowerCase()));
+
+    dmMenu.innerHTML = '';
+    matches.forEach(u => {
+      const btn = document.createElement('button');
+      btn.textContent = u;
+      btn.addEventListener('click', () => {
+        const msg = parts.slice(1).join(' ');
+        messageInputDiv.innerText = `/msg ${u} ${msg}`;
+        dmMenu.style.display = 'none';
+        messageInputDiv.focus();
+      });
+      dmMenu.appendChild(btn);
+    });
+
+    dmMenu.style.display = matches.length ? 'flex' : 'none';
+    dmMenu.style.flexDirection = 'column';
+  } else {
+    dmMenu.style.display = 'none';
+  }
+});
+
+// ================= Message Form Submission =================
 
 messageForm.addEventListener('submit', e => {
   e.preventDefault();
   const content = messageInputDiv.innerText.trim();
   if (!content || !displayName) return;
 
-  // Handle /msg command
-  if (content.startsWith('/msg ')) {
-    const parts = content.substring(5).trim().split(/\s+/);
-    const recipient = parts.shift();
-    const msg = parts.join(' ');
-
-    // No recipient -> show DM menu
-    if (!recipient) {
-      dmUserMenu.innerHTML = '';
-      const onlineUsers = Array.from(usernamesMap.keys())
-        .filter(name => name !== displayName.toLowerCase());
-
-      if (onlineUsers.length === 0) {
-        appendMessage({ username: 'System', content: 'No online users to DM.', timestamp: new Date(), isAdmin: true });
-        messageInputDiv.innerText = '';
-        return;
-      }
-
-      onlineUsers.forEach(name => {
-        const btn = document.createElement('button');
-        btn.textContent = name;
-        btn.addEventListener('click', () => {
-          messageInputDiv.innerText = `/msg ${name} `;
-          dmUserMenu.style.display = 'none';
-          messageInputDiv.focus();
-        });
-        dmUserMenu.appendChild(btn);
-      });
-
-      dmUserMenu.style.display = 'flex';
-      messageInputDiv.innerText = '';
-      return;
-    }
-
-    // Recipient exists but no message
-    if (!msg) {
-      appendMessage({ username: 'System', content: 'Please type a message after the username.', timestamp: new Date(), isAdmin: true });
-      messageInputDiv.innerText = `/msg ${recipient} `;
-      return;
-    }
-
-    // Normal private message
-    socket.emit('private message', { recipient, content: msg });
-    messageInputDiv.innerText = '';
-    return;
-  }
-
-  // Regular public message
-  socket.emit('chat message', { username: secureName || displayName, content });
-  messageInputDiv.innerText = '';
-});
-
-// ========== Update DM menu dynamically when user count changes ==========
-socket.on('user count', data => {
-  usernamesMap.clear();
-  data.userList?.forEach(name => usernamesMap.set(name.toLowerCase(), true)); // simple map for lookup
-});
+  if (content.star
