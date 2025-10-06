@@ -14,11 +14,10 @@ let displayName = '';
 let onlineUsers = [];
 
 // ========== Utilities ==========
-
 function appendMessage(msg) {
   const item = document.createElement('div');
-  item.classList.add('msg', msg.sender === displayName ? 'own' : 'other');
-  const header = `<div class="msg-header">${msg.username || msg.sender || 'System'}</div>`;
+  item.classList.add('msg', msg.username === displayName ? 'own' : 'other');
+  const header = `<div class="msg-header">${msg.username || 'System'}</div>`;
   const body = `<div class="message-content">${msg.content}</div>`;
   item.innerHTML = header + body;
   messagesDiv.appendChild(item);
@@ -26,7 +25,6 @@ function appendMessage(msg) {
 }
 
 // ========== Event Handlers ==========
-
 joinBtn.addEventListener('click', () => {
   const name = usernameInput.value.trim();
   if (!name) return;
@@ -38,7 +36,7 @@ messageForm.addEventListener('submit', e => {
   const content = messageInputDiv.innerText.trim();
   if (!content || !displayName) return;
 
-  // handle /msg command
+  // /msg command
   if (content.startsWith('/msg ')) {
     const parts = content.substring(5).trim().split(/\s+/);
     const recipient = parts.shift();
@@ -49,7 +47,7 @@ messageForm.addEventListener('submit', e => {
       dmUserMenu.style.display = 'none';
       return;
     } else {
-      appendMessage({ username:'System', content:'Invalid /msg usage'});
+      appendMessage({ username:'System', content:'Invalid /msg usage' });
       return;
     }
   }
@@ -60,7 +58,15 @@ messageForm.addEventListener('submit', e => {
   dmUserMenu.style.display = 'none';
 });
 
-// Show DM menu while typing /msg
+// Prevent Enter from creating new lines, send message instead
+messageInputDiv.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    messageForm.dispatchEvent(new Event('submit'));
+  }
+});
+
+// DM menu while typing /msg
 messageInputDiv.addEventListener('input', () => {
   const text = messageInputDiv.innerText.trim();
   if (!text.startsWith('/msg ')) {
@@ -91,13 +97,13 @@ messageInputDiv.addEventListener('input', () => {
   dmUserMenu.style.display = 'flex';
 });
 
-// Update online users
+// ========== Socket Events ==========
+socket.on('chat message', msg => appendMessage(msg));
+socket.on('private message', msg => appendMessage(msg));
+
 socket.on('user count', data => {
   userCountDisplay.textContent = `${data.count} Users Online`;
   onlineUsers = data.userList || [];
 });
-
-socket.on('chat message', msg => appendMessage(msg));
-socket.on('private message', msg => appendMessage(msg));
 
 socket.on('name_accepted', name => displayName = name);
