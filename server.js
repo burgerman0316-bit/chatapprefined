@@ -5,236 +5,184 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: '*' }
-});
+const io = new Server(server, { cors: { origin: '*' } });
 
-// Settings
-const STAFF_ROOM = 'staff_room';
+// -------------------- SETTINGS --------------------
 const MAX_HISTORY = 100;
-const BANNED_NAMES = ['hitler', 'admin', 'mod'];
 const STAFF_LIST = [
-  { loginName: 'STAFF_CONTROLS-LIAM', displayName: 'Liam Stern' },
-  { loginName: 'STAFF_CONTROLS-DIESEL', displayName: 'Diesel Carter' },
-  { loginName: 'STAFF_CONTROLS-RICKY', displayName: 'Ricky Martinez' }
+    { loginName: 'STAFF_CONTROLS-LIAM', displayName: 'Liam Stern' },
+    { loginName: 'STAFF_CONTROLS-DIESEL', displayName: 'Diesel Carter' },
+    { loginName: 'STAFF_CONTROLS-RICKY', displayName: 'Ricky Martinez' }
 ];
 
-const chatHistory = [];
-const namesInUse = new Set();
-const socketsMap = new Map();    // socket.id → displayName
-const usernamesMap = new Map();  // lowercased displayName → socket.id
+let chatHistory = [];
+let socketsMap = new Map();    // socket.id → username
+let usernamesMap = new Map();  // username.toLowerCase() → socket.id
+let bannedUsers = new Set();   // Lowercase username bans
 
-// Serve static files (HTML, CSS, JS)
+// -------------------- STATIC FILES --------------------
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Helper functions
-function isNameReserved(name) {
-    if (!name) return false;
-    const lower = name.trim().toLowerCase();
-
-    // Block only display names, not login names
-    if (STAFF_LIST.some(s => s.displayName.toLowerCase() === lower)) {
-        return true; // reserved
-    }
-
-    // Also block banned names
-    if (BANNED_NAMES.some(b => lower.includes(b.toLowerCase()))) {
-        return true;
-    }
-
-    return false;
-}
-
-function getStaffDisplayInfo(enteredName) {
-    const secure = enteredName.trim();
-    const staff = STAFF_LIST.find(s => 
-        s.loginName === secure || s.displayName.toLowerCase() === secure.toLowerCase()
-    );
-    if (staff) {
-        return { isAdmin: true, username: staff.displayName, secureName: staff.loginName };
-    }
-    return { isAdmin: false, username: secure, secureName: secure };
-}
-
+// -------------------- HELPERS --------------------
 function pushHistory(msg) {
-  chatHistory.push(msg);
-  if (chatHistory.length > MAX_HISTORY) {
-    chatHistory.shift();
-  }
+    chatHistory.push(msg);
+    if (chatHistory.length > MAX_HISTORY) chatHistory.shift();
 }
 
-function broadcastUserCount() {
-  const list = Array.from(socketsMap.values()).sort();
-  io.emit('user count', { count: namesInUse.size, userList: list });
+function getStaffInfo(name) {
+    return STAFF_LIST.find(s => s.loginName.toLowerCase() === name.toLowerCase());
 }
 
-// Socket logic
-io.on('connection', socket => {
-  console.log('Client connected:', socket.id);
+function getUserList() {
+    return Array.from(usernamesMap.values()).sort();
+}
 
-  // Send existing chat history
-  socket.emit('chat history', chatHistory);
-  broadcastUserCount();
+// -------------------- SOCKET.IO --------------------
+io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
 
-  // Name check
-  socket.on('check_staff_status', enteredName => {
-    const name = (enteredName || '').trim();
-    const lower = name.toLowerCase();
+    // Send existing chat history
+    socket.emit('chat message', chatHistory);
+    
+    // -------------------- NAME CHECK --------------------
+    socket.on('check_name', (name) => {
+        const trimmed = name.trim();
+        const lower = trimmed.toLowerCase();
 
-    if (!name) {
-      socket.emit('name_rejected', 'Please provide a name.');
-      return;
-    }
+        if (!trimmed) {
+            socket.emit('name_rejected', 'Please enter a name.');
+            return;
+        }
 
-    if (namesInUse.has(lower)) {
-      socket.emit('name_in_use_modal', 'Someone is already using that name.');
-      return;
-    }
+        if (bannedUsers.has(lower)) {
+            socket.emit('name_rejected', 'You are banned.');
+            return;
+        }
 
-    if (isNameReserved(name)) {
-      socket.emit('staff_name_reserved_modal', 'That name is reserved for staff.');
-      return;
-    }
+        if (usernamesMap.has(lower)) {
+            socket.emit('name_rejected', 'That username is already in use.');
+            return;
+        }
 
-    // Check if this is a staff login
-    const staffInfo = STAFF_LIST.find(s => s.loginName === name);
-    if (staffInfo) {
-      namesInUse.add(name.toLowerCase());
-      socketsMap.set(socket.id, staffInfo.displayName);
-      usernamesMap.set(staffInfo.displayName.toLowerCase(), socket.id);
-      socket.join(STAFF_ROOM);
+        const staff = getStaffInfo(trimmed);
+        if (staff && !trimmed.startsWith('STAFF_CONTROLS-')) {
+            socket.emit('name_rejected', `The name "${trimmed}" is reserved for staff.`);
+            return;
+        }
 
-      socket.emit('staff_status_update', { isAdmin: true, displayName: staffInfo.displayName, secureName: staffInfo.loginName });
-      const publicMsg = {
-        username: 'System',
-        content: `A moderator has entered the chat.`,
-        timestamp: new Date(),
-        isAdmin: true
-      };
-      io.emit('chat message', publicMsg);
-      broadcastUserCount();
-      return;
-    }
+        // All good
+        socketsMap.set(socket.id, trimmed);
+        usernamesMap.set(lower, socket.id);
 
-    // Normal user
-    namesInUse.add(lower);
-    socketsMap.set(socket.id, name);
-    usernamesMap.set(name.toLowerCase(), socket.id);
-    socket.emit('name_accepted', name);
+        if (staff) {
+            socket.emit('name_accepted', staff.displayName);
+        } else {
+            socket.emit('name_accepted', trimmed);
+        }
 
-    const joinMsg = {
-      username: name,
-      content: `${name} has joined the chat.`,
-      timestamp: new Date(),
-      isAdmin: false
-    };
-    pushHistory(joinMsg);
-    io.emit('chat message', joinMsg);
-    broadcastUserCount();
-  });
+        const joinMsg = {
+            sender: 'System',
+            content: `${trimmed} has joined the chat.`,
+            timestamp: new Date(),
+            isSystem: true
+        };
+        pushHistory(joinMsg);
+        io.emit('chat message', joinMsg);
+    });
 
-  // Public chat messages
-  socket.on('chat message', msg => {
-    if (!msg.content) return;
+    // -------------------- PUBLIC MESSAGE --------------------
+    socket.on('chat message', (msg) => {
+        const sender = socketsMap.get(socket.id);
+        if (!sender) return;
 
-    const info = getStaffDisplayInfo(msg.username);
-    const messageData = {
-      username: info.username,
-      content: msg.content,
-      timestamp: new Date(),
-      isAdmin: info.isAdmin
-    };
-    pushHistory(messageData);
-    io.emit('chat message', messageData);
-  });
+        const messageData = {
+            sender: sender,
+            content: msg.content,
+            timestamp: new Date(),
+            isAdmin: STAFF_LIST.some(s => s.displayName === sender),
+        };
 
-  // Private message
-  socket.on('private message', msg => {
-    const sender = socketsMap.get(socket.id);
-    if (!sender) {
-      socket.emit('system_error', 'You must set a name first.');
-      return;
-    }
+        pushHistory(messageData);
+        io.emit('chat message', messageData);
+    });
 
-    const recipient = (msg.recipient || '').trim();
-    const content = (msg.content || '').trim();
-    if (!recipient || !content) {
-      socket.emit('system_error', 'Invalid /msg command. Usage: /msg [username] [message]');
-      return;
-    }
+    // -------------------- PRIVATE MESSAGE --------------------
+    socket.on('private message', (msg) => {
+        const sender = socketsMap.get(socket.id);
+        if (!sender) return;
 
-    if (recipient.toLowerCase() === sender.toLowerCase()) {
-      socket.emit('system_alert', 'You cannot send a private message to yourself.');
-      return;
-    }
+        const recipient = msg.recipient.trim();
+        const recipientSocketId = usernamesMap.get(recipient.toLowerCase());
 
-    const recLower = recipient.toLowerCase();
-    const recSocketId = usernamesMap.get(recLower);
+        if (!recipientSocketId) {
+            socket.emit('chat message', {
+                sender: 'System',
+                content: `User '${recipient}' not found or offline.`,
+                timestamp: new Date(),
+                isSystem: true
+            });
+            return;
+        }
 
-    if (recSocketId) {
-      const messageData = {
-        sender: sender,
-        recipient: recipient,
-        content: content,
-        timestamp: new Date(),
-        isPrivate: true
-      };
-      // send to recipient
-      io.to(recSocketId).emit('private message', messageData);
-      // send copy to sender
-      socket.emit('private message', messageData);
-    } else {
-      socket.emit('system_error', `User '${recipient}' not found or offline.`);
-    }
-  });
+        const messageData = {
+            sender: sender,
+            recipient: recipient,
+            content: msg.content,
+            timestamp: new Date(),
+            isPrivate: true
+        };
 
-  // Clear history (admin only)
-  socket.on('admin:clear_history', data => {
-    const info = getStaffDisplayInfo(data.username);
-    if (!info.isAdmin) {
-      socket.emit('system_error', 'Unauthorized: Admin privileges required.');
-      return;
-    }
+        socket.to(recipientSocketId).emit('private message', messageData);
+        socket.emit('private message', messageData);
+    });
 
-    chatHistory.length = 0;
-    const clearMsg = {
-      username: 'System',
-      content: `Moderator ${info.username} cleared chat history.`,
-      timestamp: new Date(),
-      isAdmin: true
-    };
-    pushHistory(clearMsg);
-    io.emit('chat history', chatHistory);
-  });
+    // -------------------- REQUEST USER LIST --------------------
+    socket.on('request_user_list', () => {
+        const users = getUserList();
+        socket.emit('user list', users);
+    });
 
-  // Disconnect
-  socket.on('disconnect', () => {
-    const name = socketsMap.get(socket.id);
-    if (!name) return;
+    socket.on('request_user_list_admin', () => {
+        const users = getUserList();
+        socket.emit('user list', users);
+    });
 
-    const lower = name.toLowerCase();
-    if (namesInUse.has(lower)) {
-      namesInUse.delete(lower);
-    }
-    usernamesMap.delete(lower);
-    socketsMap.delete(socket.id);
+    // -------------------- ADMIN CLEAR HISTORY --------------------
+    socket.on('admin:clear_history', (data) => {
+        const sender = socketsMap.get(socket.id);
+        const staff = getStaffInfo(sender);
 
-    const leaveMsg = {
-      username: 'System',
-      content: `${name} has left the chat.`,
-      timestamp: new Date(),
-      isAdmin: false
-    };
-    pushHistory(leaveMsg);
-    io.emit('chat message', leaveMsg);
-    broadcastUserCount();
-  });
+        if (!staff) {
+            socket.emit('chat message', { sender: 'System', content: 'Unauthorized', timestamp: new Date(), isSystem: true });
+            return;
+        }
+
+        chatHistory = [];
+        io.emit('chat message', { sender: 'System', content: 'Chat history cleared by admin.', timestamp: new Date(), isSystem: true });
+    });
+
+    // -------------------- DISCONNECT --------------------
+    socket.on('disconnect', () => {
+        const user = socketsMap.get(socket.id);
+        if (!user) return;
+
+        socketsMap.delete(socket.id);
+        usernamesMap.delete(user.toLowerCase());
+
+        const leaveMsg = {
+            sender: 'System',
+            content: `${user} has left the chat.`,
+            timestamp: new Date(),
+            isSystem: true
+        };
+        pushHistory(leaveMsg);
+        io.emit('chat message', leaveMsg);
+    });
 });
 
+// -------------------- SERVER --------------------
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
