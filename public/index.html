@@ -1,27 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Socket.IO Chat</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Chat App</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Chat Container -->
   <div class="chat-container">
-    <!-- Header / Controls -->
+    <!-- Header -->
     <div class="header-area">
-      <span id="userCountDisplay">0 Users Online</span>
+      <div>
+        <span id="userCountDisplay">0 Users Online</span>
+      </div>
       <div class="right-header">
-        <input id="usernameInput" type="text" placeholder="Enter your name">
-        <button id="joinBtn">Join Chat</button>
+        <input type="text" id="usernameInput" placeholder="Enter name">
+        <button id="joinBtn">Join</button>
         <button id="clearChatBtn" style="display:none;">Clear Chat</button>
       </div>
     </div>
 
     <!-- Messages -->
-    <div class="messages-area">
-      <div id="messages"></div>
-    </div>
+    <div class="messages-area" id="messages"></div>
 
     <!-- Message Input -->
     <form id="messageForm">
@@ -32,25 +33,26 @@
     </form>
   </div>
 
-  <!-- Staff/Name Collision Modal -->
-  <div class="modal" id="nameConflictModal" style="display:none;">
+  <!-- Staff Name Modal -->
+  <div class="modal" id="staffNameModal" style="display:none;">
     <div class="modal-content">
-      <button class="close-btn" id="nameConflictClose">&times;</button>
-      <p id="nameConflictText"></p>
-      <button id="nameConflictOk">OK</button>
+      <span class="close-btn" style="cursor:pointer; position:absolute; top:10px; right:15px;">&times;</span>
+      <p class="modal-message"></p>
+      <button class="btn-ok" onclick="document.getElementById('staffNameModal').style.display='none';">OK</button>
     </div>
   </div>
 
   <!-- DM Modal -->
   <div class="modal" id="dmModal" style="display:none;">
-    <div class="modal-content">
-      <button class="close-btn" id="dmClose">&times;</button>
-      <h3>Select a user to DM</h3>
-      <div id="dmUserList"></div>
+    <div class="modal-content" style="max-width:300px; max-height:400px; overflow-y:auto; position:relative;">
+      <span id="dmCloseBtn" style="cursor:pointer; position:absolute; top:10px; right:15px;">&times;</span>
+      <h4>Select a user to DM</h4>
+      <div id="dmUserList" style="display:flex; flex-direction:column; gap:5px;"></div>
     </div>
   </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="chat.js"></script>
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="chat.js"></script>
 </body>
 </html>
