@@ -3,17 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Socket.IO Chat</title>
+  <title>Chat App</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="chat-container">
     <div class="header-area">
-      <span id="userCountDisplay">0 Users Online</span>
+      <div class="left-header">
+        <strong>Chat Room</strong>
+      </div>
+
       <div class="right-header">
+        <span id="userCountDisplay">0 Users Online</span>
         <input id="usernameInput" type="text" placeholder="Enter your name" />
-        <button id="joinBtn">Join Chat</button>
-        <button id="clearChatBtn" style="display:none;">Clear Chat</button>
+        <button id="joinBtn">Join</button>
+        <button id="clearChatBtn" style="display:none;">Clear</button>
       </div>
     </div>
 
@@ -23,26 +27,29 @@
 
     <form id="messageForm">
       <div class="input-container">
-        <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
+        <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message or command..."></div>
       </div>
       <button type="submit">Send</button>
     </form>
   </div>
 
-  <!-- Generic modal for warnings/errors -->
+  <!-- Generic custom modal -->
   <div id="genericModal" class="modal" style="display:none">
     <div class="modal-content">
-      <button id="closeGenericModal" class="close-btn">X</button>
-      <p id="genericModalText"></p>
+      <button id="genericClose" class="modal-close">&times;</button>
+      <p id="genericText"></p>
+      <div style="text-align:center; margin-top:12px;">
+        <button id="genericOk">OK</button>
+      </div>
     </div>
   </div>
 
   <!-- DM selection modal -->
   <div id="dmModal" class="modal" style="display:none">
     <div class="modal-content">
-      <button id="closeDmModal" class="close-btn">X</button>
+      <button id="dmClose" class="modal-close">&times;</button>
       <h3>Select user to DM</h3>
-      <div id="dmUserList" class="dm-user-menu"></div>
+      <div id="dmUserList" class="dm-user-list"></div>
     </div>
   </div>
 
