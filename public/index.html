@@ -1,65 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Socket.IO Chat</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Chat App</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="chat-container">
-
-    <!-- Header / Controls -->
     <div class="header-area">
-      <input type="text" id="usernameInput" placeholder="Enter your name">
+      <span id="userCountDisplay">0 Users Online</span>
       <div class="right-header">
+        <input id="usernameInput" type="text" placeholder="Enter your name" />
         <button id="joinBtn">Join Chat</button>
         <button id="openAdminPanelBtn" style="display:none;">Admin Panel</button>
       </div>
     </div>
 
-    <!-- Messages -->
     <div class="messages-area">
       <div id="messages"></div>
     </div>
 
-    <!-- Message input -->
     <form id="messageForm">
       <div class="input-container">
         <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message..."></div>
-        <button type="submit">Send</button>
       </div>
+      <button type="submit">Send</button>
     </form>
-
   </div>
 
-  <!-- Private Message Modal -->
+  <!-- DM Modal (for /msg) -->
   <div id="dmModal" class="modal" style="display:none;">
     <div class="modal-content">
-      <button class="close-btn">&times;</button>
-      <h3>Select a user to message</h3>
+      <button class="close-btn" id="dmModalClose">&times;</button>
+      <h3>Select a user to DM</h3>
       <div id="dmUserList" class="scroll-list"></div>
+    </div>
+  </div>
+
+  <!-- HW Ban Modal (opened from Admin Panel) -->
+  <div id="hwBanModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <button class="close-btn" id="hwBanModalClose">&times;</button>
+      <h3>Hardware Ban — Select a user to ban</h3>
+      <p style="font-size:0.9em;color:#ddd;margin-top:6px;">Click a user to ban their current IP and disconnect them.</p>
+      <div id="hwUserList" class="scroll-list" style="margin-top:12px;"></div>
+      <div style="margin-top:12px;">
+        <button id="hwBanCancelBtn">Cancel</button>
+      </div>
     </div>
   </div>
 
   <!-- Admin Panel Modal -->
   <div id="adminPanelModal" class="modal" style="display:none;">
     <div class="modal-content">
-      <button class="close-btn">&times;</button>
-      <h3>Admin Controls</h3>
-      <button id="panelClearChatBtn">Clear Chat</button>
-      <button id="panelBanUserBtn">Ban User</button>
-      <button id="panelHWBanBtn">Hardware Ban User</button>
-      <!-- add more admin controls here -->
+      <button class="close-btn" id="adminPanelClose">&times;</button>
+      <h3>Admin Control Panel</h3>
+
+      <div style="margin-top:12px;">
+        <button id="panelClearChatBtn" class="danger">Clear Chat History</button>
+        <button id="panelOpenHwBanBtn">Hardware Ban User</button>
+      </div>
+
+      <div style="margin-top:14px; text-align:left;">
+        <h4 style="margin:6px 0;color:#ddd;">Online users (live)</h4>
+        <div id="adminUserList" class="scroll-list"></div>
+      </div>
     </div>
   </div>
 
-  <!-- Staff / Name Reserved Modal -->
-  <div id="nameReservedModal" class="modal" style="display:none;">
+  <!-- Name reserved / rejection modal -->
+  <div id="nameErrorModal" class="modal" style="display:none;">
     <div class="modal-content">
-      <h3>Name Reserved</h3>
-      <p>This name is reserved for staff or already in use.</p>
-      <button class="close-btn">Close</button>
+      <h3>Name cannot be used</h3>
+      <p id="nameErrorText">That name is reserved or already in use.</p>
+      <div style="margin-top:12px;">
+        <button id="nameErrorClose">OK</button>
+      </div>
     </div>
   </div>
 
