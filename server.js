@@ -1,4 +1,3 @@
-
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -115,6 +114,8 @@ io.on('connection', socket => {
         timestamp: new Date(),
         isAdmin: true
       };
+      // Send the public message through the normal channel so history is updated
+      pushHistory(publicMsg);
       io.emit('chat message', publicMsg);
       broadcastUserCount();
       return;
@@ -127,7 +128,7 @@ io.on('connection', socket => {
     socket.emit('name_accepted', name);
 
     const joinMsg = {
-      username: name,
+      username: 'System',
       content: `${name} has joined the chat.`,
       timestamp: new Date(),
       isAdmin: false
@@ -208,7 +209,48 @@ io.on('connection', socket => {
       isAdmin: true
     };
     pushHistory(clearMsg);
-    io.emit('chat history', chatHistory);
+    
+    // Send explicit command to all clients to clear their UI
+    io.emit('admin:history_cleared', clearMsg);
+  });
+  
+  // Kick User (admin only)
+  socket.on('admin:kick_user', data => {
+      const adminName = data.adminName;
+      const targetName = data.targetName;
+      
+      const info = getStaffDisplayInfo(adminName);
+      if (!info.isAdmin) {
+          socket.emit('system_error', 'Unauthorized: Admin privileges required.');
+          return;
+      }
+      
+      const targetLower = targetName.toLowerCase();
+      const targetSocketId = usernamesMap.get(targetLower);
+      
+      if (!targetSocketId) {
+          socket.emit('system_error', `Kick failed: User '${targetName}' not found or offline.`);
+          return;
+      }
+      
+      // 1. Notify the target user (before they disconnect)
+      io.to(targetSocketId).emit('system_error', `You have been KICKED by Moderator ${info.username}.`);
+      
+      // 2. Broadcast a message to the public chat
+      const kickMsg = {
+        username: 'System',
+        content: `Moderator ${info.username} has kicked ${targetName} from the chat.`,
+        timestamp: new Date(),
+        isAdmin: true
+      };
+      pushHistory(kickMsg);
+      io.emit('chat message', kickMsg);
+      
+      // 3. Find and forcibly disconnect the user's socket
+      const targetSocket = io.sockets.sockets.get(targetSocketId);
+      if (targetSocket) {
+          targetSocket.disconnect(true);
+      }
   });
 
   // Disconnect
