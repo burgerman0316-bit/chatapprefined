@@ -1,190 +1,172 @@
 const socket = io();
 
-// DOM Elements
+// DOM elements
 const usernameInput = document.getElementById('usernameInput');
 const joinBtn = document.getElementById('joinBtn');
 const clearChatBtn = document.getElementById('clearChatBtn');
 const adminPanelBtn = document.getElementById('adminPanelBtn');
 const messagesDiv = document.getElementById('messages');
-const messageForm = document.getElementById('messageForm');
 const messageInputDiv = document.getElementById('messageInput');
-
-// Modals
-const dmModal = document.getElementById('dmModal');
-const dmUserList = document.getElementById('dmUserList');
-const dmCloseBtn = document.getElementById('dmCloseBtn');
-
-const adminModal = document.getElementById('adminModal');
-const adminCloseBtn = document.getElementById('adminCloseBtn');
-const adminUserList = document.getElementById('adminUserList');
-
-const hardwareModal = document.getElementById('hardwareModal');
-const hardwareUserList = document.getElementById('hardwareUserList');
-const hardwareCloseBtn = document.getElementById('hardwareCloseBtn');
 
 let displayName = '';
 let secureName = '';
 let isAdmin = false;
-let currentDM = '';
+let privateRecipient = null;
 
-// -------------------- UTILITY FUNCTIONS --------------------
+// ========== Utility Functions ==========
+
 function appendMessage(msg) {
     const item = document.createElement('div');
     item.classList.add('msg');
 
-    if (msg.isSystem) {
-        item.classList.add('system');
-    } else if (msg.sender && displayName && msg.sender.toLowerCase() === displayName.toLowerCase()) {
-        item.classList.add('own');
+    // System messages centered
+    if (msg.username === 'System') {
+        item.classList.add('system-msg');
     } else {
-        item.classList.add('other');
+        if (msg.isPrivate) {
+            item.classList.add('private');
+        }
+        if (msg.username.toLowerCase() === displayName.toLowerCase()) {
+            item.classList.add('own');
+        } else {
+            item.classList.add('other');
+        }
     }
 
-    const header = `<div class="msg-header">${msg.sender || ''}${msg.isAdmin ? ' (Admin)' : ''}</div>`;
+    const header = `<div class="msg-header">${msg.username}${msg.isAdmin ? ' (Admin)' : ''}${msg.isPrivate ? ' (Private)' : ''}</div>`;
     const body = `<div class="message-content">${msg.content}</div>`;
     const foot = `<div class="timestamp">${new Date(msg.timestamp).toLocaleTimeString()}</div>`;
-
     item.innerHTML = header + body + foot;
     messagesDiv.appendChild(item);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-function openDMModal() {
-    // Populate user list
-    dmUserList.innerHTML = '';
-    socket.emit('request_user_list');
-    dmModal.style.display = 'flex';
+// Modal creation helper
+function createModal(title, bodyHTML, buttons = []) {
+    const modal = document.createElement('div');
+    modal.classList.add('modal');
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5>${title}</h5>
+                <button class="close-modal">X</button>
+            </div>
+            <div class="modal-body">${bodyHTML}</div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    modal.querySelector('.close-modal').addEventListener('click', () => {
+        modal.remove();
+    });
+
+    buttons.forEach(btn => {
+        const button = document.createElement('button');
+        button.textContent = btn.text;
+        button.addEventListener('click', () => {
+            btn.onClick(modal);
+        });
+        modal.querySelector('.modal-body').appendChild(button);
+    });
+
+    return modal;
 }
 
-function highlightDM(username) {
-    messageInputDiv.innerHTML = `<span class="highlighted-dm">${username}:</span>&nbsp;`;
-    placeCaretAtEnd(messageInputDiv);
-}
+// ========== Event Listeners ==========
 
-// Places cursor at end of contenteditable
-function placeCaretAtEnd(el) {
-    el.focus();
-    if (typeof window.getSelection != "undefined"
-        && typeof document.createRange != "undefined") {
-        var range = document.createRange();
-        range.selectNodeContents(el);
-        range.collapse(false);
-        var sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-    }
-}
-
-// -------------------- SOCKET EVENTS --------------------
-socket.on('connect', () => {
-    console.log('Connected:', socket.id);
+joinBtn.addEventListener('click', () => {
+    const name = usernameInput.value.trim();
+    if (!name) return;
+    socket.emit('check_staff_status', name);
 });
 
-socket.on('name_accepted', (name) => {
+socket.on('name_accepted', name => {
     displayName = name;
     secureName = name;
     usernameInput.disabled = true;
     joinBtn.disabled = true;
 });
 
-socket.on('name_rejected', (msg) => {
-    alert(msg); // Could later replace with a modal
+socket.on('staff_name_reserved_modal', msg => {
+    createModal('Name Reserved', `<p>${msg}</p>`);
 });
 
-socket.on('chat message', (msg) => {
-    appendMessage(msg);
+socket.on('name_in_use_modal', msg => {
+    createModal('Name In Use', `<p>${msg}</p>`);
 });
 
-socket.on('private message', (msg) => {
-    appendMessage({ ...msg, content: `[Private] ${msg.content}` });
+socket.on('staff_status_update', data => {
+    displayName = data.displayName;
+    secureName = data.secureName;
+    isAdmin = data.isAdmin;
+    usernameInput.disabled = true;
+    joinBtn.disabled = true;
+    clearChatBtn.style.display = isAdmin ? 'inline-block' : 'none';
+    adminPanelBtn.style.display = isAdmin ? 'inline-block' : 'none';
 });
 
-socket.on('user list', (users) => {
-    // Populate DM modal
-    dmUserList.innerHTML = '';
-    users.forEach(u => {
-        if (u.toLowerCase() !== displayName.toLowerCase()) {
-            const btn = document.createElement('button');
-            btn.textContent = u;
-            btn.addEventListener('click', () => {
-                highlightDM(u);
-                dmModal.style.display = 'none';
-                currentDM = u;
-            });
-            dmUserList.appendChild(btn);
-        }
-    });
+socket.on('chat message', appendMessage);
+socket.on('private message', appendMessage);
+socket.on('chat history', history => {
+    messagesDiv.innerHTML = '';
+    history.forEach(appendMessage);
 });
 
-// -------------------- JOIN CHAT --------------------
-joinBtn.addEventListener('click', () => {
-    const name = usernameInput.value.trim();
-    if (!name) return;
-    socket.emit('check_name', name);
-});
+// ========== Message Sending ==========
 
-// -------------------- MESSAGE FORM --------------------
-messageForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    let content = messageInputDiv.innerText.trim();
+function sendMessage() {
+    const content = messageInputDiv.innerText.trim();
     if (!content) return;
 
-    const dmMatch = content.match(/^(.+?):\s/);
-    if (dmMatch) {
-        // Private message
-        const recipient = dmMatch[1];
-        const msg = content.replace(/^(.+?):\s/, '');
-        socket.emit('private message', { recipient, content: msg });
-        messageInputDiv.innerText = '';
+    if (privateRecipient) {
+        socket.emit('private message', { recipient: privateRecipient, content });
+        privateRecipient = null;
+        messageInputDiv.innerHTML = '';
         return;
     }
 
-    // Regular message
-    socket.emit('chat message', { sender: secureName || displayName, content });
-    messageInputDiv.innerText = '';
-});
+    socket.emit('chat message', { username: secureName || displayName, content });
+    messageInputDiv.innerHTML = '';
+}
 
-// -------------------- ENTER TO SEND --------------------
-messageInputDiv.addEventListener('keydown', (e) => {
+// Press Enter to send
+messageInputDiv.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        messageForm.dispatchEvent(new Event('submit'));
-    }
-    // Remove highlight if backspacing over it
-    if (e.key === 'Backspace') {
-        const firstChild = messageInputDiv.firstChild;
-        if (firstChild && firstChild.classList && firstChild.classList.contains('highlighted-dm')) {
-            const range = document.getSelection().getRangeAt(0);
-            if (range.startOffset === 0) {
-                firstChild.remove();
-                currentDM = '';
-            }
-        }
+        sendMessage();
     }
 });
 
-// -------------------- DM MODAL --------------------
-dmCloseBtn.addEventListener('click', () => {
-    dmModal.style.display = 'none';
-});
-
-// -------------------- ADMIN PANEL --------------------
-adminPanelBtn.addEventListener('click', () => {
-    if (!isAdmin) return;
-    adminModal.style.display = 'flex';
-    socket.emit('request_user_list_admin');
-});
-
-adminCloseBtn.addEventListener('click', () => {
-    adminModal.style.display = 'none';
-});
-
-// -------------------- HARDWARE BAN MODAL --------------------
-hardwareCloseBtn.addEventListener('click', () => {
-    hardwareModal.style.display = 'none';
-});
-
-// -------------------- CLEAR CHAT --------------------
+// Clear Chat button
 clearChatBtn.addEventListener('click', () => {
     if (!isAdmin) return;
-    if (confirm('Are you sure you want to clear chat history?')) {
+    socket.emit('admin:clear_history', { username: displayName });
+});
+
+// Admin Panel button
+adminPanelBtn.addEventListener('click', () => {
+    if (!isAdmin) return;
+
+    const bodyHTML = `<p>Admin Controls Here</p>`;
+    createModal('Admin Panel', bodyHTML);
+});
+
+// /msg typing trigger
+messageInputDiv.addEventListener('input', () => {
+    const text = messageInputDiv.innerText;
+    if (text.startsWith('/msg ')) {
+        const usersList = Array.from(document.querySelectorAll('#user-list li')).map(li => li.textContent);
+        let listHTML = '<ul style="max-height:200px;overflow-y:auto;">';
+        usersList.forEach(u => listHTML += `<li class="dm-user">${u}</li>`);
+        listHTML += '</ul>';
+
+        const modal = createModal('Select Recipient', listHTML);
+        modal.querySelectorAll('.dm-user').forEach(li => {
+            li.addEventListener('click', () => {
+                privateRecipient = li.textContent;
+                messageInputDiv.innerHTML = `[${privateRecipient}]: `;
+                modal.remove();
+            });
+        });
+    }
+});
