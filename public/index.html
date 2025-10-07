@@ -27,7 +27,7 @@
             <hr class="info-divider"> 
             <p class="commands">**Commands (Public):**</p>
             <p class="commands">/msg [user] [message]</p>
-            <p class="commands">/kick [user with spaces] (Mod)</p>
+            <p class="commands">/kick [user] (Mod)</p>
             <p class="commands">/clear (Mod)</p>
             
             <button id="adminPanelBtn" class="btn btn-secondary mt-3" style="display: none;" data-bs-toggle="modal" data-bs-target="#adminPanelModal">Admin Panel</button>
@@ -66,7 +66,7 @@
                 <div class="modal-body">
                     <form id="name-form">
                         <div class="mb-3">
-                            <label for="name-input" class="form-label">Username:</label>
+                            <label for="name-input" class="form-label">Username (No character limit):</label>
                             <input type="text" class="form-control" id="name-input" required>
                             <div class="form-text">Use your secure key for admin login.</div>
                         </div>
@@ -87,7 +87,7 @@
                 <div class="modal-body">
                     <form id="rename-form">
                         <div class="mb-3">
-                            <label for="new-name-input" class="form-label">New Username:</label>
+                            <label for="new-name-input" class="form-label">New Username (No character limit):</label>
                             <input type="text" class="form-control" id="new-name-input" required>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Update Name</button>
@@ -107,6 +107,7 @@
                 </div>
                 <div class="modal-body">
                     <button id="adminLogoutBtn" class="btn btn-warning mb-4 w-100">Go Anonymous (Logout Admin)</button>
+                    <button id="clearChatBtn" class="btn btn-danger mb-4 w-100">Clear Current Chat History</button>
                     
                     <h6 class="text-white">Click a user to Kick/Ban:</h6>
                     <ul id="admin-user-list" class="user-select-list">
@@ -144,11 +145,11 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Ban Duration (3 numbers for days, 2 for hours/minutes):</label>
+                        <label class="form-label">Ban Duration:</label>
                         <div class="d-flex gap-2">
-                            <input type="number" id="banDurationDays" class="form-control" placeholder="Days (3#)" min="0" max="999">
-                            <input type="number" id="banDurationHours" class="form-control" placeholder="Hours (2#)" min="0" max="99">
-                            <input type="number" id="banDurationMinutes" class="form-control" placeholder="Minutes (2#)" min="0" max="99">
+                            <input type="number" id="banDurationDays" class="form-control" placeholder="Days (max 999)" min="0" max="999">
+                            <input type="number" id="banDurationHours" class="form-control" placeholder="Hours (max 99)" min="0" max="99">
+                            <input type="number" id="banDurationMinutes" class="form-control" placeholder="Minutes (max 99)" min="0" max="99">
                         </div>
                     </div>
                     <div class="mb-3">
