@@ -89,7 +89,7 @@ body {
     word-wrap: break-word;
     position: relative; /* Essential for positioning pseudo-elements */
     clear: both; /* Ensures bubbles start on a new line */
-    list-style: none;
+    list-style: none; /* Remove list bullets if any */
 }
 
 /* Own messages (align right, color #4a4a4a) */
@@ -110,7 +110,7 @@ body {
     height: 20px; 
     background-color: #4a4a4a; /* Match bubble color */
     border-bottom-left-radius: 15px; /* Creates the curve */
-    z-index: 1; /* Ensure it's above the after element */
+    z-index: 1; 
 }
 
 .msg.own::after {
@@ -118,12 +118,12 @@ body {
     content: '';
     position: absolute;
     bottom: 0;
-    right: -26px; /* Position to overlap the bubble slightly */
+    right: -24px; /* Fixed positioning for smooth blend */
     width: 20px; 
     height: 20px; 
-    background-color: #1e1e1e; /* Match chat area background! */
+    background-color: #1e1e1e; /* Must match chat area background! */
     border-bottom-left-radius: 15px; /* Creates the curve */
-    z-index: 2; /* Ensure it's above the before element */
+    z-index: 2; 
 }
 
 
@@ -153,10 +153,10 @@ body {
     content: '';
     position: absolute;
     bottom: 0;
-    left: -26px; /* Position to overlap the bubble slightly */
+    left: -24px; /* Fixed positioning for smooth blend */
     width: 20px; 
     height: 20px; 
-    background-color: #1e1e1e; /* Match chat area background! */
+    background-color: #1e1e1e; /* Must match chat area background! */
     border-bottom-right-radius: 15px; /* Creates the curve */
     z-index: 2;
 }
