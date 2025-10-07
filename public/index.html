@@ -3,94 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Socket.IO Chat</title>
-    <link rel="stylesheet" href="style.css"> 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Refined Chat App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="container" style="display: none;"> 
+
+    <div id="container" style="display: none;">
         
         <div id="user-info">
-            <h2>Chat Info</h2>
-            
-            <hr class="info-divider"> <p>Welcome, <span id="display-name">Guest</span>!</p>
+            <h2>User Info</h2>
+            <p>Name: <span id="display-name"></span></p>
             <p>Users Online: <span id="user-count">0</span></p>
+
+            <hr class="info-divider">
+
+            <button class="btn btn-secondary w-100 mb-2" id="renameBtn" data-bs-toggle="modal" data-bs-target="#renameModal" disabled>Rename</button>
+            <button class="btn btn-danger w-100 mb-2" id="adminPanelBtn" data-bs-toggle="modal" data-bs-target="#adminPanelModal" style="display: none;" disabled>Admin Panel</button>
             
-            <hr class="info-divider"> <div id="user-list-container">
-                <h4>Online Users:</h4>
-                <ul id="user-list"></ul>
-            </div>
-            
-            <hr class="info-divider"> <p class="commands">**Commands:**</p>
-            <p class="commands">/msg [user] [message]</p>
-            <p class="commands">/clear (Mod only)</p>
-            
-            <button id="adminPanelBtn" class="btn btn-secondary mt-3" style="display: none;" data-bs-toggle="modal" data-bs-target="#adminPanelModal">Admin Panel</button>
-            
+            <hr class="info-divider">
+
+            <h6>Online Users</h6>
+            <ul id="user-list">
+                </ul>
+
+            <hr class="info-divider">
+
+            <p class="commands">
+                **Commands:**<br>
+                /msg [user] [message]<br>
+                /kick [user] (Admin Only)<br>
+                /clear (Admin Only)
+            </p>
         </div>
 
         <div id="chat-area">
-            <ul id="messages"></ul>
-            <form id="messageForm" action="">
+            <ul id="messages">
+                </ul>
+            
+            <form id="messageForm">
                 <div class="input-container">
-                    <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message or command..."></div>
-                    <button type="submit">Send</button>
+                    <div class="input-wrapper">
+                        <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message or command..."></div>
+                        <div id="char-counter" class="char-counter">0 / 256</div>
+                    </div>
+                    <button type="submit" id="sendBtn">Send</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div class="modal fade" id="nameModal" tabindex="-1" aria-labelledby="nameModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal fade" id="nameModal" tabindex="-1" aria-labelledby="nameModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title" id="nameModalLabel">Join The Chat</h5>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="nameModalLabel">Enter Your Name</h5>
                 </div>
-                <div class="modal-body">
-                    <form id="name-form">
-                        <div class="mb-3">
-                            <label for="name-input" class="form-label">Username:</label>
-                            <input type="text" class="form-control" id="name-input" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Join Chat</button>
-                    </form>
-                </div>
+                <form id="name-form">
+                    <div class="modal-body">
+                        <input type="text" class="form-control" id="name-input" placeholder="Your name (3-20 characters)" required maxlength="20">
+                        <small class="form-text text-muted">Use your Admin Login Code here if applicable.</small>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Join Chat</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-    
+
     <div class="modal fade" id="renameModal" tabindex="-1" aria-labelledby="renameModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="renameModalLabel">Change Display Name</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <form id="rename-form">
-                        <div class="mb-3">
-                            <label for="new-name-input" class="form-label">New Username:</label>
-                            <input type="text" class="form-control" id="new-name-input" required>
+                <form id="rename-form">
+                    <div class="modal-body">
+                        <input type="text" class="form-control" id="new-name-input" placeholder="New name (3-20 characters)" required maxlength="20">
+                        
+                        <div class="mb-3 mt-3" id="anon-toggle-container" style="display: none;">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="anonCheckbox">
+                                <label class="form-check-label" for="anonCheckbox">
+                                    Anonymous Chatting (Hides your name from non-admins)
+                                </label>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Update Name</button>
-                    </form>
-                </div>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Update Name</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
-
-    <div class="modal fade" id="adminPanelModal" tabindex="-1" aria-labelledby="adminPanelLabel" aria-hidden="true">
+    <div class="modal fade" id="adminPanelModal" tabindex="-1" aria-labelledby="adminPanelModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="adminPanelLabel">Admin Control Panel</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="adminPanelTitle">Normal Chat - Admin Panel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <button id="clearChatBtn" class="btn btn-danger mb-4 w-100">Clear Chat History</button>
+                <div class="modal-body" id="admin-panel-content">
+                    <button class="btn btn-warning w-100 mb-3" id="adminChatBtn">Switch to Admin Chat</button>
+                    <button class="btn btn-danger w-100 mb-3" id="clearChatBtn">Clear Current Chat History</button>
                     
-                    <h6 class="text-white">Click a user to Kick (via confirmation modal):</h6>
+                    <h6>Users Online (Click to Kick/Ban)</h6>
                     <ul id="admin-user-list" class="user-select-list">
                         </ul>
                 </div>
@@ -98,45 +120,71 @@
         </div>
     </div>
     
-    <div class="modal fade" id="kickConfirmModal" tabindex="-1" aria-labelledby="kickConfirmModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="kickConfirmModalLabel">Confirm User Kick</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="kickConfirmBody">
-                    Are you sure you want to KICK **[User Name]** from the chat?
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="kickConfirmBtn">Kick User</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="modal fade" id="clearConfirmModal" tabindex="-1" aria-labelledby="clearConfirmModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="clearConfirmModalLabel">Admin Confirmation</h5>
+                    <h5 class="modal-title" id="clearConfirmModalLabel">Confirm Clear History</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    Are you absolutely sure you want to clear the chat history for everyone?
+                    <p>Are you sure you want to completely clear the chat history for the current room?</p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="clearCancelBtn">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-danger" id="clearConfirmBtn">Clear History</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <div class="modal fade" id="kickConfirmModal" tabindex="-1" aria-labelledby="kickConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="kickConfirmModalLabel">Confirm Action</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="kickConfirmBody">Action for [User]:</p>
+                    <button type="button" class="btn btn-danger w-100 mb-2" id="kickConfirmBtn">Kick User</button>
+                    <button type="button" class="btn btn-warning w-100 mb-2" id="openBanModalBtn">IP Ban User</button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="banConfirmModal" tabindex="-1" aria-labelledby="banConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="banConfirmModalLabel">Confirm IP Ban</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>IP Ban Target: <strong><span id="banTargetName"></span></strong></p>
+                    <p>Enter Ban Duration (D:H:M):</p>
+                    <div class="d-flex justify-content-between mb-3">
+                        <input type="number" id="banDays" class="form-control me-2" placeholder="Days" min="0" value="0">
+                        <input type="number" id="banHours" class="form-control me-2" placeholder="Hours" min="0" value="1">
+                        <input type="number" id="banMinutes" class="form-control" placeholder="Minutes" min="0" value="0">
+                    </div>
+                    <p class="text-danger small">Banning an IP will disconnect the user immediately and prevent them from reconnecting for the set duration.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="banConfirmBtn">Confirm IP Ban</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> 
     <script src="chat.js"></script>
 </body>
 </html>
-
