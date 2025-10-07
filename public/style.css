@@ -46,6 +46,7 @@ body {
 #user-list li {
     padding: 3px 0;
     cursor: pointer;
+    color: #fff;
 }
 
 .commands {
@@ -193,5 +194,6 @@ body {
 .user-select-list li:hover {
     background-color: #555;
 }
+
 
 
