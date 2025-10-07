@@ -118,7 +118,7 @@ body {
     content: '';
     position: absolute;
     bottom: 0;
-    right: -24px; /* Fixed positioning for smooth blend */
+    right: -24px; 
     width: 20px; 
     height: 20px; 
     background-color: #1e1e1e; /* Must match chat area background! */
@@ -153,7 +153,7 @@ body {
     content: '';
     position: absolute;
     bottom: 0;
-    left: -24px; /* Fixed positioning for smooth blend */
+    left: -24px; 
     width: 20px; 
     height: 20px; 
     background-color: #1e1e1e; /* Must match chat area background! */
@@ -276,4 +276,60 @@ body {
 
 .user-select-list li:hover {
     background-color: #555;
+}
+
+/* 7. CUSTOM SCROLLBAR STYLING (For WebKit/Chrome/Safari) */
+/* Targets the main chat message area and the sidebar's user list area */
+
+/* WebKit-based scrollbar styling */
+#messages::-webkit-scrollbar,
+#user-info::-webkit-scrollbar,
+.custom-input::-webkit-scrollbar,
+.user-select-list::-webkit-scrollbar {
+    width: 8px;
+    background-color: transparent; 
+}
+
+/* The track (the area the thumb moves along) */
+#messages::-webkit-scrollbar-track,
+#user-info::-webkit-scrollbar-track,
+.custom-input::-webkit-scrollbar-track,
+.user-select-list::-webkit-scrollbar-track {
+    background: #1e1e1e; /* Matches the chat area background */
+    border-radius: 10px;
+}
+
+/* The thumb (the draggable scroll indicator) */
+#messages::-webkit-scrollbar-thumb,
+#user-info::-webkit-scrollbar-thumb,
+.custom-input::-webkit-scrollbar-thumb,
+.user-select-list::-webkit-scrollbar-thumb {
+    background-color: #555; /* Darker gray for contrast */
+    border-radius: 10px;
+}
+
+/* Hover state for the thumb */
+#messages::-webkit-scrollbar-thumb:hover,
+#user-info::-webkit-scrollbar-thumb:hover,
+.custom-input::-webkit-scrollbar-thumb:hover,
+.user-select-list::-webkit-scrollbar-thumb:hover {
+    background-color: #777; /* Slightly lighter gray on hover */
+}
+
+/* Hides the buttons at the ends of the scrollbar (the 'scroll arrows') */
+#messages::-webkit-scrollbar-button,
+#user-info::-webkit-scrollbar-button,
+.custom-input::-webkit-scrollbar-button,
+.user-select-list::-webkit-scrollbar-button {
+    display: none;
+}
+
+/* Optional: Scrollbar for Firefox (less customizable) */
+/* For users on Firefox, this changes the color scheme */
+#messages,
+#user-info,
+.custom-input,
+.user-select-list {
+    scrollbar-color: #555 #1e1e1e; /* thumb color, track color */
+    scrollbar-width: thin; /* 'auto' or 'thin' */
 }
