@@ -1,4 +1,4 @@
-// chat.js - FULL AND FINAL SCRIPT WITH BOOTSTRAP MODAL FIX
+// chat.js - FINAL SCRIPT WITH ALL MODAL FIXES
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
@@ -9,10 +9,10 @@ const socket = io();
 // Elements
 const nameForm = document.getElementById('name-form');
 const nameInput = document.getElementById('name-input');
-const container = document.getElementById('container'); // Main chat container
+const container = document.getElementById('container'); 
 
 const displayNameEl = document.getElementById('display-name');
-const messagesDiv = document.getElementById('messages'); // The <ul> element
+const messagesDiv = document.getElementById('messages'); 
 const messageInputDiv = document.getElementById('messageInput');
 const messageForm = document.getElementById('messageForm');
 
@@ -24,12 +24,17 @@ const clearChatBtn = document.getElementById('clearChatBtn');
 const adminUserList = document.getElementById('admin-user-list'); 
 const adminModalEl = document.getElementById('adminPanelModal'); 
 
-// New Modal Elements for Confirm replacement
+// Modal Elements for Clear History
 const clearConfirmModalEl = document.getElementById('clearConfirmModal');
 const clearConfirmModal = new bootstrap.Modal(clearConfirmModalEl);
 const clearConfirmBtn = document.getElementById('clearConfirmBtn');
-// const clearCancelBtn = document.getElementById('clearCancelBtn'); // Not needed, data-bs-dismiss handles it
 
+// *** NEW Modal Elements for Kick Confirmation ***
+const kickConfirmModalEl = document.getElementById('kickConfirmModal');
+const kickConfirmModal = new bootstrap.Modal(kickConfirmModalEl);
+const kickConfirmBtn = document.getElementById('kickConfirmBtn');
+const kickConfirmBody = document.getElementById('kickConfirmBody');
+let userToKick = null; // Variable to temporarily store the target user's name
 
 let displayName = '';
 let isAdmin = false;
@@ -80,19 +85,24 @@ function updateUsers(userList) {
              const adminLi = document.createElement('li');
              adminLi.textContent = user;
              
-             // Admin Kick functionality (NOTE: This still uses confirm(), 
-             // which might be blocked, but is less critical than chat clear)
+             // *** FIX: Replace click listener with Modal Trigger ***
              adminLi.addEventListener('click', () => {
                  if (user === displayName) {
                       alert('You cannot kick yourself!');
                       return;
                  }
-                 if (confirm(`Are you sure you want to KICK "${user}" from the chat?`)) {
-                      socket.emit('admin:kick_user', { targetName: user, adminName: displayName });
-                      
-                      const adminModal = bootstrap.Modal.getInstance(adminModalEl);
-                      if (adminModal) adminModal.hide();
-                 }
+                 
+                 userToKick = user; // Store the target user's name
+                 
+                 // Update the modal body text for the specific user
+                 kickConfirmBody.innerHTML = `Are you sure you want to KICK <strong>${user}</strong> from the chat?`;
+                 
+                 // Show the Kick Confirmation Modal
+                 kickConfirmModal.show();
+                 
+                 // Hide the Admin Panel modal
+                 const adminModal = bootstrap.Modal.getInstance(adminModalEl);
+                 if (adminModal) adminModal.hide();
              });
              
              adminUserList.appendChild(adminLi);
@@ -132,7 +142,7 @@ messageForm.addEventListener('submit', e => {
     } 
     else if (content.toLowerCase() === '/clear') {
         if (isAdmin) {
-             // *** FIX: Show Bootstrap Modal instead of confirm() ***
+             // Already fixed: Shows Clear Modal
              clearConfirmModal.show();
              console.log("[CLIENT DEBUG - COMMAND] Bootstrap Modal Shown for /clear.");
         } else {
@@ -154,22 +164,34 @@ messageInputDiv.addEventListener('keydown', e => {
 
 // 4. Admin: Clear Chat Button
 clearChatBtn.addEventListener('click', () => {
-    // *** FIX: Show Bootstrap Modal instead of confirm() ***
     clearConfirmModal.show();
     console.log("[CLIENT DEBUG - BUTTON] Bootstrap Modal Shown for Clear Chat Button.");
     
-    // Hide the Admin Panel modal immediately since the confirmation modal is open
     const adminModal = bootstrap.Modal.getInstance(adminModalEl);
     if (adminModal) adminModal.hide();
 });
 
-// 5. NEW: Handle the confirmation click from the Bootstrap modal
+// 5. Clear History Confirmation Click 
 clearConfirmBtn.addEventListener('click', () => {
     if (isAdmin) {
         socket.emit('admin:clear_history', { username: displayName });
         console.log(`[CLIENT DEBUG - BUTTON] Event 'admin:clear_history' EMITTED from Bootstrap Modal.`);
     }
-    clearConfirmModal.hide(); // Always hide the confirmation modal
+    clearConfirmModal.hide(); 
+});
+
+
+// *** 6. NEW: Kick User Confirmation Click Handler ***
+kickConfirmBtn.addEventListener('click', () => {
+    if (isAdmin && userToKick) {
+        socket.emit('admin:kick_user', { targetName: userToKick, adminName: displayName });
+        console.log(`[CLIENT DEBUG - KICK] Event 'admin:kick_user' EMITTED for user: ${userToKick}`);
+    } else {
+        console.error('[CLIENT DEBUG - KICK] Kick failed. Not admin or no target user selected.');
+    }
+    
+    kickConfirmModal.hide(); 
+    userToKick = null; // Clear the temporary variable
 });
 
 
@@ -191,7 +213,7 @@ function handleSuccessfulLogin(data) {
     }
 }
 
-// Login Success events (unchanged)
+// Login Success events
 socket.on('name_accepted', name => {
     handleSuccessfulLogin({ displayName: name, isAdmin: false });
 });
@@ -199,7 +221,7 @@ socket.on('staff_status_update', data => {
     handleSuccessfulLogin(data);
 });
 
-// Login Errors (unchanged)
+// Login Errors 
 socket.on('staff_name_reserved_modal', msg => {
     alert(msg);
 });
@@ -207,7 +229,7 @@ socket.on('name_in_use_modal', msg => {
     alert(msg);
 });
 
-// Chat Events (unchanged)
+// Chat Events 
 socket.on('chat history', history => {
     messagesDiv.innerHTML = ''; 
     history.forEach(msg => appendMessage(msg));
@@ -215,15 +237,15 @@ socket.on('chat history', history => {
 socket.on('chat message', msg => appendMessage(msg));
 socket.on('private message', msg => appendMessage(msg));
 
-// Admin Events (CRITICAL: This handles the history clear command broadcast)
+// Admin Events 
 socket.on('admin:history_cleared', msg => {
     console.log(`[CLIENT DEBUG] Received 'admin:history_cleared' broadcast. UI cleared.`);
     
     const messagesElement = document.getElementById('messages');
     
     if (messagesElement) {
-        messagesElement.innerHTML = ''; // Clears the entire message list for the client
-        appendMessage(msg);             // Adds the system message about the clear
+        messagesElement.innerHTML = ''; 
+        appendMessage(msg);             
     }
 });
 
