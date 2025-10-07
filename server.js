@@ -21,8 +21,10 @@ const BANNED_WORDS = ['hitler', 'swear', 'badword', 'bannedword', 'spam', 'admin
 // Staff accounts - NOTE: LoginName is the SECURE password/key
 const STAFF_LIST = [
   { loginName: 'hfdskLshkdgdibIdsjfkbdAshfjhsfdshfjMdjsbfhd', displayName: 'Liam Stern' },
-  { loginName: 'hfsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh', displayName: 'Diesel Carter' },
-  { loginName: 'hbjrhfjRnjkfdvjkIfhdCnjfkdnjKjndksdjkfjdkdy', displayName: 'Ricky Martinez' },
+  { loginName: 'efsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh', displayName: 'Diesel Carter' },
+  { loginName: 'lbjrhfjRnjkfdvjkIfhdCnjfkdnjKjndksdjkfjdkdy', displayName: 'Ricky Martinez' },
+  { loginName: 'ljdkAsanfjdAksanfRdjksanOjkdsanfjNdksalnfjd', displayName: 'Aaron Ortega' },
+  { loginName: 'odDhsfjdkOsahfNjdahOfkjsVdahjAskagNfdhgdjsa', displayName: 'Donovan Powell' }
 ];
 
 const chatHistory = [];
@@ -573,3 +575,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
