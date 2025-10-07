@@ -50,7 +50,7 @@ body {
 
 .commands {
     font-size: 0.85em;
-    color: #aaa;
+    color: #fff;
 }
 
 /* Chat Area */
@@ -193,4 +193,5 @@ body {
 .user-select-list li:hover {
     background-color: #555;
 }
+
 
