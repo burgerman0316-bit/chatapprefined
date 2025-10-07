@@ -12,7 +12,7 @@ app.set('trust proxy', 1);
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*' },
-    // **PROX Y/CONNECTION FIXES**
+    // Proxy/Connection Fixes for stability
     pingTimeout: 5000, 
     pingInterval: 15000,
 });
@@ -306,7 +306,7 @@ io.on('connection', socket => {
 
     // --- 6. ADMIN COMMANDS ---
 
-    // Global Message (/gmsg) - NEW FEATURE
+    // Global Message (/gmsg) 
     socket.on('admin:global_message', (content) => {
         if (!socket.user || !socket.user.isAdmin) return socket.emit('system_error', 'Unauthorized: Global Message requires Admin rights.');
         if (!content || content.length > MAX_MESSAGE_LENGTH) return socket.emit('system_error', 'Invalid /gmsg command or message too long.');
