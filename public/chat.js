@@ -1,16 +1,23 @@
-// public/js/chat.js
+// public/js/chat.js (Hardened Client Connection)
+
 // === CONFIGURATION ===
 const MAX_MESSAGE_LENGTH = 256;
 const NORMAL_ROOM = 'normal_chat';
 const ADMIN_ROOM = 'admin_chat';
 
 
-// === SOCKET CONNECTION (FIXED FOR PROXY/RAILWAY) ===
-// Explicitly define the connection URL using the window's current protocol and host
+// === SOCKET CONNECTION (MOST CRITICAL SECTION FOR 502 ERROR) ===
+// 1. Explicitly define the connection URL using the window's current protocol and host
 const SOCKET_URL = window.location.protocol + "//" + window.location.host;
+
+// 2. Initialize the socket with specific options for stability on proxies
 const socket = io(SOCKET_URL, {
-    // Explicitly listing transports helps some proxies
-    transports: ['websocket', 'polling']
+    transports: ['websocket', 'polling'],
+    reconnection: true,             // Enable automatic reconnection
+    reconnectionAttempts: Infinity, // Keep trying forever
+    reconnectionDelay: 1000,        // Start delay at 1 second
+    reconnectionDelayMax: 5000,     // Max delay at 5 seconds
+    timeout: 20000                  // Connection timeout (20 seconds)
 });
 
 
@@ -21,8 +28,10 @@ let currentIsAdmin = false;
 let currentIsAnon = false;
 
 // === DOM ELEMENTS ===
+// ... (Keep all your DOM element definitions here)
+// e.g., const nameModal = new bootstrap.Modal(document.getElementById('nameModal'), { ... });
 const nameModal = new bootstrap.Modal(document.getElementById('nameModal'), { backdrop: 'static', keyboard: false });
-const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
+const renameModal = new bootstrap.Modal(document.Modal(document.getElementById('renameModal')));
 const adminPanelModal = new bootstrap.Modal(document.getElementById('adminPanelModal'));
 const clearConfirmModal = new bootstrap.Modal(document.getElementById('clearConfirmModal'));
 const kickConfirmModal = new bootstrap.Modal(document.getElementById('kickConfirmModal'));
@@ -35,12 +44,13 @@ const charCounter = document.getElementById('char-counter');
 const userList = document.getElementById('user-list');
 const adminUserList = document.getElementById('admin-user-list');
 
-// Variables for Admin Actions
 let targetUserId = null;
 let targetUserDisplayName = null;
 
 
 // === HELPER FUNCTIONS ===
+// (Place all your helper functions like escapeHTML, displayMessage, renderUserList, handleCommand here)
+// ...
 
 // Function to safely sanitize and format message content
 function escapeHTML(str) {
@@ -217,6 +227,7 @@ function handleCommand(input) {
 
 
 // === ADMIN ACTION MODALS ===
+// (Keep all modal related functions here)
 
 // Opens the Kick/Ban choice modal
 function openKickConfirmModal(displayName, room) {
@@ -260,12 +271,30 @@ document.getElementById('banConfirmBtn').addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
     nameModal.show();
     
-    // Listen for client connection errors (e.g., from IP ban middleware)
-    socket.on('connect_error', (err) => {
-        console.error("Connection Error:", err.message);
-        document.getElementById('container').style.display = 'none';
-        document.body.innerHTML = `<h1 style="color: red; text-align: center; padding-top: 100px;">Connection Failed: ${err.message}</h1>`;
+    // --- ADDED RESILIENCE LOGGING ---
+    socket.on('connect', () => {
+        console.log(`Socket.IO Client connected successfully: ${socket.id}`);
+        // Only attempt login when connection is verified
+        document.getElementById('name-form').querySelector('button[type="submit"]').disabled = false;
+        if(currentUserName) { // Auto-re-login attempt if user was logged in
+            socket.emit('check_staff_status', currentUserName, () => {}); 
+        }
     });
+
+    socket.on('disconnect', (reason) => {
+        console.error(`Socket.IO Client disconnected: ${reason}`);
+    });
+    
+    // Listen for client connection errors (e.g., from IP ban middleware or 502)
+    socket.on('connect_error', (err) => {
+        console.error("Connection Error (Client-Side):", err.message);
+        // Display a hard error if the error is due to a ban or persistent 502
+        if (err.message.includes('Banned') || err.message.includes('401')) {
+             document.getElementById('container').style.display = 'none';
+             document.body.innerHTML = `<h1 style="color: red; text-align: center; padding-top: 100px;">Connection Failed: ${err.message}</h1>`;
+        }
+    });
+    // --- END RESILIENCE LOGGING ---
 });
 
 document.getElementById('name-form').addEventListener('submit', function(e) {
@@ -305,6 +334,7 @@ document.getElementById('name-form').addEventListener('submit', function(e) {
 
 
 // === EVENT LISTENERS ===
+// (Keep all other event listeners here)
 
 // Chat Form Submission
 messageForm.addEventListener('submit', function(e) {
@@ -394,6 +424,7 @@ document.getElementById('adminChatBtn').addEventListener('click', () => {
 
 
 // === SOCKET EVENT HANDLERS ===
+// (Keep all socket handlers here)
 
 socket.on('chat message', function(msg) {
     displayMessage(msg);
