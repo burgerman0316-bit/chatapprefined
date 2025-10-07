@@ -9,17 +9,22 @@
 </head>
 <body>
     <div id="container" style="display: none;"> 
+        
         <div id="user-info">
             <h2>Chat Info</h2>
-            <p>Welcome, <span id="display-name">Guest</span>!</p>
+            
+            <hr class="info-divider"> <p>Welcome, <span id="display-name">Guest</span>!</p>
             <p>Users Online: <span id="user-count">0</span></p>
-            <div id="user-list-container">
+            
+            <hr class="info-divider"> <div id="user-list-container">
                 <h4>Online Users:</h4>
                 <ul id="user-list"></ul>
             </div>
-            <p class="commands">**Commands:**</p>
+            
+            <hr class="info-divider"> <p class="commands">**Commands:**</p>
             <p class="commands">/msg [user] [message]</p>
             <p class="commands">/clear (Mod only)</p>
+            
             <button id="adminPanelBtn" class="btn btn-secondary mt-3" style="display: none;" data-bs-toggle="modal" data-bs-target="#adminPanelModal">Admin Panel</button>
         </div>
 
@@ -88,6 +93,7 @@
             </div>
         </div>
     </div>
+
     <div class="modal fade" id="clearConfirmModal" tabindex="-1" aria-labelledby="clearConfirmModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -105,6 +111,7 @@
             </div>
         </div>
     </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> 
     <script src="chat.js"></script>
