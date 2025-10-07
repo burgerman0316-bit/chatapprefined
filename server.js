@@ -11,7 +11,12 @@ app.set('trust proxy', 1);
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*' }
+  cors: { origin: '*' },
+    // **NEW PROXY/CONNECTION FIXES**
+    pingTimeout: 5000, 
+    pingInterval: 15000,
+    // Setting this to 'websocket' might sometimes solve issues on certain hosts, but long-polling is more compatible.
+    // We will stick to the default unless you tell me you only want websockets.
 });
 
 // --- SETTINGS ---
@@ -40,34 +45,36 @@ const ipBans = new Map();        // IP Address -> { until: Date, reason: string 
 
 /**
  * Helper to determine the client IP address from the handshake headers.
- * This is crucial for environments like Railway, where a proxy is used.
+ * This function should be highly robust for proxy environments.
  */
 function getClientIp(handshake) {
     const forwarded = handshake.headers['x-forwarded-for'];
 
     if (forwarded) {
-        // x-forwarded-for can be a comma-separated list. We want the first (client) IP.
+        // x-forwarded-for can be a comma-separated list. We want the client's original IP (the first one).
         const ips = (Array.isArray(forwarded) ? forwarded[0] : forwarded).split(',');
         return ips[0].trim();
     }
-    // Fallback for direct connections or environments without proxy headers
+    // Fallback
     return handshake.address;
 }
 
-// --- IP BAN MIDDLEWARE (FINAL FIX) ---
+// --- IP BAN MIDDLEWARE (Robust Proxy IP Check) ---
 io.use((socket, next) => {
+    // Attach the robustly determined IP to the socket object
     socket.clientIp = getClientIp(socket.handshake);
     
+    // Check for active ban
     const ban = ipBans.get(socket.clientIp);
-    if (ban && ban.until > new Date()) {
-        console.log(`[BAN BLOCK] Connection blocked for IP: ${socket.clientIp} until ${ban.until.toLocaleString()}.`);
-        // Terminate connection with error message
-        return next(new Error(`Banned: You are banned until ${ban.until.toLocaleString()}`));
-    }
-    
-    // Cleanup expired bans (optional, but good practice)
-    if (ban && ban.until <= new Date()) {
-        ipBans.delete(socket.clientIp);
+    if (ban) {
+        if (ban.until > new Date()) {
+            console.log(`[BAN BLOCK] Connection blocked for IP: ${socket.clientIp} until ${ban.until.toLocaleString()}.`);
+            // Terminate connection with error message
+            return next(new Error(`Banned: You are banned until ${ban.until.toLocaleString()}`));
+        } else {
+            // Ban is expired, clean it up
+            ipBans.delete(socket.clientIp);
+        }
     }
     
     next();
