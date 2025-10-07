@@ -3,7 +3,7 @@ body {
     margin: 0;
     font-family: Arial, sans-serif;
     background-color: #000 !important;
-    color: #f0f0f0;
+    color: #fff;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -31,6 +31,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    color: #fff;
 }
 
 #user-info h2 { 
@@ -194,6 +195,7 @@ body {
 .user-select-list li:hover {
     background-color: #555;
 }
+
 
 
 
