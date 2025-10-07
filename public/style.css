@@ -84,13 +84,12 @@ body {
 .msg {
     max-width: 70%; 
     margin-bottom: 10px;
-    padding: 8px 12px;
-    /* This must be position relative for the tails to be positioned absolutely */
+    padding: 8px 10px;
     position: relative; 
     word-wrap: break-word;
     clear: both; 
     list-style: none;
-    padding-top: 24px;
+    padding-top: 10px;
     /* Removed padding adjustment for name indicator, as it was adjusted to account for the bubble tail */
 }
 
@@ -329,3 +328,4 @@ body {
     scrollbar-color: #555 #1e1e1e;
     scrollbar-width: thin; 
 }
+
