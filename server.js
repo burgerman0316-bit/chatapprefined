@@ -6,6 +6,9 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
+// IMPORTANT: Tell Express it is behind a proxy (like Railway) so it trusts the 'x-forwarded-for' header
+app.set('trust proxy', 1); 
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*' }
@@ -34,29 +37,39 @@ const chatHistory = {
 };
 const ipBans = new Map();        // IP Address -> { until: Date, reason: string }
 
-// --- IP BAN MIDDLEWARE (FIXED) ---
-io.use((socket, next) => {
-    // 1. Get the IP from common proxy header (e.g., Railway, Heroku)
-    const forwardedIp = socket.handshake.headers['x-forwarded-for'];
-    
-    // 2. Resolve the IP: use the first IP in the list (if present) or the direct connection IP
-    let clientIp;
-    if (forwardedIp) {
-        // If it's a list (common with proxies), take the first one
-        clientIp = (Array.isArray(forwardedIp) ? forwardedIp[0] : forwardedIp).split(',')[0].trim();
-    } else {
-        // Fallback to the direct connection address
-        clientIp = socket.handshake.address;
-    }
 
-    socket.clientIp = clientIp;
+/**
+ * Helper to determine the client IP address from the handshake headers.
+ * This is crucial for environments like Railway, where a proxy is used.
+ */
+function getClientIp(handshake) {
+    const forwarded = handshake.headers['x-forwarded-for'];
+
+    if (forwarded) {
+        // x-forwarded-for can be a comma-separated list. We want the first (client) IP.
+        const ips = (Array.isArray(forwarded) ? forwarded[0] : forwarded).split(',');
+        return ips[0].trim();
+    }
+    // Fallback for direct connections or environments without proxy headers
+    return handshake.address;
+}
+
+// --- IP BAN MIDDLEWARE (FINAL FIX) ---
+io.use((socket, next) => {
+    socket.clientIp = getClientIp(socket.handshake);
     
     const ban = ipBans.get(socket.clientIp);
     if (ban && ban.until > new Date()) {
-        console.log(`Connection blocked: IP ${socket.clientIp} is banned until ${ban.until}`);
+        console.log(`[BAN BLOCK] Connection blocked for IP: ${socket.clientIp} until ${ban.until.toLocaleString()}.`);
         // Terminate connection with error message
         return next(new Error(`Banned: You are banned until ${ban.until.toLocaleString()}`));
     }
+    
+    // Cleanup expired bans (optional, but good practice)
+    if (ban && ban.until <= new Date()) {
+        ipBans.delete(socket.clientIp);
+    }
+    
     next();
 });
 
@@ -86,7 +99,7 @@ function getActiveUsersList(room = NORMAL_ROOM) {
     
     const list = Array.from(socketsInRoom)
         .map(socketId => users.get(socketId))
-        .filter(user => user) // Filter out nulls
+        .filter(user => user)
         .map(user => ({
             id: user.id,
             socketId: user.socketId,
@@ -107,7 +120,6 @@ function pushHistory(msg, room) {
 }
 
 function broadcastUserList() {
-    // We send two lists: one for the normal room, one for admin room (for the admin panel)
     io.to(NORMAL_ROOM).emit('user list update', getActiveUsersList(NORMAL_ROOM));
     io.to(ADMIN_ROOM).emit('admin user list update', getActiveUsersList(NORMAL_ROOM));
 }
@@ -116,7 +128,6 @@ function broadcastUserList() {
 io.on('connection', socket => {
   console.log('Client connected:', socket.id, `(IP: ${socket.clientIp})`);
     
-    // Initial setup: Join the main room and provide initial history
     socket.join(NORMAL_ROOM);
   socket.emit('chat history', chatHistory[NORMAL_ROOM], NORMAL_ROOM);
   broadcastUserList();
@@ -137,14 +148,12 @@ io.on('connection', socket => {
         }
     }
     
-    // Cleanup any stale data for this socket ID
     const oldUser = users.get(socket.id);
     if (oldUser) {
         namesInUse.delete(oldUser.displayName.toLowerCase());
         users.delete(socket.id);
     }
 
-    // Staff Login Logic (Exact loginName match)
     const staffInfo = getStaffInfoByLogin(name);
     let displayName = name;
     let isAdmin = false;
@@ -152,18 +161,17 @@ io.on('connection', socket => {
     if (staffInfo) {
       displayName = staffInfo.displayName;
       isAdmin = true;
-      socket.join(ADMIN_ROOM); // Join Admin Chat room
-      socket.emit('chat history', chatHistory[ADMIN_ROOM], ADMIN_ROOM); // Send admin history
+      socket.join(ADMIN_ROOM); 
+      socket.emit('chat history', chatHistory[ADMIN_ROOM], ADMIN_ROOM);
     }
 
-    // Finalize user object
     const newUser = {
         id: uuidv4(),
         socketId: socket.id,
         displayName: displayName,
         isAdmin: isAdmin,
         isAnon: false,
-        currentRoom: NORMAL_ROOM // Default to normal chat
+        currentRoom: NORMAL_ROOM
     };
     
     namesInUse.add(displayName.toLowerCase());
@@ -239,14 +247,10 @@ io.on('connection', socket => {
     socket.on('change room', (newRoom) => {
         if (!socket.user || !socket.user.isAdmin || (newRoom !== NORMAL_ROOM && newRoom !== ADMIN_ROOM)) return;
         
-        // Leave the current room
         socket.leave(socket.user.currentRoom);
-        
-        // Join the new room
         socket.join(newRoom);
         socket.user.currentRoom = newRoom;
         
-        // Update client UI and history
         socket.emit('room changed', newRoom);
         socket.emit('chat history', chatHistory[newRoom], newRoom);
     });
@@ -260,7 +264,6 @@ io.on('connection', socket => {
         const newNameTrimmed = newName.trim();
         const newNameLower = newNameTrimmed.toLowerCase();
         
-        // 1. Validate New Name
         if (newNameTrimmed.length < 3 || newNameTrimmed.length > 20) {
             return callback({ success: false, message: 'Name must be 3-20 characters.' });
         }
@@ -268,14 +271,12 @@ io.on('connection', socket => {
             return callback({ success: false, message: 'Name contains a banned word.' });
         }
         
-        // 2. Check Uniqueness (if name is changing AND it's not the current name)
         if (oldName.toLowerCase() !== newNameLower) {
             if (namesInUse.has(newNameLower)) {
                 return callback({ success: false, message: 'Name is already taken.' });
             }
         }
         
-        // 3. Update State
         if (oldName.toLowerCase() !== newNameLower) {
             namesInUse.delete(oldName.toLowerCase());
             namesInUse.add(newNameLower);
@@ -285,10 +286,8 @@ io.on('connection', socket => {
             socket.user.isAnon = isAnon;
         }
         
-        // 4. Success callback
         callback({ success: true, newName: socket.user.displayName, isAnon: socket.user.isAnon });
 
-        // 5. Broadcast (Scope based on staff status)
         const publicMsgContent = `${oldName} has changed their name.`;
         const adminMsgContent = `[ADMIN ONLY] ${oldName} is now ${socket.user.displayName} (Anon: ${socket.user.isAnon ? 'ON' : 'OFF'}).`;
 
@@ -299,11 +298,9 @@ io.on('connection', socket => {
             username: 'System', content: adminMsgContent, timestamp: new Date(), isSystem: true, isAdmin: true, room: NORMAL_ROOM
         };
         
-        // General user: Broadcast generic message to normal chat
         io.to(NORMAL_ROOM).emit('chat message', publicMsg);
         pushHistory(publicMsg, NORMAL_ROOM);
         
-        // Admin user: Broadcast detailed message to admins
         if (isStaffChange) {
             io.to(ADMIN_ROOM).emit('chat message', adminMsg);
         }
@@ -318,7 +315,6 @@ io.on('connection', socket => {
         if (!socket.user || !socket.user.isAdmin) return socket.emit('system_error', 'Unauthorized.');
         
         const targetLower = targetDisplayName.toLowerCase();
-        // Find user by Display Name across all connected users (not just the room)
         const targetUser = Array.from(users.values()).find(u => u.displayName.toLowerCase() === targetLower);
         
         if (!targetUser) return socket.emit('system_error', `Kick failed: User '${targetDisplayName}' not found.`);
@@ -377,7 +373,6 @@ io.on('connection', socket => {
         
         const targetIp = targetSocket.clientIp;
         
-        // Calculate ban end time
         const durationMs = (days * 24 * 60 * 60 * 1000) + (hours * 60 * 60 * 1000) + (minutes * 60 * 1000);
         const banUntil = new Date(Date.now() + durationMs);
         
@@ -385,7 +380,6 @@ io.on('connection', socket => {
 
         ipBans.set(targetIp, { until: banUntil, reason: 'Manual Admin Ban' });
         
-        // Kick the target user
         io.to(targetUser.socketId).emit('system_error', `Your IP has been BANNED by Moderator ${socket.user.displayName}.`);
         targetSocket.disconnect(true);
 
