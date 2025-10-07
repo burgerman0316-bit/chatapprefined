@@ -15,7 +15,7 @@ body {
     display: flex;
     width: 90%;
     max-width: 1000px;
-    height: 90vh; 
+    height: 90vh;
     background: #1e1e1e;
     border-radius: 8px;
     overflow: hidden;
@@ -32,11 +32,28 @@ body {
     flex-direction: column;
     overflow-y: auto;
     color: #f0f0f0; 
-    flex-shrink: 0; /* Chat doesn't change sizes ever. */
+    font-size: 0.9rem;
 }
 
 #user-info h2 { 
     color: #fff;
+    font-size: 1.5rem;
+}
+
+.info-divider {
+    border-color: #444;
+    margin: 10px 0;
+}
+
+.commands {
+    font-size: 0.8rem;
+    color: #aaa;
+    margin: 2px 0;
+}
+
+#user-list-container h4 {
+    font-size: 1.1rem;
+    margin-top: 10px;
 }
 
 #user-list {
@@ -46,25 +63,14 @@ body {
 }
 
 #user-list li {
-    padding: 3px 0;
+    padding: 2px 0;
     cursor: pointer;
-    color: #f0f0f0; 
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    transition: color 0.1s;
+    font-size: 0.9rem;
 }
 
-.commands {
-    font-size: 0.85em;
-    color: #f0f0f0; 
-}
-
-.info-divider {
-    border: 0;
-    height: 1px;
-    background-color: #444; 
-    margin-top: 10px;
-    margin-bottom: 10px;
+#user-list li:hover {
+    color: #5bc0de;
 }
 
 /* Chat Area */
@@ -74,222 +80,227 @@ body {
     flex-direction: column;
 }
 
-/* Chat Header and Tabs (NEW) */
 #chat-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px 15px;
-    background: #252525;
+    background: #222;
     border-bottom: 1px solid #444;
 }
-#chat-header h3 {
+
+#chatTitle {
     margin: 0;
-    font-size: 1.2em;
+    font-size: 1.2rem;
 }
+
+#chat-tabs {
+    display: flex;
+}
+
 .chat-tab {
     background: none;
     border: none;
-    color: #999;
+    color: #ccc;
     padding: 5px 10px;
     margin-left: 5px;
     cursor: pointer;
-}
-.chat-tab.active {
-    color: #fff;
-    border-bottom: 2px solid #fff;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: background-color 0.2s, color 0.2s;
 }
 
-/* Message Bubbles - CONTAINER AND BASE STYLES */
+.chat-tab:hover {
+    background-color: #444;
+}
+
+.chat-tab.active {
+    background-color: #007bff;
+    color: white;
+}
+
+/* Message List */
 #messages {
-    display: flex; 
-    flex-direction: column; 
-    padding: 10px;
+    list-style-type: none;
     margin: 0;
-    overflow-y: auto;
+    padding: 15px;
     flex-grow: 1;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    background: #1e1e1e;
 }
 
 .msg {
-    max-width: 70%; 
-    margin-bottom: 10px;
-    padding: 8px 10px;
-    position: relative; 
+    padding: 8px 0;
+    border-radius: 5px;
+    margin-bottom: 5px;
     word-wrap: break-word;
-    clear: both; 
-    list-style: none;
-    padding-top: 20px; 
+    white-space: pre-wrap;
+    line-height: 1.4;
 }
 
-/* --- OWN MESSAGES (Right Side) --- */
-.msg.own {
-    align-self: flex-end; 
-    background-color: #4a4a4a; 
-    color: #fff;
-    border-radius: 12px;
-}
-
-/* --- OTHER MESSAGES (Left Side) --- */
-.msg.other {
-    align-self: flex-start; 
-    background-color: #2c2c2c; 
-    color: #f0f0f0;
-    border-radius: 12px;
-}
-
-/* Gold Border for Admin messages */
-.msg.other[style*="border: 2px solid gold"] {
-    border: 2px solid gold !important;
-}
-
-/* System messages */
-.msg.system {
-    float: none; 
-    align-self: center; 
-    font-style: italic;
-    color: #888;
-    background: none; 
-    text-align: center;
-    width: 100%;
-    margin: 10px auto; 
-    padding: 0; 
-    border-radius: 0; 
-}
-
-/* Always-white timestamp */
-.msg .timestamp {
-    color: #f0f0f0 !important; 
-    font-size: 0.8em;
-    margin-left: 8px;
-    opacity: 0.8;
-    white-space: nowrap;
-}
-
-/* Styles for sender name indicator */
-.sender-name {
-    position: absolute;
-    top: 4px;
-    font-size: 0.8em;
+.msg strong {
     font-weight: bold;
-    white-space: nowrap;
+    margin-right: 5px;
+    color: #5bc0de; /* Default blue for names */
 }
 
-.msg.own .sender-name {
-    right: 10px;
-    color: #99cfff; 
+/* User Roles */
+.msg.system {
+    text-align: center;
+    color: #aaa;
+    font-style: italic;
+    font-size: 0.9rem;
+    padding: 5px 10px;
 }
 
 .msg.other .sender-name {
-    left: 10px;
-    color: #c0c0c0; 
+    color: #5bc0de; 
+    font-weight: bold;
+    margin-right: 5px;
+    display: block;
+    font-size: 0.9rem;
 }
 
-/* Styles for stacking messages from the same user (Fixes the curved thing) */
-.msg.own + .msg.own {
-    margin-top: -8px; 
-    border-top-right-radius: 12px;
-    border-bottom-right-radius: 12px;
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
-    padding-top: 8px; 
-}
-.msg.own + .msg.own .sender-name {
-    display: none; 
+.msg.own {
+    text-align: right;
+    padding-right: 10px;
 }
 
-.msg.other + .msg.other {
-    margin-top: -8px; 
-    border-top-right-radius: 12px;
-    border-bottom-right-radius: 12px;
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
-    padding-top: 8px; 
+.msg.own .sender-name {
+    display: none; /* Hide the "You" name */
 }
-.msg.other + .msg.other .sender-name {
-    display: none; 
+
+.msg .timestamp {
+    color: #777;
+    font-size: 0.7rem;
+    margin-left: 5px;
+}
+
+/* Admin Message Styling */
+.msg.other.admin-msg {
+    border-left: 3px solid gold;
+    padding-left: 7px;
+}
+.msg.other.admin-msg .sender-name {
+    color: gold; 
 }
 
 
-/* Input Box */
+/* Input Form */
 #messageForm {
-    flex-shrink: 0;
+    padding: 10px 15px;
+    background: #2c2c2c;
+    border-top: 1px solid #444;
 }
 
 .input-container {
     display: flex;
-    padding: 10px;
-    background-color: #2c2c2c;
-    border-top: 1px solid #444;
+    align-items: flex-end;
 }
 
 .custom-input {
     flex-grow: 1;
-    padding: 10px;
-    /* Removed border-radius for less "curved thing" */
-    border-radius: 0; 
-    background-color: #383838;
-    color: #f0f0f0;
+    min-height: 38px;
+    max-height: 100px; /* Limit input box height */
+    padding: 8px 12px;
+    margin-right: 10px;
+    background: #3c3c3c;
     border: 1px solid #555;
-    margin-right: 8px;
-    min-height: 40px;
-    max-height: 80px;
-    overflow-y: auto;
-    -webkit-user-modify: read-write-plaintext-only;
-}
-
-.custom-input:empty::before {
-    content: attr(data-placeholder);
-    color: #888;
-}
-
-.input-container button {
-    padding: 10px 15px;
     border-radius: 4px;
-    border: none;
-    background-color: #585858;
     color: white;
+    overflow-y: auto;
+    white-space: pre-wrap; /* Allows line breaks */
+    word-break: break-word;
+}
+
+.custom-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.custom-input[contenteditable]:empty:before {
+    content: attr(data-placeholder);
+    color: #777;
+    pointer-events: none;
+}
+
+#messageForm button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
     cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+    height: 38px; /* Match input height */
 }
 
-.input-container button:hover {
-    background-color: #4a4a4a;
+#messageForm button:hover {
+    background-color: #0056b3;
 }
 
-/* Modals & Bootstrap Overrides */
+/* FIX: Character Counter Visibility */
+#charCountContainer {
+    font-size: 0.75rem;
+    margin-top: 4px;
+    /* Increased color contrast */
+    color: #ccc !important; 
+}
+
+/* Modals */
 .modal-content {
-    background-color: #2c2c2c !important;
-    color: #f0f0f0 !important;
-    border: 1px solid #444 !important;
+    background-color: #2c2c2c;
+    color: white;
 }
 
-/* Fix: Scroll on the kick page (Admin Modal User List) */
+.modal-header {
+    border-bottom: 1px solid #444;
+}
+
+.modal-title {
+    color: white;
+}
+
+.btn-close {
+    filter: invert(1);
+}
+
+/* Admin List in Modal */
 .user-select-list {
     list-style: none;
     padding: 0;
-    margin: 0;
-    max-height: 250px; 
-    overflow-y: auto; /* Make it scrollable */
-    background-color: #383838;
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid #444;
     border-radius: 4px;
+    background-color: #1e1e1e;
 }
 
 .user-select-list li {
-    padding: 8px;
-    border-bottom: 1px solid #444;
+    padding: 8px 12px;
     cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    border-bottom: 1px solid #333;
+    transition: background-color 0.15s;
 }
-.user-select-list li.admin-name-list {
+
+.user-select-list li:last-child {
+    border-bottom: none;
+}
+
+.user-select-list li:hover {
+    background-color: #383838;
+}
+
+.admin-name-list {
     color: gold;
     font-weight: bold;
 }
-.user-select-list li:hover {
-    background-color: #555;
-}
 
-/* CUSTOM SCROLLBAR STYLING */
+/* Custom Scrollbar */
+/* Note: scrollbar styling is non-standard and may only work in WebKit browsers */
 #messages::-webkit-scrollbar,
 #user-info::-webkit-scrollbar,
 .custom-input::-webkit-scrollbar,
@@ -297,4 +308,26 @@ body {
     width: 8px;
     background-color: transparent; 
 }
-/* ... (rest of scrollbar styles remain the same) ... */
+
+#messages::-webkit-scrollbar-track,
+#user-info::-webkit-scrollbar-track,
+.custom-input::-webkit-scrollbar-track,
+.user-select-list::-webkit-scrollbar-track {
+    background: #1e1e1e;
+    border-radius: 10px;
+}
+
+#messages::-webkit-scrollbar-thumb,
+#user-info::-webkit-scrollbar-thumb,
+.custom-input::-webkit-scrollbar-thumb,
+.user-select-list::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 10px;
+}
+
+#messages::-webkit-scrollbar-thumb:hover,
+#user-info::-webkit-scrollbar-thumb:hover,
+.custom-input::-webkit-scrollbar-thumb:hover,
+.user-select-list::-webkit-scrollbar-thumb:hover {
+    background-color: #777; 
+}
