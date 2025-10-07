@@ -2,7 +2,7 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #000;
+    background-color: #000 !important;
     color: #f0f0f0;
     display: flex;
     justify-content: center;
@@ -193,3 +193,4 @@ body {
 .user-select-list li:hover {
     background-color: #555;
 }
+
