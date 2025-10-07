@@ -246,14 +246,13 @@ body {
 #charCountContainer {
     font-size: 0.75rem;
     margin-top: 4px;
-    /* Increased color contrast */
     color: #ccc !important; 
 }
 
-/* Modals */
+/* --- MODAL STYLES (REINFORCED DARK THEME) --- */
 .modal-content {
-    background-color: #2c2c2c;
-    color: white;
+    background-color: #2c2c2c; /* Main dark background */
+    color: #f0f0f0; /* Light text color */
 }
 
 .modal-header {
@@ -264,8 +263,14 @@ body {
     color: white;
 }
 
+.modal-footer {
+    border-top: 1px solid #444;
+}
+
+/* Ensure the close button is white on a dark background */
 .btn-close {
     filter: invert(1);
+    color: white; 
 }
 
 /* Admin List in Modal */
