@@ -1,9 +1,9 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Advanced Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Chat</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -15,22 +15,16 @@
       </div>
 
       <div class="panel-section">
-        <h3>Kick / Admin Menu</h3>
-        <div id="kick-panel" class="scrollable">
-          <!-- populated by JS -->
-        </div>
+        <h3>Kick / Ban Menu</h3>
+        <div id="kick-panel" class="scrollable"></div>
       </div>
 
       <div class="panel-section" id="admin-controls" style="display:none;">
         <h3>Admin Panel</h3>
-        <button id="open-admin-chat">Open Admin Chat</button>
+        <button id="open-admin-chat">Admin Chat</button>
         <div class="admin-control-row">
           <label>Spam limit (msgs / 10s)</label>
           <input id="spam-limit" type="number" min="1" max="50" value="6"/>
-        </div>
-
-        <div class="admin-control-row">
-          <label>Ban by name (select user then set time)</label>
         </div>
       </div>
     </aside>
@@ -43,8 +37,8 @@
       <div id="composer">
         <div id="composer-top">
           <input id="display-name" placeholder="Display name (unique)" maxlength="64"/>
-          <button id="change-name">Change Name</button>
-          <label><input id="anon-toggle" type="checkbox"/> Admin anonymous</label>
+          <button id="change-name">Change</button>
+          <label><input id="anon-toggle" type="checkbox"/> Anonymous</label>
           <span id="me-label"></span>
         </div>
 
@@ -55,7 +49,7 @@
 
         <div id="composer-bottom">
           <button id="send">Send</button>
-          <button id="clear-chat">Clear Chat (admins)</button>
+          <button id="clear-chat">Clear (Admin)</button>
           <div id="system-warnings"></div>
         </div>
       </div>
@@ -66,12 +60,11 @@
         <h3>Admin Chat</h3>
         <div id="admin-chat" class="scrollable" style="height:200px;"></div>
         <textarea id="admin-message" placeholder="Admin message..."></textarea>
-        <button id="send-admin" style="display:none;">Send (Admin)</button>
+        <button id="send-admin" style="display:none;">Send</button>
       </div>
     </aside>
   </div>
 
-  <!-- Modal for ban -->
   <div id="ban-modal" class="modal hidden">
     <div class="modal-inner">
       <h2>You are banned</h2>
