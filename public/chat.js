@@ -21,16 +21,19 @@ const userList = document.getElementById('user-list');
 const adminPanelBtn = document.getElementById('adminPanelBtn');
 
 // Modal Elements (Requires Bootstrap 5)
+// LOGIN Modal
 const nameModalEl = document.getElementById('nameModal');
 const nameModal = new bootstrap.Modal(nameModalEl, { backdrop: 'static', keyboard: false });
 const nameForm = document.getElementById('name-form');
 const nameInput = document.getElementById('name-input');
 
+// RENAME Modal
 const renameModalEl = document.getElementById('renameModal');
 const renameModal = new bootstrap.Modal(renameModalEl);
 const renameForm = document.getElementById('rename-form');
 const newNameInput = document.getElementById('new-name-input');
 
+// ADMIN Modals
 const adminPanelModalEl = document.getElementById('adminPanelModal');
 const adminPanelModal = new bootstrap.Modal(adminPanelModalEl);
 const adminUserList = document.getElementById('admin-user-list');
@@ -106,17 +109,15 @@ function handleRename(newName) {
         return;
     }
 
-    // Emit the new name to the server, expecting a callback response
     socket.emit('rename', newName, function(response) {
         if (response.success) {
             // Success: Update client-side state and UI
-            displayNameSpan.textContent = response.username; // Use server-verified name
+            displayNameSpan.textContent = response.username; 
             username = response.username; 
 
             newNameInput.value = '';
             renameModal.hide(); 
         } else {
-            // Failure: Use server-provided message if available
             alert(`Rename failed: ${response.message || 'The name might be taken or invalid.'}`);
         }
     });
@@ -133,7 +134,7 @@ function showKickConfirmModal(targetName, targetId) {
     kickTargetSocketId = targetId;
     kickConfirmBody.innerHTML = `Are you sure you want to KICK <strong>${targetName}</strong> from the chat?`;
     kickConfirmModal.show();
-    adminPanelModal.hide(); // Hide the admin panel behind the confirmation
+    adminPanelModal.hide(); 
 }
 
 /**
@@ -146,7 +147,7 @@ function confirmKick() {
                 appendMessage('Error: Failed to kick user. They may have already left.', 'system');
             }
         });
-        kickTargetSocketId = ''; // Clear the target ID
+        kickTargetSocketId = ''; 
         kickConfirmModal.hide();
     }
 }
@@ -173,7 +174,6 @@ nameForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const inputName = nameInput.value.trim();
     if (inputName) {
-        // Emit 'new user' and wait for server callback
         socket.emit('new user', inputName, (response) => {
             if (response.success) {
                 username = response.username;
@@ -183,7 +183,6 @@ nameForm.addEventListener('submit', function(e) {
                 container.style.display = 'flex'; // Show the chat
                 nameModal.hide(); // Hide the login modal
 
-                // Show admin button if user is a moderator
                 if (isMod) {
                     adminPanelBtn.style.display = 'block';
                 }
@@ -199,13 +198,12 @@ messageForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const msg = messageInput.textContent.trim();
     if (msg) {
-        // Basic command handling
         if (msg.startsWith('/clear') && isMod) {
             clearConfirmModal.show();
         } else {
             socket.emit('chat message', msg);
         }
-        messageInput.textContent = ''; // Clear the input field
+        messageInput.textContent = ''; 
     }
 });
 
@@ -238,7 +236,6 @@ socket.on('chat message', function(data) {
     const messageType = data.username === username ? 'own' : 'other';
     const sender = data.username === username ? 'You' : data.username;
     
-    // Assumes server sends a time property (data.time) for a complete display
     appendMessage(`${sender}: ${data.msg}`, messageType);
 });
 
@@ -261,5 +258,5 @@ socket.on('clear messages', function() {
 // Server tells the client they were kicked
 socket.on('kicked', function() {
     alert("You have been kicked from the chat.");
-    location.reload(); // Simple way to force logout and reload
+    location.reload(); 
 });
