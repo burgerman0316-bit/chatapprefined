@@ -1,7 +1,7 @@
 // =========================================================================
-// 0. SOCKET.IO CONNECTION (This must be outside the listener)
+// 0. SOCKET.IO CONNECTION
 // =========================================================================
-// Use your specific Railway URL here:
+// *** FIX: Explicitly connect to the deployed server URL ***
 const socket = io("https://chatapprefined-production.up.railway.app"); 
 
 // Wrap all logic inside DOMContentLoaded to ensure elements exist before script runs
@@ -30,21 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const adminPanelBtn = document.getElementById('adminPanelBtn');
 
     // Modal Elements (Requires Bootstrap 5)
-    // LOGIN Modal
-    // Initialize modals safely, ensuring the elements are ready.
     const nameModalEl = document.getElementById('nameModal');
-    // NOTE: We now use nameModalEl directly in the listener, not the instance
     const nameModal = new bootstrap.Modal(nameModalEl, { backdrop: 'static', keyboard: false });
     const nameForm = document.getElementById('name-form');
     const nameInput = document.getElementById('name-input');
 
-    // RENAME Modal
     const renameModalEl = document.getElementById('renameModal');
     const renameModal = new bootstrap.Modal(renameModalEl);
     const renameForm = document.getElementById('rename-form');
     const newNameInput = document.getElementById('new-name-input');
 
-    // ADMIN Modals
     const adminPanelModalEl = document.getElementById('adminPanelModal');
     const adminPanelModal = new bootstrap.Modal(adminPanelModalEl);
     const adminUserList = document.getElementById('admin-user-list');
@@ -112,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 newNameInput.value = '';
                 renameModal.hide(); 
             } else {
+                // FIX: Use appendMessage for error
                 appendMessage(`[Client Error] Rename failed: ${response.message || 'The name might be taken or invalid.'}`, 'system');
             }
         });
@@ -175,6 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         adminPanelBtn.style.display = 'block';
                     }
                 } else {
+                    // FIX: Use appendMessage for error
                     appendMessage(`[Client Error] Login failed: ${response.message || 'Name may be taken or invalid.'}`, 'system');
                 }
             });
@@ -202,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (newName && newName.length <= 20) { 
             handleRename(newName);
         } else {
+            // FIX: Use appendMessage for client validation error
             appendMessage('Please enter a valid name (1-20 characters).', 'system');
         }
     });
@@ -240,6 +238,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     socket.on('kicked', function() {
+        // FIX: Removed final alert() call
+        appendMessage('You have been kicked from the chat. Reloading...', 'system');
         location.reload(); 
     });
-}); // End of DOMContentLoaded listener
+});
