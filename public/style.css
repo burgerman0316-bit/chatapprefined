@@ -55,7 +55,7 @@ body {
     color: #f0f0f0; /* Makes the command text white */
 }
 
-/* Styling for the new HR dividers in the user-info panel */
+/* Styling for the HR dividers in the user-info panel */
 .info-divider {
     border: 0;
     height: 1px;
@@ -71,67 +71,94 @@ body {
     flex-direction: column;
 }
 
+/* Message Bubbles - CONTAINER AND BASE STYLES */
 #messages {
-    flex-grow: 1;
-    list-style: none;
+    display: flex; /* Make the messages container a flexbox */
+    flex-direction: column; /* Stack messages vertically */
     padding: 10px;
     margin: 0;
     overflow-y: auto;
+    flex-grow: 1;
 }
 
-/* Message Bubbles - BASE STYLES */
 .msg {
-    max-width: 70%;
+    max-width: 70%; /* Keep bubbles from stretching too wide */
     margin-bottom: 10px;
     padding: 8px 12px;
-    border-radius: 10px; /* Base rounded corners */
+    border-radius: 18px; /* Larger border-radius for the curved effect */
     word-wrap: break-word;
-    position: relative; /* Needed for positioning the ::before (arrow) */
-    clear: both; /* Prevents bubbles from overlapping side-by-side */
-    list-style: none; /* Ensure no list bullets */
+    position: relative; /* Essential for positioning pseudo-elements */
+    clear: both; /* Ensures bubbles start on a new line */
+    list-style: none;
 }
 
 /* Own messages (align right, color #4a4a4a) */
 .msg.own {
-    float: right; /* Aligns to the right */
-    background-color: #4a4a4a; /* Your specified color */
+    align-self: flex-end; /* Aligns to the right in a flex container */
+    background-color: #4a4a4a; 
     color: #fff;
-    margin-left: auto; /* Pushes content to the right when combined with max-width */
+    border-bottom-right-radius: 0; /* Make this corner sharp for the tail */
 }
 
 .msg.own::before {
+    /* The main body of the curved tail */
     content: '';
     position: absolute;
-    top: 50%; 
-    right: -7px; /* Position the tail outside the bubble */
-    width: 0;
-    height: 0;
-    border: 10px solid transparent; /* Creates the triangle shape */
-    border-left-color: #4a4a4a; /* Color of the tail (must match bubble background) */
-    border-right: 0; 
-    transform: translateY(-50%); /* Centers the tail vertically */
+    bottom: 0;
+    right: -7px; /* Position next to the bubble */
+    width: 20px; 
+    height: 20px; 
+    background-color: #4a4a4a; /* Match bubble color */
+    border-bottom-left-radius: 15px; /* Creates the curve */
+    z-index: 1; /* Ensure it's above the after element */
+}
+
+.msg.own::after {
+    /* The 'cutout' that makes the curve smooth against the background */
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: -26px; /* Position to overlap the bubble slightly */
+    width: 20px; 
+    height: 20px; 
+    background-color: #1e1e1e; /* Match chat area background! */
+    border-bottom-left-radius: 15px; /* Creates the curve */
+    z-index: 2; /* Ensure it's above the before element */
 }
 
 
 /* Other messages (align left, color #2c2c2c) */
 .msg.other {
-    float: left; /* Aligns to the left */
-    background-color: #2c2c2c; /* Your specified color */
+    align-self: flex-start; /* Aligns to the left in a flex container */
+    background-color: #2c2c2c; 
     color: #f0f0f0;
-    margin-right: auto; /* Pushes content to the left when combined with max-width */
+    border-bottom-left-radius: 0; /* Make this corner sharp for the tail */
 }
 
 .msg.other::before {
+    /* The main body of the curved tail */
     content: '';
     position: absolute;
-    top: 50%; 
-    left: -7px; /* Position the tail outside the bubble */
-    width: 0;
-    height: 0;
-    border: 10px solid transparent; /* Creates the triangle shape */
-    border-right-color: #2c2c2c; /* Color of the tail (must match bubble background) */
-    border-left: 0; 
-    transform: translateY(-50%); /* Centers the tail vertically */
+    bottom: 0;
+    left: -7px; /* Position next to the bubble */
+    width: 20px; 
+    height: 20px; 
+    background-color: #2c2c2c; /* Match bubble color */
+    border-bottom-right-radius: 15px; /* Creates the curve */
+    z-index: 1;
+}
+
+.msg.other::after {
+    /* The 'cutout' that makes the curve smooth against the background */
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: -26px; /* Position to overlap the bubble slightly */
+    width: 20px; 
+    height: 20px; 
+    background-color: #1e1e1e; /* Match chat area background! */
+    border-bottom-right-radius: 15px; /* Creates the curve */
+    z-index: 2;
 }
 
 /* System messages (centered, no tail) */
@@ -145,10 +172,12 @@ body {
     width: 100%;
     margin: 10px auto; 
     padding: 0; 
+    border-radius: 0; 
 }
 
-.msg.system::before {
-    content: none; /* No arrow for system messages */
+.msg.system::before,
+.msg.system::after {
+    content: none; /* No arrows for system messages */
 }
 /* END Message Bubbles */
 
@@ -248,4 +277,3 @@ body {
 .user-select-list li:hover {
     background-color: #555;
 }
-
