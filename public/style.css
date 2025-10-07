@@ -89,7 +89,8 @@ body {
     position: relative; 
     word-wrap: break-word;
     clear: both; 
-    list-style: none; 
+    list-style: none;
+    padding-top: 24px; /* Added for the sender name */
 }
 
 /* --- OWN MESSAGES (Right Side) --- */
@@ -126,7 +127,6 @@ body {
     border-top-left-radius: 10px; 
     z-index: 2; 
 }
-
 
 /* --- OTHER MESSAGES (Left Side) --- */
 .msg.other {
@@ -182,6 +182,44 @@ body {
     content: none; /* Crucial: No arrows for system messages */
 }
 /* END Message Bubbles */
+
+
+/* ADDED: Styles for sender name indicator */
+.sender-name {
+    position: absolute; /* Position relative to the .msg parent */
+    top: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.msg.own .sender-name {
+    right: 12px;
+    color: #99cfff; /* Light blue for your own name */
+}
+
+.msg.other .sender-name {
+    left: 12px;
+    color: #c0c0c0; /* Gray or white for other users' names */
+}
+
+/* ADDED: Styles for stacking messages from the same user */
+.msg.own + .msg.own {
+    margin-top: -8px; /* Reduce space between consecutive messages from you */
+    border-radius: 12px 12px 2px 12px; /* Adjust top-right corner to be square */
+}
+
+.msg.own + .msg.own .sender-name {
+    display: none; /* Hide name for consecutive messages */
+}
+
+.msg.other + .msg.other {
+    margin-top: -8px; /* Reduce space between consecutive messages from others */
+    border-radius: 12px 12px 12px 2px; /* Adjust top-left corner to be square */
+}
+
+.msg.other + .msg.other .sender-name {
+    display: none; /* Hide name for consecutive messages */
+}
 
 
 /* Input Box */
