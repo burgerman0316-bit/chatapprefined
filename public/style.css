@@ -34,7 +34,7 @@ body {
 }
 
 #user-info h2 { 
-    color: #fff; /* Pure white text for "Chat Info" */
+    color: #fff;
 }
 
 #user-list {
@@ -43,7 +43,6 @@ body {
     margin: 0;
 }
 
-/* Style for user list items */
 #user-list li {
     padding: 3px 0;
     cursor: pointer;
@@ -96,7 +95,7 @@ body {
     color: #888;
     background: none;
     text-align: center;
-    width: 100%; /* Important for centering */
+    width: 100%;
 }
 
 /* Input Box */
@@ -118,7 +117,6 @@ body {
     min-height: 40px;
     max-height: 80px;
     overflow-y: auto;
-    /* Custom placeholder effect */
     -webkit-user-modify: read-write-plaintext-only;
 }
 
@@ -129,7 +127,7 @@ body {
 
 .input-container button {
     padding: 10px 15px;
-    border-radius: 4px; /* Changed to match input box */
+    border-radius: 4px;
     border: none;
     background-color: #585858;
     color: white;
@@ -149,10 +147,6 @@ body {
 
 .modal-header {
     border-bottom: 1px solid #444 !important;
-}
-
-.modal-footer {
-    border-top: 1px solid #444 !important;
 }
 
 .form-control {
@@ -179,7 +173,7 @@ body {
 }
 
 .btn-close {
-    filter: invert(1); /* Makes the 'X' visible on dark background */
+    filter: invert(1);
 }
 
 .user-select-list {
