@@ -46,7 +46,7 @@ body {
 
 #user-list li {
     padding: 3px 0;
-    cursor: default; /* Changed from pointer as list items don't trigger actions */
+    cursor: pointer;
     color: #f0f0f0; 
 }
 
@@ -84,18 +84,13 @@ body {
 .msg {
     max-width: 70%; 
     margin-bottom: 10px;
-    padding: 8px 12px;
-    border-radius: 18px; 
-    word-wrap: break-word;
+    padding: 8px 10px;
     position: relative; 
+    word-wrap: break-word;
     clear: both; 
-    list-style: none; 
-}
-
-/* Admin Message Gold Border */
-.msg.admin {
-    border: 1px solid gold;
-    padding: 7px 11px; /* Adjust padding to account for border */
+    list-style: none;
+    padding-top: 10px;
+    /* Removed padding adjustment for name indicator, as it was adjusted to account for the bubble tail */
 }
 
 /* --- OWN MESSAGES (Right Side) --- */
@@ -103,66 +98,27 @@ body {
     align-self: flex-end; 
     background-color: #4a4a4a; 
     color: #fff;
-    border-bottom-right-radius: 0; 
+    /* Round all corners for a clean, tailless bubble */
+    border-radius: 12px;
 }
 
-/* Restore the tail for own messages */
-.msg.own::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: -7px; 
-    width: 20px; 
-    height: 20px; 
-    background-color: #4a4a4a; 
-    border-bottom-left-radius: 15px; 
-    z-index: 1; 
+/* REMOVED: The tail itself and cutout */
+.msg.own::before, .msg.own::after {
+    content: none;
 }
-
-.msg.own::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: -24px; 
-    width: 20px; 
-    height: 20px; 
-    background-color: #1e1e1e; /* Must match chat area background! */
-    border-bottom-left-radius: 15px; 
-    z-index: 2; 
-}
-
 
 /* --- OTHER MESSAGES (Left Side) --- */
 .msg.other {
     align-self: flex-start; 
     background-color: #2c2c2c; 
     color: #f0f0f0;
-    border-bottom-left-radius: 0; 
+    /* Round all corners for a clean, tailless bubble */
+    border-radius: 12px;
 }
 
-/* Restore the tail for other messages */
-.msg.other::before {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: -7px; 
-    width: 20px; 
-    height: 20px; 
-    background-color: #2c2c2c; 
-    border-bottom-right-radius: 15px; 
-    z-index: 1;
-}
-
-.msg.other::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: -24px; 
-    width: 20px; 
-    height: 20px; 
-    background-color: #1e1e1e; /* Must match chat area background! */
-    border-bottom-right-radius: 15px; 
-    z-index: 2;
+/* REMOVED: The tail itself and cutout */
+.msg.other::before, .msg.other::after {
+    content: none;
 }
 
 /* System messages (No Tail) */
@@ -204,38 +160,23 @@ body {
     color: #c0c0c0; /* Gray or white for other users' names */
 }
 
-/* Timestamp style */
-.timestamp {
-    font-size: 0.75em;
-    color: #fff; /* White timestamp */
-    margin-top: 2px;
-    display: block; 
-    text-align: right;
-}
-
-.msg.other .timestamp {
-    text-align: left;
-}
-
 /* Styles for stacking messages from the same user */
 .msg.own + .msg.own {
-    margin-top: -8px; 
-    border-top-right-radius: 18px; 
-    border-bottom-right-radius: 0;
+    margin-top: -8px; /* Reduce space between consecutive messages from you */
+    border-radius: 12px; /* Set uniform border radius */
 }
 
 .msg.own + .msg.own .sender-name {
-    display: none; 
+    display: none; /* Hide name for consecutive messages */
 }
 
 .msg.other + .msg.other {
-    margin-top: -8px; 
-    border-top-left-radius: 18px;
-    border-bottom-left-radius: 0;
+    margin-top: -8px; /* Reduce space between consecutive messages from others */
+    border-radius: 12px; /* Set uniform border radius */
 }
 
 .msg.other + .msg.other .sender-name {
-    display: none; 
+    display: none; /* Hide name for consecutive messages */
 }
 
 
@@ -245,20 +186,6 @@ body {
     padding: 10px;
     background-color: #2c2c2c;
     border-top: 1px solid #444;
-}
-
-.input-wrapper {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.char-counter {
-    font-size: 0.7em;
-    color: #888;
-    text-align: right;
-    margin-top: 2px;
-    padding-right: 18px; 
 }
 
 .custom-input {
