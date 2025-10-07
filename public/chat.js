@@ -17,16 +17,17 @@ const messagesDiv = document.getElementById('messages');
 const messageInputDiv = document.getElementById('messageInput');
 const messageForm = document.getElementById('messageForm');
 const charCountSpan = document.getElementById('char-count'); 
-const charCountContainer = document.getElementById('charCountContainer'); // NEW
+const charCountContainer = document.getElementById('charCountContainer'); 
 
 const userListEl = document.getElementById('user-list');
 const userCountEl = document.getElementById('user-count');
+const adminUserListEl = document.getElementById('admin-user-list'); // NEW REFERENCE
 
 const adminPanelBtn = document.getElementById('adminPanelBtn');
 const adminModalEl = document.getElementById('adminPanelModal'); 
 const renameBtn = document.getElementById('renameBtn');
 
-// Chat Context Tabs (NEW)
+// Chat Context Tabs
 const publicChatTab = document.getElementById('publicChatTab');
 const adminChatTab = document.getElementById('adminChatTab');
 
@@ -41,7 +42,7 @@ const kickConfirmModalEl = document.getElementById('kickConfirmModal');
 const kickConfirmModal = new bootstrap.Modal(kickConfirmModalEl);
 const kickConfirmBody = document.getElementById('kickConfirmBody');
 
-// Modal Elements for IP Ban (NEW)
+// Modal Elements for IP Ban
 const banModalEl = document.getElementById('ipBanModal');
 const banModal = new bootstrap.Modal(banModalEl);
 const banConfirmBtn = document.getElementById('banConfirmBtn');
@@ -69,7 +70,6 @@ function appendMessage(msg) {
     const item = document.createElement('li');
     item.classList.add('msg');
     
-    // Format timestamp
     const time = new Date(msg.timestamp);
     const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const timeHtml = `<span class="timestamp">${timeString}</span>`; 
@@ -83,7 +83,7 @@ function appendMessage(msg) {
     } else {
         item.classList.add('other');
         if (msg.isAdmin) { 
-            item.classList.add('admin-msg'); // Added CSS class for better styling
+            item.classList.add('admin-msg'); 
         }
         
         const nameDisplay = msg.isPrivate ? `Private from ${msg.username}` : msg.username;
@@ -96,65 +96,78 @@ function appendMessage(msg) {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-// Utility: Updates the online user list
-function updateUsers(data, adminUsersMap) {
-    const userList = data.userList;
+// Utility: Updates the online user list for ALL clients (Public list)
+function updatePublicUserList(data) {
+    const userList = data.userList; // Sorted list of display names
+    const publicUserMap = data.usersMap; // Map of displayName -> { isAdmin }
     
     // 1. Public Info Panel
     userCountEl.textContent = userList.length;
     userListEl.innerHTML = '';
     
-    userList.forEach(user => {
+    userList.forEach(userDisplayName => {
         const li = document.createElement('li');
-        li.textContent = user;
-        li.title = `Click to send private message to ${user}`;
+        
+        // Find user status
+        const userEntry = publicUserMap[userDisplayName] || {};
+        
+        li.textContent = userDisplayName;
+        
+        // FIX: Display MOD tag in the public list
+        if (userEntry.isAdmin) { 
+             li.textContent += ' (MOD)'; 
+             li.classList.add('admin-name-list'); 
+        }
+        
+        li.title = `Click to send private message to ${userDisplayName}`;
         li.addEventListener('click', () => {
-             messageInputDiv.innerText = `/msg ${user} `;
+             messageInputDiv.innerText = `/msg ${userDisplayName} `;
              messageInputDiv.focus();
         });
         userListEl.appendChild(li);
     });
+}
 
-    // 2. Admin Kick/Ban List
-    const adminUserList = document.getElementById('admin-user-list');
-    adminUserList.innerHTML = ''; 
+// Utility: Updates the admin management list (Admin only)
+function updateAdminManagementList(adminUsersMap) {
+    if (!isAdmin) return; // Should only run for admins
+
+    adminUserListEl.innerHTML = ''; 
     
-    if (isAdmin) {
-        // Iterate over the full admin map (includes IP)
-        Object.keys(adminUsersMap).forEach(key => {
-             const user = adminUsersMap[key];
-             const userDisplayName = user.displayName;
-             
-             // Only display users in public chat or currently logged-in admins
-             if (user.chatContext !== 'public' && !user.isAdmin) return;
-             
-             const adminLi = document.createElement('li');
-             adminLi.textContent = userDisplayName;
-             
-             if (user.isAdmin) {
-                 adminLi.textContent += ' (MOD)';
-                 adminLi.classList.add('admin-name-list');
+    // Iterate over the full admin map (includes IP)
+    Object.keys(adminUsersMap).forEach(key => {
+         const user = adminUsersMap[key];
+         const userDisplayName = user.displayName;
+         
+         // Only display users in public chat or currently logged-in admins
+         if (user.chatContext !== 'public' && !user.isAdmin) return;
+         
+         const adminLi = document.createElement('li');
+         adminLi.textContent = userDisplayName;
+         
+         if (user.isAdmin) {
+             adminLi.textContent += ' (MOD)';
+             adminLi.classList.add('admin-name-list');
+         }
+         
+         adminLi.addEventListener('click', () => {
+             if (userDisplayName === displayName) {
+                  alert('Cannot manage yourself!');
+                  return;
              }
              
-             adminLi.addEventListener('click', () => {
-                 if (userDisplayName === displayName) {
-                      alert('Cannot manage yourself!');
-                      return;
-                 }
-                 
-                 userToKick = userDisplayName; 
-                 userIpToBan = user.ip; 
-                 
-                 kickConfirmBody.innerHTML = `Manage user: <strong>${userDisplayName}</strong><br>IP: ${user.ip}<br>Admin Status: ${user.isAdmin ? 'Yes' : 'No'}`;
-                 
-                 const adminModal = bootstrap.Modal.getInstance(adminModalEl);
-                 if (adminModal) adminModal.hide(); 
-                 kickConfirmModal.show();
-             });
+             userToKick = userDisplayName; 
+             userIpToBan = user.ip; 
              
-             adminUserList.appendChild(adminLi);
-        });
-    }
+             kickConfirmBody.innerHTML = `Manage user: <strong>${userDisplayName}</strong><br>IP: ${user.ip}<br>Admin Status: ${user.isAdmin ? 'Yes' : 'No'}`;
+             
+             const adminModal = bootstrap.Modal.getInstance(adminModalEl);
+             if (adminModal) adminModal.hide(); 
+             kickConfirmModal.show();
+         });
+         
+         adminUserListEl.appendChild(adminLi);
+    });
 }
 
 // Utility: Switches the chat window (Public vs Admin)
@@ -196,7 +209,7 @@ messageForm.addEventListener('submit', e => {
     
     messageInputDiv.innerText = ''; 
     charCountSpan.textContent = `0/${MAX_CHARS}`; 
-    charCountContainer.style.color = '#888'; // Reset color
+    charCountContainer.style.color = '#ccc'; // Reset color
 
     if (!content || content.length > MAX_CHARS) return;
 
@@ -260,9 +273,9 @@ messageInputDiv.addEventListener('input', () => {
     
     // Style change
     if (currentLength >= MAX_CHARS * 0.9) {
-        charCountContainer.style.color = '#ff4d4d'; // Brighter red
+        charCountContainer.style.color = '#ff4d4d'; 
     } else {
-        charCountContainer.style.color = '#ccc'; // Brighter gray
+        charCountContainer.style.color = '#ccc'; 
     }
 });
 
@@ -494,10 +507,9 @@ socket.on('banned_modal', data => {
 
 
 // User List Update
-socket.on('user count', data => updateUsers(data, {})); 
+socket.on('user count', data => updatePublicUserList(data)); 
+
+// Admin User Map Update (for Admin Panel management list)
 socket.on('admin_user_map', adminMap => {
-    if (isAdmin) {
-        // Ensure the full map is passed when the admin user count is updated
-        updateUsers({ userList: Object.keys(adminMap).map(id => adminMap[id].displayName), usersMap: adminMap }, adminMap); 
-    }
+    updateAdminManagementList(adminMap);
 });
