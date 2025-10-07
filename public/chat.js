@@ -24,6 +24,7 @@ const userCountEl = document.getElementById('user-count');
 
 const adminPanelBtn = document.getElementById('adminPanelBtn');
 const adminModalEl = document.getElementById('adminPanelModal'); 
+const renameBtn = document.getElementById('renameBtn');
 
 // Chat Context Tabs (NEW)
 const publicChatTab = document.getElementById('publicChatTab');
@@ -34,6 +35,11 @@ const clearConfirmModalEl = document.getElementById('clearConfirmModal');
 const clearConfirmModal = new bootstrap.Modal(clearConfirmModalEl);
 const clearConfirmBtn = document.getElementById('clearConfirmBtn');
 const clearConfirmTargetName = document.getElementById('clearConfirmTargetName');
+
+// Modal Elements for Kick Confirmation (Manage User)
+const kickConfirmModalEl = document.getElementById('kickConfirmModal');
+const kickConfirmModal = new bootstrap.Modal(kickConfirmModalEl);
+const kickConfirmBody = document.getElementById('kickConfirmBody');
 
 // Modal Elements for IP Ban (NEW)
 const banModalEl = document.getElementById('ipBanModal');
@@ -47,9 +53,9 @@ const banReasonInput = document.getElementById('banReason');
 
 let displayName = '';
 let isAdmin = false;
-let userToKick = null; // Store the target name for the ban modal
-let userIpToBan = null; // Store the target IP for the ban modal
-let currentChatContext = 'public'; // 'public' or 'admin_chat'
+let userToKick = null; 
+let userIpToBan = null; 
+let currentChatContext = 'public'; 
 const MAX_CHARS = 256;
 const ADMIN_CHAT_ID = 'admin_chat';
 
@@ -63,7 +69,7 @@ function appendMessage(msg) {
     const item = document.createElement('li');
     item.classList.add('msg');
     
-    // Format timestamp to be white text
+    // Format timestamp
     const time = new Date(msg.timestamp);
     const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const timeHtml = `<span class="timestamp">${timeString}</span>`; 
@@ -72,18 +78,14 @@ function appendMessage(msg) {
         item.classList.add('system');
         item.textContent = msg.content;
     } else if (msg.username === displayName || (msg.username === 'You' && msg.isPrivate)) {
-        // Fix: "your name isn't you from your perspective" 
-        // We use "You" for the sender in /msg, and rely on CSS to hide the name
         item.classList.add('own');
-        // Fix: Curved thing in messages is handled by CSS stacking logic
         item.innerHTML = `${msg.content} ${timeHtml}`;
     } else {
         item.classList.add('other');
         if (msg.isAdmin) { 
-            item.style.border = '2px solid gold'; // Gold border for admin messages
+            item.classList.add('admin-msg'); // Added CSS class for better styling
         }
         
-        // Sender Name Display (Fix: remove "You: " from front of messages)
         const nameDisplay = msg.isPrivate ? `Private from ${msg.username}` : msg.username;
         const nameClass = msg.isPrivate ? 'sender-name private-name' : 'sender-name';
         
@@ -97,7 +99,6 @@ function appendMessage(msg) {
 // Utility: Updates the online user list
 function updateUsers(data, adminUsersMap) {
     const userList = data.userList;
-    const usersMap = data.usersMap;
     
     // 1. Public Info Panel
     userCountEl.textContent = userList.length;
@@ -114,7 +115,7 @@ function updateUsers(data, adminUsersMap) {
         userListEl.appendChild(li);
     });
 
-    // 2. Admin Kick/Ban List (Kick Menu)
+    // 2. Admin Kick/Ban List
     const adminUserList = document.getElementById('admin-user-list');
     adminUserList.innerHTML = ''; 
     
@@ -122,36 +123,32 @@ function updateUsers(data, adminUsersMap) {
         // Iterate over the full admin map (includes IP)
         Object.keys(adminUsersMap).forEach(key => {
              const user = adminUsersMap[key];
-             const displayName = user.displayName;
+             const userDisplayName = user.displayName;
              
              // Only display users in public chat or currently logged-in admins
              if (user.chatContext !== 'public' && !user.isAdmin) return;
              
              const adminLi = document.createElement('li');
-             adminLi.textContent = displayName;
+             adminLi.textContent = userDisplayName;
              
-             // Highlight admins
              if (user.isAdmin) {
                  adminLi.textContent += ' (MOD)';
                  adminLi.classList.add('admin-name-list');
              }
              
-             // *** NEW: Add event listener to open Kick/Ban menu on click ***
              adminLi.addEventListener('click', () => {
-                 if (displayName === displayNameEl.textContent.split(' ')[0]) {
+                 if (userDisplayName === displayName) {
                       alert('Cannot manage yourself!');
                       return;
                  }
                  
-                 userToKick = displayName; 
-                 userIpToBan = user.ip; // Store the IP
+                 userToKick = userDisplayName; 
+                 userIpToBan = user.ip; 
                  
-                 // Update the confirmation modal body text
-                 document.getElementById('kickConfirmBody').innerHTML = `Manage user: <strong>${displayName}</strong><br>Admin Status: ${user.isAdmin ? 'Yes' : 'No'}`;
+                 kickConfirmBody.innerHTML = `Manage user: <strong>${userDisplayName}</strong><br>IP: ${user.ip}<br>Admin Status: ${user.isAdmin ? 'Yes' : 'No'}`;
                  
-                 // Show the Kick Confirmation Modal
                  const adminModal = bootstrap.Modal.getInstance(adminModalEl);
-                 if (adminModal) adminModal.hide(); // Hide the admin panel
+                 if (adminModal) adminModal.hide(); 
                  kickConfirmModal.show();
              });
              
@@ -165,19 +162,17 @@ function switchChatContext(contextId) {
     if (!isAdmin && contextId === ADMIN_CHAT_ID) return;
     
     currentChatContext = contextId;
-    messagesDiv.innerHTML = ''; // Clear chat window
+    messagesDiv.innerHTML = ''; 
     
     // Update tabs
     if (contextId === ADMIN_CHAT_ID) {
         adminChatTab.classList.add('active');
         publicChatTab.classList.remove('active');
         document.getElementById('chatTitle').textContent = 'Admin Chat';
-        document.getElementById('adminChatSection').style.display = 'block';
     } else {
         adminChatTab.classList.remove('active');
         publicChatTab.classList.add('active');
         document.getElementById('chatTitle').textContent = 'Public Chat';
-        document.getElementById('adminChatSection').style.display = 'none';
     }
     
     // Tell the server to switch context and send history
@@ -200,10 +195,10 @@ messageForm.addEventListener('submit', e => {
     const content = messageInputDiv.innerText.trim();
     
     messageInputDiv.innerText = ''; 
-    charCountSpan.textContent = `0/${MAX_CHARS}`; // Reset counter
-    
-    if (!content) return;
-    if (content.length > MAX_CHARS) return;
+    charCountSpan.textContent = `0/${MAX_CHARS}`; 
+    charCountContainer.style.color = '#888'; // Reset color
+
+    if (!content || content.length > MAX_CHARS) return;
 
     // Command Check
     if (content.startsWith('/')) {
@@ -212,7 +207,7 @@ messageForm.addEventListener('submit', e => {
         const args = content.substring(command.length).trim();
 
         if (command === '/msg') {
-            const match = args.match(/^(\S+)\s+(.*)/s); // Match recipient and the rest of the message
+            const match = args.match(/^(\S+)\s+(.*)/s); 
             if (match) {
                 const recipient = match[1];
                 const dmContent = match[2];
@@ -225,13 +220,12 @@ messageForm.addEventListener('submit', e => {
                  appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg [username] [message]', timestamp: new Date(), type: 'system' });
             }
         } 
-        else if (command === '/kick') { // /kick COMMAND (Allows spaces in name)
+        else if (command === '/kick') { 
             if (!isAdmin) {
                  appendMessage({ username: 'System', content: 'You do not have permission to use the /kick command.', timestamp: new Date(), type: 'system' });
                  return;
             }
             if (args) {
-                // Send the full args as the targetName (allows spaces)
                 socket.emit('admin:kick_user', { targetName: args, adminName: displayName });
             } else {
                 appendMessage({ username: 'System', content: 'Invalid /kick command. Usage: /kick [username]', timestamp: new Date(), type: 'system' });
@@ -253,11 +247,10 @@ messageForm.addEventListener('submit', e => {
     }
 });
 
-// 3. Input Character Counter 
+// 3. Input Character Counter (Visibility improved via CSS)
 messageInputDiv.addEventListener('input', () => {
     const currentLength = messageInputDiv.innerText.length;
     
-    // Truncate if over limit
     if (currentLength > MAX_CHARS) {
         messageInputDiv.innerText = messageInputDiv.innerText.substring(0, MAX_CHARS);
         charCountSpan.textContent = `${MAX_CHARS}/${MAX_CHARS}`;
@@ -265,15 +258,14 @@ messageInputDiv.addEventListener('input', () => {
         charCountSpan.textContent = `${currentLength}/${MAX_CHARS}`;
     }
     
-    // Optional: visual feedback when nearing the limit
-    if (currentLength >= MAX_CHARS - 10) {
-        charCountContainer.style.color = 'red';
+    // Style change
+    if (currentLength >= MAX_CHARS * 0.9) {
+        charCountContainer.style.color = '#ff4d4d'; // Brighter red
     } else {
-        charCountContainer.style.color = '#888';
+        charCountContainer.style.color = '#ccc'; // Brighter gray
     }
 });
 
-// Prevent chat window from changing size (fixed height/width in CSS)
 // Ensure Enter sends message
 messageInputDiv.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -282,26 +274,32 @@ messageInputDiv.addEventListener('keydown', e => {
     }
 });
 
-// 4. Admin: Clear History Confirmation Click 
+// 4. Admin Panel Button Handlers
+document.getElementById('clearChatBtn').addEventListener('click', () => {
+    clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';
+    clearConfirmModal.show();
+    const adminModal = bootstrap.Modal.getInstance(adminModalEl);
+    if (adminModal) adminModal.hide();
+});
+
+// 5. Clear History Confirmation Click 
 clearConfirmBtn.addEventListener('click', () => {
     if (isAdmin) {
-        // Clear history only affects the current chat context
         socket.emit('admin:clear_history', currentChatContext); 
     }
     clearConfirmModal.hide(); 
 });
 
-// 5. Admin: Kick User Confirmation Click Handler (Step 1: Open Ban Modal)
+// 6. Admin: Kick User Confirmation Click Handler (Step 1: Open Ban Modal)
 document.getElementById('kickToBanBtn').addEventListener('click', () => {
     kickConfirmModal.hide(); 
     
-    if (isAdmin && userToKick) {
+    if (isAdmin && userToKick && userIpToBan) {
         banTargetNameSpan.textContent = userToKick;
-        // Default to a short, severe ban duration
         banDurationDaysInput.value = '0';
         banDurationHoursInput.value = '0';
         banDurationMinutesInput.value = '30';
-        banReasonInput.value = 'Hate Speech/Spam';
+        banReasonInput.value = 'Spam/Hate Speech';
         banModal.show();
     } else {
          userToKick = null; 
@@ -309,7 +307,7 @@ document.getElementById('kickToBanBtn').addEventListener('click', () => {
     }
 });
 
-// 6. Admin: Kick User Directly (Skip Ban Modal)
+// 7. Admin: Kick User Directly (Skip Ban Modal)
 document.getElementById('kickDirectlyBtn').addEventListener('click', () => {
      if (isAdmin && userToKick) {
          socket.emit('admin:kick_user', { targetName: userToKick });
@@ -320,7 +318,7 @@ document.getElementById('kickDirectlyBtn').addEventListener('click', () => {
 });
 
 
-// 7. Admin: IP Ban Submission
+// 8. Admin: IP Ban Submission
 banConfirmBtn.addEventListener('click', () => {
     if (!isAdmin || !userToKick || !userIpToBan) {
         banModal.hide();
@@ -332,9 +330,8 @@ banConfirmBtn.addEventListener('click', () => {
     const minutes = parseInt(banDurationMinutesInput.value);
     const reason = banReasonInput.value;
     
-    // Client-side validation for numbers and limits
     if (isNaN(days) || isNaN(hours) || isNaN(minutes) || (days === 0 && hours === 0 && minutes === 0) || days > 999 || hours > 99 || minutes > 99) {
-        alert('Invalid duration. Days max 3 digits, Hours/Minutes max 2 digits, and duration must be > 0.');
+        alert('Invalid duration. Max: 999 days, 99 hours, 99 minutes. Duration must be > 0.');
         return;
     }
     
@@ -352,17 +349,15 @@ banConfirmBtn.addEventListener('click', () => {
     userIpToBan = null;
 });
 
-// 8. Admin: Log out (Go Anonymous)
+// 9. Admin: Log out (Go Anonymous)
 document.getElementById('adminLogoutBtn').addEventListener('click', () => {
     if (isAdmin) {
         socket.emit('admin:go_anonymous');
     }
 });
 
-// 9. Public Chat Tab Switch
+// 10. Chat Tab Switches
 publicChatTab.addEventListener('click', () => switchChatContext('public'));
-
-// 10. Admin Chat Tab Switch
 adminChatTab.addEventListener('click', () => switchChatContext(ADMIN_CHAT_ID));
 
 // 11. Rename form submission
@@ -376,7 +371,7 @@ document.getElementById('rename-form').addEventListener('submit', e => {
 });
 
 // 12. Enable rename button after successful login
-document.getElementById('renameBtn').addEventListener('click', () => {
+renameBtn.addEventListener('click', () => {
     document.getElementById('new-name-input').value = displayName;
     renameModal.show();
 });
@@ -394,11 +389,10 @@ function handleSuccessfulLogin(data) {
     container.style.display = 'flex'; 
 
     adminPanelBtn.style.display = isAdmin ? 'block' : 'none';
-    document.getElementById('renameBtn').style.display = 'block';
+    renameBtn.style.display = 'block';
     document.getElementById('adminLogoutBtn').style.display = isAdmin ? 'block' : 'none'; 
     adminChatTab.style.display = isAdmin ? 'block' : 'none';
     
-    // Set initial context display
     if (isAdmin && currentChatContext === ADMIN_CHAT_ID) {
         switchChatContext(ADMIN_CHAT_ID);
     } else {
@@ -432,7 +426,6 @@ socket.on('admin_context_switched', newContext => {
 
 // Chat Events (Both Public and Private)
 socket.on('chat history', history => {
-    // Fix: When chat is cleared, this handles the repaint
     messagesDiv.innerHTML = ''; 
     history.forEach(msg => appendMessage(msg));
 });
@@ -441,7 +434,6 @@ socket.on('chat message', msg => {
         appendMessage(msg);
     }
 }); 
-// Separate event for Admin Chat messages
 socket.on('admin chat message', msg => {
     if (currentChatContext === ADMIN_CHAT_ID) {
         appendMessage(msg);
@@ -450,7 +442,6 @@ socket.on('admin chat message', msg => {
 
 // Admin Events 
 socket.on('admin:history_cleared', data => {
-    // Fix: When the chat is cleared, the user list should not reset (handled by server logic)
     if (data.targetChatId === currentChatContext) {
         messagesDiv.innerHTML = ''; 
         appendMessage(data.clearMsg);             
@@ -461,12 +452,12 @@ socket.on('admin:history_cleared', data => {
 socket.on('system_error', msg => appendMessage({ username: 'System', content: `ERROR: ${msg}`, timestamp: new Date(), type: 'system' }));
 socket.on('system_alert', msg => appendMessage({ username: 'System', content: msg, timestamp: new Date(), type: 'system' }));
 
+
 // IP Banned Modal (NEW)
 socket.on('banned_modal', data => {
     const banReason = data.reason;
     const banDurationMs = data.banDurationMs;
     
-    // Update the banned modal content 
     const bannedModalBody = document.getElementById('bannedModalBody');
     const bannedModal = new bootstrap.Modal(document.getElementById('bannedModal'));
     
@@ -498,16 +489,15 @@ socket.on('banned_modal', data => {
         }
     }, 1000);
     
-    // Disconnect the socket immediately
     socket.disconnect();
 });
 
 
 // User List Update
-socket.on('user count', data => updateUsers(data, {})); // Public user list
+socket.on('user count', data => updateUsers(data, {})); 
 socket.on('admin_user_map', adminMap => {
     if (isAdmin) {
-        // Only update the admin panel's user list when we receive the detailed map
+        // Ensure the full map is passed when the admin user count is updated
         updateUsers({ userList: Object.keys(adminMap).map(id => adminMap[id].displayName), usersMap: adminMap }, adminMap); 
     }
 });
