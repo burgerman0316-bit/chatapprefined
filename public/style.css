@@ -2,7 +2,7 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #000 !important;
+    background-color: #000;
     color: #f0f0f0; /* Default text color is white/off-white */
     display: flex;
     justify-content: center;
@@ -79,35 +79,79 @@ body {
     overflow-y: auto;
 }
 
-/* Message Bubbles */
+/* Message Bubbles - BASE STYLES */
 .msg {
     max-width: 70%;
     margin-bottom: 10px;
     padding: 8px 12px;
-    border-radius: 10px;
+    border-radius: 10px; /* Base rounded corners */
     word-wrap: break-word;
+    position: relative; /* Needed for positioning the ::before (arrow) */
+    clear: both; /* Prevents bubbles from overlapping side-by-side */
+    list-style: none; /* Ensure no list bullets */
 }
 
+/* Own messages (align right, color #4a4a4a) */
 .msg.own {
-    align-self: flex-end;
-    background-color: #4a4a4a;
+    float: right; /* Aligns to the right */
+    background-color: #4a4a4a; /* Your specified color */
     color: #fff;
+    margin-left: auto; /* Pushes content to the right when combined with max-width */
 }
 
+.msg.own::before {
+    content: '';
+    position: absolute;
+    top: 50%; 
+    right: -7px; /* Position the tail outside the bubble */
+    width: 0;
+    height: 0;
+    border: 10px solid transparent; /* Creates the triangle shape */
+    border-left-color: #4a4a4a; /* Color of the tail (must match bubble background) */
+    border-right: 0; 
+    transform: translateY(-50%); /* Centers the tail vertically */
+}
+
+
+/* Other messages (align left, color #2c2c2c) */
 .msg.other {
-    align-self: flex-start;
-    background-color: #2c2c2c;
+    float: left; /* Aligns to the left */
+    background-color: #2c2c2c; /* Your specified color */
     color: #f0f0f0;
+    margin-right: auto; /* Pushes content to the left when combined with max-width */
 }
 
+.msg.other::before {
+    content: '';
+    position: absolute;
+    top: 50%; 
+    left: -7px; /* Position the tail outside the bubble */
+    width: 0;
+    height: 0;
+    border: 10px solid transparent; /* Creates the triangle shape */
+    border-right-color: #2c2c2c; /* Color of the tail (must match bubble background) */
+    border-left: 0; 
+    transform: translateY(-50%); /* Centers the tail vertically */
+}
+
+/* System messages (centered, no tail) */
 .msg.system {
-    align-self: center;
+    float: none; 
+    align-self: center; 
     font-style: italic;
     color: #888;
-    background: none;
+    background: none; 
     text-align: center;
     width: 100%;
+    margin: 10px auto; 
+    padding: 0; 
 }
+
+.msg.system::before {
+    content: none; /* No arrow for system messages */
+}
+/* END Message Bubbles */
+
 
 /* Input Box */
 .input-container {
@@ -204,4 +248,3 @@ body {
 .user-select-list li:hover {
     background-color: #555;
 }
-
