@@ -6,10 +6,10 @@ const ADMIN_ROOM = 'admin_chat';
 
 
 // === SOCKET CONNECTION (FIXED FOR PROXY/RAILWAY) ===
-// Explicitly define the connection URL to ensure it routes correctly through the proxy/load balancer
+// Explicitly define the connection URL using the window's current protocol and host
 const SOCKET_URL = window.location.protocol + "//" + window.location.host;
 const socket = io(SOCKET_URL, {
-    // Optional: Force transports to mitigate some common proxy issues
+    // Explicitly listing transports helps some proxies
     transports: ['websocket', 'polling']
 });
 
@@ -202,7 +202,7 @@ function handleCommand(input) {
         return true;
     }
     
-    // NEW COMMAND: Global Message
+    // Global Message Command
     if (command === '/gmsg') {
         if (!currentIsAdmin) return socket.emit('system_error', 'Unauthorized: /gmsg is Admin only.');
         const content = parts.slice(1).join(' ');
