@@ -11,24 +11,22 @@ const io = new Server(server, {
 
 // --- SETTINGS & DATA STRUCTURES ---
 const STAFF_ROOM = 'staff_room';
-const ADMIN_CHAT_ID = 'admin_chat'; // Unique ID for the admin-only chat page
+const ADMIN_CHAT_ID = 'admin_chat'; 
 const MAX_HISTORY = 100;
-const NAME_MAX_CHARS = 20;
-const CONTENT_MAX_CHARS = 256;
+// Character limit for NAME is now removed.
+const CONTENT_MAX_CHARS = 256; // Message content limit remains
 // Banned words for name AND content (case-insensitive)
 const BANNED_WORDS = ['hitler', 'swear', 'badword', 'bannedword', 'spam', 'adminchat'];
 
 // Staff accounts - NOTE: LoginName is the SECURE password/key
 const STAFF_LIST = [
   { loginName: 'hfdskLshkdgdibIdsjfkbdAshfjhsfdshfjMdjsbfhd', displayName: 'Liam Stern' },
-  { loginName: 'efsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh', displayName: 'Diesel Carter' },
-  { loginName: 'lbjrhfjRnjkfdvjkIfhdCnjfkdnjKjndksdjkfjdkdy', displayName: 'Ricky Martinez' },
-  { loginName: 'ljdkAsanfjdAksanfRdjksanOjkdsanfjNdksalnfjd', displayName: 'Aaron Ortega' },
-  { loginName: 'odDhsfjdkOsahfNjdahOfkjsVdahjAskagNfdhgdjsa', displayName: 'Donovan Powell' }
+  { loginName: 'hfsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh', displayName: 'Diesel Carter' },
+  { loginName: 'hbjrhfjRnjkfdvjkIfhdCnjfkdnjKjndksdjkfjdkdy', displayName: 'Ricky Martinez' },
 ];
 
 const chatHistory = [];
-const adminChatHistory = []; // New history for admin-only chat
+const adminChatHistory = []; 
 
 // Use socket.id to store user data for easier lookup and persistence
 const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext }
@@ -135,8 +133,8 @@ io.on('connection', socket => {
     cleanUpUser(socket.id); 
 
     // Basic checks
-    if (!name || name.length > NAME_MAX_CHARS) {
-      socket.emit('name_rejected', `Please provide a name, max ${NAME_MAX_CHARS} characters.`);
+    if (!name) { // Only check for empty name
+      socket.emit('name_rejected', `Please provide a name.`);
       return;
     }
     if (isNameBanned(name)) {
@@ -277,7 +275,7 @@ io.on('connection', socket => {
     const newLower = trimmedNewName.toLowerCase();
     
     // Checks
-    if (trimmedNewName === user.displayName || trimmedNewName.length > NAME_MAX_CHARS) return;
+    if (trimmedNewName === user.displayName || !trimmedNewName) return; // Removed length check
     if (isNameBanned(trimmedNewName)) {
         socket.emit('system_error', 'That name is not allowed.');
         return;
@@ -575,4 +573,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
