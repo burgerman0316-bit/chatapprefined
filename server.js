@@ -207,7 +207,6 @@ io.on('connection', socket => {
   socket.on('admin:clear_history', data => {
     const info = getStaffDisplayInfo(data.username);
     
-    // --- START LOGGING FOR DEBUG ---
     console.log(`[ADMIN DEBUG] Attempting to clear history by: ${data.username} (Is Admin: ${info.isAdmin})`);
     
     if (!info.isAdmin) {
@@ -231,7 +230,6 @@ io.on('connection', socket => {
     io.emit('admin:history_cleared', clearMsg);
     
     console.log(`[ADMIN DEBUG] History cleared and 'admin:history_cleared' broadcast sent.`);
-    // --- END LOGGING FOR DEBUG ---
   });
   
   // Kick User (admin only)
