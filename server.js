@@ -16,7 +16,7 @@ const NORMAL_ROOM = 'normal_chat'; // Everyone joins this room
 const ADMIN_ROOM = 'admin_chat';   // Only admins join this room
 const MAX_HISTORY = 100;
 const MAX_MESSAGE_LENGTH = 256;
-const BANNED_WORDS = ['hitler', 'nazi', 'swearword', 'bomb', 'kill']; // Expanded list for name/message filtering
+const BANNED_WORDS = ['hitler', 'nazi', 'swearword', 'bomb', 'kill'];
 const STAFF_LIST = [
   { loginName: 'hfdskLshkdgdibIdsjfkbdAshfjhsfdshfjMdjsbfhd', displayName: 'Liam Stern' },
   { loginName: 'hfsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh', displayName: 'Diesel Carter' },
@@ -34,15 +34,27 @@ const chatHistory = {
 };
 const ipBans = new Map();        // IP Address -> { until: Date, reason: string }
 
-// --- IP BAN MIDDLEWARE ---
+// --- IP BAN MIDDLEWARE (FIXED) ---
 io.use((socket, next) => {
-    // Get the connecting IP (handles proxies/deployment environments like Railway)
-    const ip = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
-    socket.clientIp = (Array.isArray(ip) ? ip[0] : ip) || socket.handshake.address;
+    // 1. Get the IP from common proxy header (e.g., Railway, Heroku)
+    const forwardedIp = socket.handshake.headers['x-forwarded-for'];
+    
+    // 2. Resolve the IP: use the first IP in the list (if present) or the direct connection IP
+    let clientIp;
+    if (forwardedIp) {
+        // If it's a list (common with proxies), take the first one
+        clientIp = (Array.isArray(forwardedIp) ? forwardedIp[0] : forwardedIp).split(',')[0].trim();
+    } else {
+        // Fallback to the direct connection address
+        clientIp = socket.handshake.address;
+    }
 
+    socket.clientIp = clientIp;
+    
     const ban = ipBans.get(socket.clientIp);
     if (ban && ban.until > new Date()) {
         console.log(`Connection blocked: IP ${socket.clientIp} is banned until ${ban.until}`);
+        // Terminate connection with error message
         return next(new Error(`Banned: You are banned until ${ban.until.toLocaleString()}`));
     }
     next();
@@ -141,6 +153,7 @@ io.on('connection', socket => {
       displayName = staffInfo.displayName;
       isAdmin = true;
       socket.join(ADMIN_ROOM); // Join Admin Chat room
+      socket.emit('chat history', chatHistory[ADMIN_ROOM], ADMIN_ROOM); // Send admin history
     }
 
     // Finalize user object
@@ -205,7 +218,7 @@ io.on('connection', socket => {
     const recipient = (msg.recipient || '').trim();
     const content = (msg.content || '').trim();
 
-    const targetUser = getActiveUsersList().find(u => u.displayName.toLowerCase() === recipient.toLowerCase());
+    const targetUser = getActiveUsersList(NORMAL_ROOM).find(u => u.displayName.toLowerCase() === recipient.toLowerCase());
 
     if (targetUser) {
       const messageData = {
@@ -243,7 +256,6 @@ io.on('connection', socket => {
         if (!socket.user) return callback({ success: false, message: 'Not logged in.' });
 
         const oldName = socket.user.displayName;
-        const oldAnonStatus = socket.user.isAnon;
         const isStaffChange = socket.user.isAdmin;
         const newNameTrimmed = newName.trim();
         const newNameLower = newNameTrimmed.toLowerCase();
@@ -387,6 +399,7 @@ io.on('connection', socket => {
         };
         
         io.to(ADMIN_ROOM).emit('chat message', banMsg);
+        socket.emit('system_alert', `Successfully banned IP ${targetIp} until ${banUntil.toLocaleString()}.`);
     });
     
     // --- 7. DISCONNECT ---
