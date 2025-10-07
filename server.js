@@ -17,7 +17,9 @@ const BANNED_NAMES = ['hitler', 'admin', 'mod'];
 const STAFF_LIST = [
   { loginName: 'STAFF_CONTROLS-LIAM', displayName: 'Liam Stern' },
   { loginName: 'STAFF_CONTROLS-DIESEL', displayName: 'Diesel Carter' },
-  { loginName: 'STAFF_CONTROLS-RICKY', displayName: 'Ricky Martinez' }
+  { loginName: 'STAFF_CONTROLS-RICKY', displayName: 'Ricky Martinez' },
+  { loginName: 'STAFF_CONTROLS-AARON', displayName: 'Aaron Oertega' },
+  { loginName: 'STAFF_CONTROLS-DONOVAN', displayName: 'Donovan Powell' }
 ];
 
 const chatHistory = [];
@@ -298,3 +300,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
