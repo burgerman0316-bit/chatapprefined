@@ -1,446 +1,461 @@
-// chat.js
-// --- SOCKET.IO CONNECTION ---
-const socket = io(); 
-
-// --- CONSTANTS ---
+// public/js/chat.js
+// === CONFIGURATION ===
+const MAX_MESSAGE_LENGTH = 256;
 const NORMAL_ROOM = 'normal_chat';
 const ADMIN_ROOM = 'admin_chat';
-const MAX_MESSAGE_LENGTH = 256;
 
-// --- STATE ---
-let user = {
-    displayName: '',
-    isAdmin: false,
-    isAnon: false,
-    currentRoom: NORMAL_ROOM
-};
 
-// --- Elements ---
-const container = document.getElementById('container');
-const messageForm = document.getElementById('messageForm');
-const messageInput = document.getElementById('messageInput');
-const charCounter = document.getElementById('char-counter');
-const messages = document.getElementById('messages');
-const displayNameSpan = document.getElementById('display-name');
-const userCountSpan = document.getElementById('user-count');
-const userList = document.getElementById('user-list');
+// === SOCKET CONNECTION (FIXED FOR PROXY/RAILWAY) ===
+// Explicitly define the connection URL to ensure it routes correctly through the proxy/load balancer
+const SOCKET_URL = window.location.protocol + "//" + window.location.host;
+const socket = io(SOCKET_URL, {
+    // Optional: Force transports to mitigate some common proxy issues
+    transports: ['websocket', 'polling']
+});
 
-// Sidebar Elements
-const renameBtn = document.getElementById('renameBtn');
-const adminPanelBtn = document.getElementById('adminPanelBtn');
 
-// Modal Elements (Bootstrap)
+// === STATE ===
+let currentRoom = NORMAL_ROOM;
+let currentUserName = '';
+let currentIsAdmin = false;
+let currentIsAnon = false;
+
+// === DOM ELEMENTS ===
 const nameModal = new bootstrap.Modal(document.getElementById('nameModal'), { backdrop: 'static', keyboard: false });
-const nameForm = document.getElementById('name-form');
-const nameInput = document.getElementById('name-input');
-
-const renameModalEl = document.getElementById('renameModal');
-const renameModal = new bootstrap.Modal(renameModalEl);
-const renameForm = document.getElementById('rename-form');
-const newNameInput = document.getElementById('new-name-input');
-const anonToggleContainer = document.getElementById('anon-toggle-container'); // Container for anon checkbox
-const anonCheckbox = document.getElementById('anonCheckbox'); // New checkbox
-
+const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
 const adminPanelModal = new bootstrap.Modal(document.getElementById('adminPanelModal'));
-const adminChatBtn = document.getElementById('adminChatBtn'); // New button to switch to admin chat
-const adminPanelTitle = document.getElementById('adminPanelTitle');
-
-// Kick/Clear/Ban Modals
-const adminUserList = document.getElementById('admin-user-list');
-const kickConfirmModal = new bootstrap.Modal(document.getElementById('kickConfirmModal'));
-const kickConfirmBody = document.getElementById('kickConfirmBody');
-const kickConfirmBtn = document.getElementById('kickConfirmBtn');
 const clearConfirmModal = new bootstrap.Modal(document.getElementById('clearConfirmModal'));
-const clearConfirmBtn = document.getElementById('clearConfirmBtn');
-
+const kickConfirmModal = new bootstrap.Modal(document.getElementById('kickConfirmModal'));
 const banConfirmModal = new bootstrap.Modal(document.getElementById('banConfirmModal'));
-const banTargetNameSpan = document.getElementById('banTargetName');
-const banDaysInput = document.getElementById('banDays');
-const banHoursInput = document.getElementById('banHours');
-const banMinutesInput = document.getElementById('banMinutes');
-const banConfirmBtn = document.getElementById('banConfirmBtn');
 
-let kickTargetDisplayName = ''; 
-let banTargetDisplayName = '';
+const messages = document.getElementById('messages');
+const messageInput = document.getElementById('messageInput');
+const messageForm = document.getElementById('messageForm');
+const charCounter = document.getElementById('char-counter');
+const userList = document.getElementById('user-list');
+const adminUserList = document.getElementById('admin-user-list');
 
-// =========================================================================
-// 2. HELPER FUNCTIONS
-// =========================================================================
+// Variables for Admin Actions
+let targetUserId = null;
+let targetUserDisplayName = null;
 
-function formatTimestamp(date) {
-    return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+// === HELPER FUNCTIONS ===
+
+// Function to safely sanitize and format message content
+function escapeHTML(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
 
-function appendMessage(data) {
-    if (data.room && data.room !== user.currentRoom) return; // Only show messages for the active room
+// Renders a single message to the chat history
+function displayMessage(msg) {
+    // Determine the room of the displayed message
+    const msgRoom = msg.room || NORMAL_ROOM;
 
-    const isOwn = data.username === user.displayName || (data.isAdmin && data.username === 'Anonymous' && user.isAnon);
-    const item = document.createElement('li');
-    
-    if (data.isSystem) {
-        item.classList.add('msg', 'system');
-    } else {
-        item.classList.add('msg', isOwn ? 'own' : 'other');
-        if (data.isAdmin) item.classList.add('admin');
-        if (data.isAnon) item.classList.add('anon'); // Optional: Add visual style for anon
-    }
-    
-    if (data.isPrivate) {
-        const direction = data.sender === user.displayName ? 'to' : 'from';
-        const target = data.sender === user.displayName ? data.recipient : data.sender;
-        item.innerHTML = `<span class="sender-name">PM ${direction} ${target}</span><br>${data.content}`;
-    } else if (!data.isSystem) {
-        item.innerHTML = `<span class="sender-name">${data.username}</span><br>${data.content}`;
-    } else {
-        item.textContent = data.content;
-    }
-
-    if (!data.isSystem) {
-        const time = document.createElement('span');
-        time.classList.add('timestamp');
-        time.textContent = formatTimestamp(data.timestamp);
-        item.appendChild(time);
-    }
-    
-    messages.appendChild(item);
-    messages.scrollTop = messages.scrollHeight; 
-}
-
-function updateUserList(users) {
-    userCountSpan.textContent = users.length;
-    userList.innerHTML = '';
-    adminUserList.innerHTML = '';
-    
-    users.forEach(u => {
-        // 1. Sidebar list
-        const li = document.createElement('li');
-        li.textContent = `${u.displayName}${u.isAdmin ? ' (Admin)' : ''}`;
-        if (u.isAdmin) li.style.color = 'gold'; // Admin name highlight
-        userList.appendChild(li);
-
-        // 2. Admin Kick/Ban list
-        if (user.isAdmin) {
-            const adminLi = document.createElement('li');
-            adminLi.innerHTML = `${u.displayName} ${u.isAdmin ? ' (Admin)' : ''} ${u.isAnon ? ' (Anon)' : ''}`;
-            
-            // Cannot kick self or other admins
-            if (!u.isAdmin) {
-                adminLi.classList.add('kick-target');
-                adminLi.dataset.displayName = u.displayName;
-                adminLi.onclick = () => showKickOrBanModal(u.displayName, u.socketId);
-            } else if (u.isAdmin) {
-                adminLi.style.fontWeight = 'bold';
-                adminLi.style.color = 'gold';
-            }
-            adminUserList.appendChild(adminLi);
-        }
-    });
-}
-
-// =========================================================================
-// 3. COMMAND PARSING AND HANDLERS
-// =========================================================================
-
-function handleMessageCommand(input) {
-    const parts = input.match(/^\/msg\s+([\s\S]+?)\s+([\s\S]+)$/i);
-    
-    if (parts) {
-        // The regex captures everything after /msg and the last word.
-        // We need to parse out the recipient name from the content.
-        const msgStart = parts[0].lastIndexOf(parts[2]);
-        const recipientName = parts[0].substring(5, msgStart).trim();
-        const content = parts[2].trim();
-        
-        if (recipientName && content) {
-            socket.emit('private message', { recipient: recipientName, content: content });
-            return true;
-        }
-    }
-    
-    socket.emit('system_error', 'Invalid /msg command. Usage: /msg [username] [message]');
-    return true;
-}
-
-function handleKickCommand(input) {
-    const parts = input.match(/^\/kick\s+([\s\S]+)$/i);
-    
-    if (!parts || !user.isAdmin) {
-        socket.emit('system_error', 'Unauthorized or invalid /kick command. Usage: /kick [username]');
-        return true;
-    }
-    
-    const targetName = parts[1].trim();
-    if (targetName) {
-        // Use the simple kick confirmation for command-line kicks
-        kickTargetDisplayName = targetName;
-        kickConfirmBody.innerHTML = `Are you sure you want to KICK <strong>${targetName}</strong> from the chat?`;
-        kickConfirmModal.show();
-        return true;
-    }
-    
-    socket.emit('system_error', 'Invalid /kick command. Usage: /kick [username]');
-    return true;
-}
-
-// =========================================================================
-// 4. ADMIN MODAL HANDLERS
-// =========================================================================
-
-function showKickOrBanModal(displayName, socketId) {
-    // This is the list-click handler. We'll show the kick modal, which also contains a button to open the ban modal.
-    kickTargetDisplayName = displayName;
-    kickConfirmBody.innerHTML = `Action for <strong>${displayName}</strong>:`;
-    
-    // Set the ban modal defaults
-    banTargetNameSpan.textContent = displayName;
-    banDaysInput.value = 0;
-    banHoursInput.value = 1;
-    banMinutesInput.value = 0;
-    
-    kickConfirmModal.show();
-    adminPanelModal.hide(); 
-}
-
-function confirmKick() {
-    if (kickTargetDisplayName) {
-        // The server will handle the logic and broadcast the kick
-        socket.emit('admin:kick_user', kickTargetDisplayName, user.currentRoom);
-        kickTargetDisplayName = ''; 
-        kickConfirmModal.hide();
-        adminPanelModal.show();
-    }
-}
-
-function showBanModal() {
-    kickConfirmModal.hide();
-    banConfirmModal.show();
-}
-
-function confirmBan() {
-    const targetName = banTargetNameSpan.textContent;
-    const days = parseInt(banDaysInput.value) || 0;
-    const hours = parseInt(banHoursInput.value) || 0;
-    const minutes = parseInt(banMinutesInput.value) || 0;
-    
-    if (days + hours + minutes <= 0) {
-        socket.emit('system_error', 'Ban duration must be greater than zero.');
+    // Only display messages relevant to the current room (or global messages)
+    if (msgRoom !== currentRoom && msgRoom !== 'GLOBAL') {
         return;
     }
 
-    socket.emit('admin:ban_ip', targetName, days, hours, minutes);
-    banConfirmModal.hide();
-    adminPanelModal.show();
-}
+    const item = document.createElement('li');
+    const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const isSelf = msg.username === currentUserName && !msg.isSystem;
+    const isAnonAdmin = msg.isAnon && msg.isAdmin;
 
-function confirmClearHistory() {
-    socket.emit('admin:clear_history', user.currentRoom);
-    clearConfirmModal.hide();
-    adminPanelModal.hide();
-}
+    // Determine the class and content structure
+    let contentHTML = '';
+    let classList = 'msg';
+    
+    if (msg.isSystem) {
+        classList += ' system';
+        contentHTML = escapeHTML(msg.content); // System messages are simple
+        if (msg.room === 'GLOBAL') {
+             classList += ' admin';
+             item.style.fontWeight = 'bold';
+             item.style.color = '#ff6666'; // Highlight global messages
+             contentHTML = escapeHTML(msg.content);
+        }
+    } else if (msg.isPrivate) {
+        // Private message structure
+        classList += ' private system';
+        const partner = msg.sender === currentUserName ? msg.recipient : msg.sender;
+        contentHTML = `(Private to ${partner}): ${escapeHTML(msg.content)}`;
+    } else {
+        // Standard chat message
+        classList += isSelf ? ' own' : ' other';
+        if (msg.isAdmin) {
+            classList += ' admin'; // Add gold border for admins
+        }
 
-// =========================================================================
-// 5. EVENT LISTENERS
-// =========================================================================
+        // Standard bubble content
+        const displayName = isAnonAdmin && !currentIsAdmin ? 'Anonymous' : escapeHTML(msg.username);
+        
+        contentHTML = `
+            <span class="sender-name">${displayName}</span>
+            <div class="message-content">${escapeHTML(msg.content)}</div>
+            <span class="timestamp">${time}</span>
+        `;
+    }
 
-// Show the login modal immediately on page load
-nameModal.show();
+    item.className = classList;
+    item.innerHTML = contentHTML;
 
-// --- Message Input Character Counter ---
-messageInput.addEventListener('input', () => {
-    let content = messageInput.textContent;
-    if (content.length > MAX_MESSAGE_LENGTH) {
-        content = content.substring(0, MAX_MESSAGE_LENGTH);
-        messageInput.textContent = content;
+    // Logic to fix stacking/spacing for sequential messages from the same user
+    const lastMsg = messages.lastElementChild;
+    if (lastMsg) {
+        // Check if the last message was a regular chat message and from the same sender
+        const isSameSender = lastMsg.classList.contains(isSelf ? 'own' : 'other');
+        const wasChatMsg = !lastMsg.classList.contains('system') && !lastMsg.classList.contains('private');
+        
+        if (wasChatMsg && isSameSender && !msg.isSystem && !msg.isPrivate) {
+            // Apply spacing fix and remove the arrow/tail from the top message
+            item.style.marginTop = '-8px';
+            if (isSelf) {
+                lastMsg.style.borderBottomRightRadius = '0';
+                lastMsg.classList.remove('own');
+                lastMsg.classList.add('own-stacked-top');
+            } else {
+                lastMsg.style.borderBottomLeftRadius = '0';
+                lastMsg.classList.remove('other');
+                lastMsg.classList.add('other-stacked-top');
+            }
+        }
     }
     
-    charCounter.textContent = `${content.length} / ${MAX_MESSAGE_LENGTH}`;
-    charCounter.style.color = content.length === MAX_MESSAGE_LENGTH ? 'red' : '#888';
-});
-
-// --- Login Listener ---
-nameForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const inputName = nameInput.value.trim();
-    if (inputName) {
-        socket.emit('check_staff_status', inputName, (response) => {
-            if (response.success) {
-                user.displayName = response.displayName;
-                user.isAdmin = response.isAdmin;
-                user.isAnon = response.isAnon || false;
-                
-                displayNameSpan.textContent = user.displayName + (user.isAdmin ? ' (Admin)' : '');
-                container.style.display = 'flex'; 
-                nameModal.hide(); 
-                
-                // Set up rename and admin panel access
-                if (user.isAdmin) {
-                    adminPanelBtn.removeAttribute('disabled');
-                    adminPanelBtn.style.display = 'block';
-                    anonToggleContainer.style.display = 'block';
-                    anonCheckbox.checked = user.isAnon;
-                }
-                renameBtn.removeAttribute('disabled');
-            } else {
-                let message = 'Login failed.';
-                switch (response.reason) {
-                    case 'banned_word_or_length':
-                        message = 'Name must be 3-20 characters and cannot contain banned words.';
-                        break;
-                    case 'name_in_use':
-                        message = 'That name is already in use.';
-                        break;
-                    default:
-                        message = response.message || 'Name rejected by server.';
-                }
-                socket.emit('system_error', message);
-            }
-        });
+    // Add arrow/tail styling back to the new message if it's not a stacked one
+    if (isSelf && !msg.isSystem && !msg.isPrivate) {
+        item.style.borderBottomRightRadius = '0';
+    } else if (!isSelf && !msg.isSystem && !msg.isPrivate) {
+        item.style.borderBottomLeftRadius = '0';
     }
+
+
+    messages.appendChild(item);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+// Renders the list of online users in the sidebar
+function renderUserList(users, listElement) {
+    listElement.innerHTML = '';
+    
+    users.forEach(user => {
+        const li = document.createElement('li');
+        li.dataset.socketId = user.socketId;
+        li.dataset.displayName = user.displayName;
+        
+        let nameHtml = escapeHTML(user.displayName);
+        
+        if (user.isAdmin) {
+            nameHtml = `<span style="color: gold;">⭐ ${nameHtml}</span>`;
+            if (user.isAnon) {
+                nameHtml += ' (Anon)';
+            }
+        } else if (user.isAnon && currentIsAdmin) {
+            // Admins see "Anonymous (Real Name)"
+            nameHtml = `<span style="color: #ccc;">Anonymous (${escapeHTML(user.displayName)})</span>`;
+        } else if (user.isAnon && !currentIsAdmin) {
+            // Non-admins only see "Anonymous"
+            nameHtml = `<span style="color: #ccc;">Anonymous</span>`;
+        }
+
+        li.innerHTML = nameHtml;
+        listElement.appendChild(li);
+    });
+
+    // Update the user count display
+    document.getElementById('user-count').textContent = users.length;
+}
+
+// Function to handle chat commands
+function handleCommand(input) {
+    const parts = input.trim().split(/\s+/);
+    const command = parts[0].toLowerCase();
+    
+    if (command === '/msg') {
+        const recipient = parts[1];
+        const content = parts.slice(2).join(' ');
+        
+        if (!recipient || !content) {
+            return socket.emit('system_error', 'Usage: /msg [user] [message]');
+        }
+        
+        socket.emit('private message', { recipient: recipient, content: content.substring(0, MAX_MESSAGE_LENGTH) });
+        return true;
+    } 
+    
+    if (command === '/kick') {
+        if (!currentIsAdmin) return socket.emit('system_error', 'Unauthorized: /kick is Admin only.');
+        const targetUser = parts[1];
+        if (!targetUser) return socket.emit('system_error', 'Usage: /kick [user]');
+
+        openKickConfirmModal(targetUser, currentRoom);
+        return true;
+    }
+    
+    if (command === '/clear') {
+        if (!currentIsAdmin) return socket.emit('system_error', 'Unauthorized: /clear is Admin only.');
+        // Show confirmation modal
+        clearConfirmModal.show();
+        return true;
+    }
+    
+    // NEW COMMAND: Global Message
+    if (command === '/gmsg') {
+        if (!currentIsAdmin) return socket.emit('system_error', 'Unauthorized: /gmsg is Admin only.');
+        const content = parts.slice(1).join(' ');
+        if (!content) return socket.emit('system_error', 'Usage: /gmsg [global message]');
+        
+        socket.emit('admin:global_message', content.substring(0, MAX_MESSAGE_LENGTH));
+        return true;
+    }
+
+    return false; // Not a recognized command
+}
+
+
+// === ADMIN ACTION MODALS ===
+
+// Opens the Kick/Ban choice modal
+function openKickConfirmModal(displayName, room) {
+    // We only need the display name for the admin action
+    targetUserDisplayName = displayName;
+    
+    document.getElementById('kickConfirmBody').innerHTML = `Action for: <strong>${escapeHTML(displayName)}</strong>`;
+    
+    // Set up listeners for the modal buttons
+    document.getElementById('kickConfirmBtn').onclick = () => {
+        socket.emit('admin:kick_user', targetUserDisplayName, currentRoom);
+        kickConfirmModal.hide();
+    };
+
+    document.getElementById('openBanModalBtn').onclick = () => {
+        kickConfirmModal.hide();
+        document.getElementById('banTargetName').textContent = targetUserDisplayName;
+        banConfirmModal.show();
+    };
+    
+    kickConfirmModal.show();
+}
+
+// Sets up the Ban confirmation and emission
+document.getElementById('banConfirmBtn').addEventListener('click', () => {
+    const days = parseInt(document.getElementById('banDays').value) || 0;
+    const hours = parseInt(document.getElementById('banHours').value) || 0;
+    const minutes = parseInt(document.getElementById('banMinutes').value) || 0;
+
+    if (days === 0 && hours === 0 && minutes === 0) {
+        return alert('Ban duration must be greater than zero.');
+    }
+    
+    socket.emit('admin:ban_ip', targetUserDisplayName, days, hours, minutes);
+    banConfirmModal.hide();
 });
 
-// --- Message Submit Listener ---
+
+// === INITIALIZATION / LOGIN ===
+
+document.addEventListener('DOMContentLoaded', () => {
+    nameModal.show();
+    
+    // Listen for client connection errors (e.g., from IP ban middleware)
+    socket.on('connect_error', (err) => {
+        console.error("Connection Error:", err.message);
+        document.getElementById('container').style.display = 'none';
+        document.body.innerHTML = `<h1 style="color: red; text-align: center; padding-top: 100px;">Connection Failed: ${err.message}</h1>`;
+    });
+});
+
+document.getElementById('name-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name = document.getElementById('name-input').value;
+
+    socket.emit('check_staff_status', name, ({ success, reason, displayName, isAdmin, isAnon }) => {
+        if (success) {
+            currentUserName = displayName;
+            currentIsAdmin = isAdmin;
+            currentIsAnon = isAnon;
+
+            // Update UI elements
+            document.getElementById('display-name').textContent = currentUserName + (currentIsAdmin ? ' (Admin)' : '');
+            document.getElementById('container').style.display = 'flex';
+            document.getElementById('renameBtn').disabled = false;
+            
+            if (currentIsAdmin) {
+                document.getElementById('adminPanelBtn').style.display = 'block';
+                document.getElementById('adminPanelBtn').disabled = false;
+                document.getElementById('anon-toggle-container').style.display = 'block'; // Show anon toggle
+            }
+
+            nameModal.hide();
+            messageInput.focus();
+        } else {
+            let message = '';
+            if (reason === 'banned_word_or_length') {
+                message = 'Name must be 3-20 characters and cannot contain banned words.';
+            } else if (reason === 'name_in_use') {
+                message = 'This name is already in use.';
+            }
+            alert('Login failed: ' + message);
+        }
+    });
+});
+
+
+// === EVENT LISTENERS ===
+
+// Chat Form Submission
 messageForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    const msg = messageInput.textContent.trim();
+    const content = messageInput.textContent.trim();
+    messageInput.textContent = ''; // Clear input field
+    updateCharCounter(); // Reset counter
     
-    if (msg.length > MAX_MESSAGE_LENGTH) return;
-    
-    if (msg.startsWith('/')) {
-        const command = msg.split(/\s+/)[0].toLowerCase();
-        let handled = false;
-        
-        if (command === '/msg') {
-            handled = handleMessageCommand(msg);
-        } else if (command === '/clear' && user.isAdmin) {
-            clearConfirmModal.show();
-            handled = true;
-        } else if (command === '/kick' && user.isAdmin) {
-            handled = handleKickCommand(msg);
-        } else if (command === '/clear' || command === '/kick') {
-            socket.emit('system_error', `Unauthorized: ${command} is an admin command.`);
-            handled = true;
-        }
+    if (content) {
+        // 1. Check for command
+        const isCommand = handleCommand(content);
 
-        if (handled) {
-            messageInput.textContent = ''; 
-            messageInput.dispatchEvent(new Event('input'));
-            return;
+        // 2. If not a command, send as a regular chat message
+        if (!isCommand) {
+            const safeContent = content.substring(0, MAX_MESSAGE_LENGTH);
+            socket.emit('chat message', { content: safeContent }, currentRoom);
         }
-    }
-    
-    if (msg) {
-        socket.emit('chat message', { content: msg }, user.currentRoom);
-        messageInput.textContent = ''; 
-        messageInput.dispatchEvent(new Event('input'));
     }
 });
 
-// --- Rename Listener ---
-renameForm.addEventListener('submit', function(e) {
+// Character Counter and Max Length Enforcement
+messageInput.addEventListener('input', updateCharCounter);
+messageInput.addEventListener('keydown', function(e) {
+    // Block input if max length is reached
+    if (messageInput.textContent.length >= MAX_MESSAGE_LENGTH && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+    }
+    // Handle Enter key for submission (preventing new line)
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        messageForm.dispatchEvent(new Event('submit'));
+    }
+});
+function updateCharCounter() {
+    const count = messageInput.textContent.length;
+    charCounter.textContent = `${count} / ${MAX_MESSAGE_LENGTH}`;
+    charCounter.style.color = count > MAX_MESSAGE_LENGTH ? 'red' : '#888';
+}
+
+
+// Rename Form Submission
+document.getElementById('rename-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    const newName = newNameInput.value.trim();
-    const isAnon = user.isAdmin ? anonCheckbox.checked : false;
+    const newName = document.getElementById('new-name-input').value;
+    const isAnon = currentIsAdmin ? document.getElementById('anonCheckbox').checked : false;
 
-    if (newName) { 
-        socket.emit('rename', newName, isAnon, (response) => {
-            if (response.success) {
-                user.displayName = response.newName;
-                user.isAnon = response.isAnon;
-                displayNameSpan.textContent = user.displayName + (user.isAdmin ? ' (Admin)' : '');
-                newNameInput.value = '';
-                renameModal.hide();
-            } else {
-                socket.emit('system_error', response.message || 'Rename failed: Name may be taken or invalid.');
-            }
-        });
-    } else {
-        socket.emit('system_error', 'Please enter a valid name (3-20 characters).');
-    }
+    socket.emit('rename', newName, isAnon, ({ success, message, newName, isAnon }) => {
+        if (success) {
+            currentUserName = newName;
+            currentIsAnon = isAnon;
+            document.getElementById('display-name').textContent = currentUserName + (currentIsAdmin ? ' (Admin)' : '');
+            renameModal.hide();
+        } else {
+            alert('Rename failed: ' + message);
+        }
+    });
 });
 
-// --- Admin Panel Room Switch ---
-adminChatBtn.addEventListener('click', () => {
-    const newRoom = user.currentRoom === NORMAL_ROOM ? ADMIN_ROOM : NORMAL_ROOM;
+// Admin Panel User List Click Handler
+adminUserList.addEventListener('click', function(e) {
+    const li = e.target.closest('li');
+    if (!li || !currentIsAdmin) return;
+    
+    const targetName = li.dataset.displayName;
+    
+    // Prevent admin from kicking/banning themselves
+    if (targetName === currentUserName) {
+        return socket.emit('system_error', "You cannot kick or ban yourself.");
+    }
+
+    adminPanelModal.hide();
+    openKickConfirmModal(targetName, currentRoom);
+});
+
+// Clear Chat Confirmation Button
+document.getElementById('clearConfirmBtn').addEventListener('click', () => {
+    socket.emit('admin:clear_history', currentRoom);
+    clearConfirmModal.hide();
+});
+
+// Switch to Admin Chat Button
+document.getElementById('adminChatBtn').addEventListener('click', () => {
+    const newRoom = currentRoom === NORMAL_ROOM ? ADMIN_ROOM : NORMAL_ROOM;
     socket.emit('change room', newRoom);
     adminPanelModal.hide();
 });
 
-// --- Admin Panel Modals ---
-document.getElementById('clearChatBtn').addEventListener('click', () => {
-    adminPanelModal.hide(); 
-    clearConfirmModal.show();
-});
-clearConfirmBtn.addEventListener('click', confirmClearHistory);
-kickConfirmBtn.addEventListener('click', confirmKick);
-document.getElementById('openBanModalBtn').addEventListener('click', showBanModal);
-banConfirmBtn.addEventListener('click', confirmBan);
 
+// === SOCKET EVENT HANDLERS ===
 
-// =========================================================================
-// 6. SOCKET.IO LISTENERS (SERVER RESPONSES)
-// =========================================================================
-
-// Incoming Chat Message
-socket.on('chat message', function(data) {
-    // The server ensures the message is for the current room
-    appendMessage(data);
+socket.on('chat message', function(msg) {
+    displayMessage(msg);
 });
 
-// Private Messages
-socket.on('private message', function(data) {
-    appendMessage(data);
+socket.on('private message', function(msg) {
+    displayMessage(msg);
 });
 
-// Initial History Load and Room Switch History
-socket.on('chat history', function(history, room) {
-    if (room === user.currentRoom) {
-        messages.innerHTML = ''; // Clear chat area
-        history.forEach(appendMessage);
-    }
+socket.on('system_error', function(message) {
+    displayMessage({ username: 'System Error', content: message, timestamp: new Date(), isSystem: true, isAdmin: true });
 });
 
-// Normal User List
+socket.on('system_alert', function(message) {
+    displayMessage({ username: 'System Alert', content: message, timestamp: new Date(), isSystem: true });
+});
+
 socket.on('user list update', function(users) {
-    if (user.currentRoom === NORMAL_ROOM) {
-        updateUserList(users);
+    if (currentRoom === NORMAL_ROOM) {
+        renderUserList(users, userList);
     }
 });
 
-// Admin User List (For Admin Panel)
 socket.on('admin user list update', function(users) {
-    // This list is only used for the Admin Modal, regardless of the current chat room
-    updateUserList(users);
+    // Admins always get the list of users in the NORMAL_ROOM for the panel
+    renderUserList(users, adminUserList);
 });
 
-// Room Change Confirmation
-socket.on('room changed', function(newRoom) {
-    user.currentRoom = newRoom;
-    
-    // Update UI elements to reflect room change
-    const roomName = newRoom === NORMAL_ROOM ? 'Normal Chat' : 'Admin Chat';
-    adminPanelTitle.textContent = `${roomName} - Admin Panel`;
-    adminChatBtn.textContent = newRoom === NORMAL_ROOM ? 'Switch to Admin Chat' : 'Switch to Normal Chat';
-    
-    // Clear chat and wait for the new history to be sent by the server
+socket.on('chat history', function(history, room) {
+    if (room !== currentRoom) return;
+
     messages.innerHTML = '';
-    appendMessage({ username: 'System', content: `Switched to ${roomName}.`, timestamp: new Date(), isSystem: true });
+    history.forEach(msg => displayMessage(msg));
 });
 
-// Server forces a clear of the messages list
-socket.on('admin:history_cleared', function(clearMsg) {
-    if (clearMsg.room === user.currentRoom) {
-        messages.innerHTML = '';
-        if (user.isAdmin) {
-            appendMessage(clearMsg);
-        }
+socket.on('room changed', function(newRoom) {
+    currentRoom = newRoom;
+    const title = document.getElementById('adminPanelTitle');
+    const switchBtn = document.getElementById('adminChatBtn');
+    
+    if (newRoom === ADMIN_ROOM) {
+        title.textContent = 'Admin Chat - Admin Panel';
+        switchBtn.textContent = 'Switch to Normal Chat';
+        switchBtn.classList.replace('btn-warning', 'btn-success');
+    } else {
+        title.textContent = 'Normal Chat - Admin Panel';
+        switchBtn.textContent = 'Switch to Admin Chat';
+        switchBtn.classList.replace('btn-success', 'btn-warning');
     }
+    
+    const roomMsg = {
+        username: 'System', 
+        content: `You have switched to the ${newRoom === ADMIN_ROOM ? 'Admin Chat' : 'Normal Chat'} room.`,
+        timestamp: new Date(), 
+        isSystem: true, 
+        isAdmin: true,
+        room: newRoom
+    };
+    displayMessage(roomMsg);
 });
 
-// Server-side errors/alerts
-socket.on('system_error', function(msg) {
-    appendMessage({ username: 'System', content: `ERROR: ${msg}`, timestamp: new Date(), isSystem: true, isAdmin: false });
-});
-
-socket.on('system_alert', function(msg) {
-    appendMessage({ username: 'System', content: `ALERT: ${msg}`, timestamp: new Date(), isSystem: true, isAdmin: false });
+socket.on('admin:history_cleared', function(clearMsg) {
+    messages.innerHTML = '';
+    displayMessage(clearMsg);
 });
