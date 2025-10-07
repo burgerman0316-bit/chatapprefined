@@ -87,14 +87,17 @@ function broadcastUserCount() {
   const userMap = {};
   users.forEach(user => {
     if (user.chatContext === 'public' || user.isAdmin) {
+        // FIX: Include isAdmin status for all clients to see who is a moderator
         userMap[user.displayName] = { 
-            isAdmin: user.isAdmin,
-            ip: user.ip 
+            isAdmin: user.isAdmin
+            // IP address removed from public broadcast for security
         };
     }
   });
 
   io.emit('user count', { userList: Object.keys(userMap).sort(), usersMap: userMap });
+  
+  // This event remains for admin-only tools (it includes IP and secureName)
   io.to(STAFF_ROOM).emit('admin_user_map', Object.fromEntries(users));
 }
 
@@ -425,7 +428,6 @@ io.on('connection', socket => {
 
   // 8. Admin: Kick User (/kick, Button)
   socket.on('admin:kick_user', data => {
-      // FIX: Use the correct 'admin' user object for status/display name
       const admin = users.get(socket.id); 
       const targetName = (data.targetName || '').trim();
       
