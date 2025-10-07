@@ -12,16 +12,14 @@ app.set('trust proxy', 1);
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*' },
-    // **NEW PROXY/CONNECTION FIXES**
+    // **PROX Y/CONNECTION FIXES**
     pingTimeout: 5000, 
     pingInterval: 15000,
-    // Setting this to 'websocket' might sometimes solve issues on certain hosts, but long-polling is more compatible.
-    // We will stick to the default unless you tell me you only want websockets.
 });
 
 // --- SETTINGS ---
-const NORMAL_ROOM = 'normal_chat'; // Everyone joins this room
-const ADMIN_ROOM = 'admin_chat';   // Only admins join this room
+const NORMAL_ROOM = 'normal_chat'; 
+const ADMIN_ROOM = 'admin_chat';   
 const MAX_HISTORY = 100;
 const MAX_MESSAGE_LENGTH = 256;
 const BANNED_WORDS = ['hitler', 'nazi', 'swearword', 'bomb', 'kill'];
@@ -34,49 +32,40 @@ const STAFF_LIST = [
 ];
 
 // --- STATE ---
-const users = new Map();         // socket.id -> user object
-const namesInUse = new Set();    // Lowercased display names
+const users = new Map();         
+const namesInUse = new Set();    
 const chatHistory = {
     [NORMAL_ROOM]: [],
     [ADMIN_ROOM]: []
 };
-const ipBans = new Map();        // IP Address -> { until: Date, reason: string }
+const ipBans = new Map();        
 
 
 /**
  * Helper to determine the client IP address from the handshake headers.
- * This function should be highly robust for proxy environments.
  */
 function getClientIp(handshake) {
     const forwarded = handshake.headers['x-forwarded-for'];
-
     if (forwarded) {
-        // x-forwarded-for can be a comma-separated list. We want the client's original IP (the first one).
         const ips = (Array.isArray(forwarded) ? forwarded[0] : forwarded).split(',');
         return ips[0].trim();
     }
-    // Fallback
     return handshake.address;
 }
 
-// --- IP BAN MIDDLEWARE (Robust Proxy IP Check) ---
+// --- IP BAN MIDDLEWARE ---
 io.use((socket, next) => {
-    // Attach the robustly determined IP to the socket object
     socket.clientIp = getClientIp(socket.handshake);
     
-    // Check for active ban
     const ban = ipBans.get(socket.clientIp);
     if (ban) {
         if (ban.until > new Date()) {
             console.log(`[BAN BLOCK] Connection blocked for IP: ${socket.clientIp} until ${ban.until.toLocaleString()}.`);
-            // Terminate connection with error message
             return next(new Error(`Banned: You are banned until ${ban.until.toLocaleString()}`));
         } else {
-            // Ban is expired, clean it up
             ipBans.delete(socket.clientIp);
         }
     }
-    
     next();
 });
 
@@ -316,6 +305,28 @@ io.on('connection', socket => {
     });
 
     // --- 6. ADMIN COMMANDS ---
+
+    // Global Message (/gmsg) - NEW FEATURE
+    socket.on('admin:global_message', (content) => {
+        if (!socket.user || !socket.user.isAdmin) return socket.emit('system_error', 'Unauthorized: Global Message requires Admin rights.');
+        if (!content || content.length > MAX_MESSAGE_LENGTH) return socket.emit('system_error', 'Invalid /gmsg command or message too long.');
+        
+        const senderName = socket.user.isAnon ? 'Anonymous Admin' : socket.user.displayName;
+        
+        const globalMsg = {
+            username: 'GLOBAL ALERT',
+            content: `[${senderName}]: ${content}`,
+            timestamp: new Date(),
+            isAdmin: true, 
+            isSystem: true, 
+            room: 'GLOBAL'
+        };
+        
+        pushHistory(globalMsg, NORMAL_ROOM);
+        pushHistory(globalMsg, ADMIN_ROOM);
+
+        io.emit('chat message', globalMsg);
+    });
 
     // Kick User (admin only)
     socket.on('admin:kick_user', (targetDisplayName, room) => {
