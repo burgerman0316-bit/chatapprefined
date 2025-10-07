@@ -14,11 +14,9 @@ const STAFF_ROOM = 'staff_room';
 const ADMIN_CHAT_ID = 'admin_chat'; 
 const MAX_HISTORY = 100;
 const CONTENT_MAX_CHARS = 256; 
-// Banned words for name AND content (case-insensitive)
 const BANNED_WORDS = ['hitler', 'swear', 'badword', 'bannedword', 'spam', 'adminchat'];
 
 // Staff accounts - NOTE: LoginName is the SECURE password/key
-// RESTORED THE FULL 5-USER LIST
 const STAFF_LIST = [
   { loginName: 'hfdskLshkdgdibIdsjfkbdAshfjhsfdshfjMdjsbfhd', displayName: 'Liam Stern' },
   { loginName: 'hfsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh', displayName: 'Diesel Carter' },
@@ -47,7 +45,6 @@ function cleanUpUser(socketId) {
 
     const lower = user.displayName.toLowerCase();
     
-    // Check if this socket is the one currently registered for this name
     if (usernamesMap.has(lower) && usernamesMap.get(lower) === socketId) {
         usernamesMap.delete(lower);
     }
@@ -55,7 +52,6 @@ function cleanUpUser(socketId) {
     users.delete(socketId);
 }
 
-// FIX: Combined check for banned words AND reserved staff display names
 function isNameReservedOrBanned(name) { 
     if (!name) return true;
     const lower = name.trim().toLowerCase();
@@ -77,17 +73,6 @@ function isContentBanned(content) {
     if (!content) return false; 
     const lower = content.trim().toLowerCase();
     return BANNED_WORDS.some(banned => lower.includes(banned.toLowerCase()));
-}
-
-function getStaffInfo(secureNameOrDisplayName) {
-    const secure = (secureNameOrDisplayName || '').trim();
-    const staff = STAFF_LIST.find(s => 
-        s.loginName === secure || s.displayName.toLowerCase() === secure.toLowerCase()
-    );
-    if (staff) {
-        return { isAdmin: true, displayName: staff.displayName, secureName: staff.loginName };
-    }
-    return { isAdmin: false, displayName: secure, secureName: secure };
 }
 
 function pushHistory(msg, target = 'public') {
@@ -140,7 +125,6 @@ io.on('connection', socket => {
 
     cleanUpUser(socket.id); 
 
-    // Basic checks
     if (!name) { 
       socket.emit('name_rejected', `Please provide a name.`);
       return;
@@ -152,7 +136,6 @@ io.on('connection', socket => {
         const staffName = staffLoginAttempt.displayName;
         const staffLower = staffName.toLowerCase();
 
-        // Check for display name conflict
         if (usernamesMap.has(staffLower)) {
             socket.emit('name_rejected', `The staff display name '${staffName}' is already in use.`);
             return;
@@ -282,7 +265,6 @@ io.on('connection', socket => {
     
     if (trimmedNewName === user.displayName || !trimmedNewName) return; 
     
-    // FIX: Use the new reserved/banned name check
     if (isNameReservedOrBanned(trimmedNewName)) {
         socket.emit('system_error', 'That name is either reserved for staff or not allowed.');
         return;
@@ -443,7 +425,8 @@ io.on('connection', socket => {
 
   // 8. Admin: Kick User (/kick, Button)
   socket.on('admin:kick_user', data => {
-      const admin = users.get(socket.id);
+      // FIX: Use the correct 'admin' user object for status/display name
+      const admin = users.get(socket.id); 
       const targetName = (data.targetName || '').trim();
       
       if (!admin || !admin.isAdmin) {
