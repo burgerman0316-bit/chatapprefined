@@ -31,7 +31,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    color: #f0f0f0; /* Ensures all base text in the sidebar is white */
+    color: #f0f0f0; 
 }
 
 #user-info h2 { 
@@ -47,19 +47,19 @@ body {
 #user-list li {
     padding: 3px 0;
     cursor: pointer;
-    color: #f0f0f0; /* Explicitly makes the user list white */
+    color: #f0f0f0; 
 }
 
 .commands {
     font-size: 0.85em;
-    color: #f0f0f0; /* Makes the command text white */
+    color: #f0f0f0; 
 }
 
 /* Styling for the HR dividers in the user-info panel */
 .info-divider {
     border: 0;
     height: 1px;
-    background-color: #444; /* Dark gray color */
+    background-color: #444; 
     margin-top: 10px;
     margin-bottom: 10px;
 }
@@ -73,8 +73,8 @@ body {
 
 /* Message Bubbles - CONTAINER AND BASE STYLES */
 #messages {
-    display: flex; /* Make the messages container a flexbox */
-    flex-direction: column; /* Stack messages vertically */
+    display: flex; 
+    flex-direction: column; 
     padding: 10px;
     margin: 0;
     overflow-y: auto;
@@ -82,22 +82,22 @@ body {
 }
 
 .msg {
-    max-width: 70%; /* Keep bubbles from stretching too wide */
+    max-width: 70%; 
     margin-bottom: 10px;
     padding: 8px 12px;
-    border-radius: 18px; /* Larger border-radius for the curved effect */
+    border-radius: 18px; 
     word-wrap: break-word;
-    position: relative; /* Essential for positioning pseudo-elements */
-    clear: both; /* Ensures bubbles start on a new line */
-    list-style: none; /* Remove list bullets if any */
+    position: relative; 
+    clear: both; 
+    list-style: none; 
 }
 
 /* Own messages (align right, color #4a4a4a) */
 .msg.own {
-    align-self: flex-end; /* Aligns to the right in a flex container */
+    align-self: flex-end; 
     background-color: #4a4a4a; 
     color: #fff;
-    border-bottom-right-radius: 0; /* Make this corner sharp for the tail */
+    border-bottom-right-radius: 0; 
 }
 
 .msg.own::before {
@@ -105,11 +105,11 @@ body {
     content: '';
     position: absolute;
     bottom: 0;
-    right: -7px; /* Position next to the bubble */
+    right: -7px; 
     width: 20px; 
     height: 20px; 
-    background-color: #4a4a4a; /* Match bubble color */
-    border-bottom-left-radius: 15px; /* Creates the curve */
+    background-color: #4a4a4a; 
+    border-bottom-left-radius: 15px; 
     z-index: 1; 
 }
 
@@ -122,17 +122,17 @@ body {
     width: 20px; 
     height: 20px; 
     background-color: #1e1e1e; /* Must match chat area background! */
-    border-bottom-left-radius: 15px; /* Creates the curve */
+    border-bottom-left-radius: 15px; 
     z-index: 2; 
 }
 
 
 /* Other messages (align left, color #2c2c2c) */
 .msg.other {
-    align-self: flex-start; /* Aligns to the left in a flex container */
+    align-self: flex-start; 
     background-color: #2c2c2c; 
     color: #f0f0f0;
-    border-bottom-left-radius: 0; /* Make this corner sharp for the tail */
+    border-bottom-left-radius: 0; 
 }
 
 .msg.other::before {
@@ -140,11 +140,11 @@ body {
     content: '';
     position: absolute;
     bottom: 0;
-    left: -7px; /* Position next to the bubble */
+    left: -7px; 
     width: 20px; 
     height: 20px; 
-    background-color: #2c2c2c; /* Match bubble color */
-    border-bottom-right-radius: 15px; /* Creates the curve */
+    background-color: #2c2c2c; 
+    border-bottom-right-radius: 15px; 
     z-index: 1;
 }
 
@@ -157,7 +157,7 @@ body {
     width: 20px; 
     height: 20px; 
     background-color: #1e1e1e; /* Must match chat area background! */
-    border-bottom-right-radius: 15px; /* Creates the curve */
+    border-bottom-right-radius: 15px; 
     z-index: 2;
 }
 
