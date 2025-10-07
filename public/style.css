@@ -2,8 +2,8 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #000 !important;
-    color: #fff;
+    background-color: #000;
+    color: #f0f0f0; /* Default text color is white/off-white */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -31,7 +31,7 @@ body {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
-    color: #fff;
+    color: #f0f0f0; /* Ensures all base text in the sidebar is white */
 }
 
 #user-info h2 { 
@@ -47,12 +47,21 @@ body {
 #user-list li {
     padding: 3px 0;
     cursor: pointer;
-    color: #fff;
+    color: #f0f0f0; /* Explicitly makes the user list white */
 }
 
 .commands {
     font-size: 0.85em;
-    color: #fff;
+    color: #f0f0f0; /* Makes the command text white */
+}
+
+/* Styling for the new HR dividers in the user-info panel */
+.info-divider {
+    border: 0;
+    height: 1px;
+    background-color: #444; /* Dark gray color */
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 /* Chat Area */
@@ -195,7 +204,3 @@ body {
 .user-select-list li:hover {
     background-color: #555;
 }
-
-
-
-
