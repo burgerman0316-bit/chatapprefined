@@ -3,7 +3,7 @@ body {
     margin: 0;
     font-family: Arial, sans-serif;
     background-color: #000 !important;
-    color: #f0f0f0; /* Default text color is white/off-white */
+    color: #f0f0f0; 
     display: flex;
     justify-content: center;
     align-items: center;
@@ -85,83 +85,85 @@ body {
     max-width: 70%; 
     margin-bottom: 10px;
     padding: 8px 12px;
-    border-radius: 18px; 
-    word-wrap: break-word;
+    /* This must be position relative for the tails to be positioned absolutely */
     position: relative; 
+    word-wrap: break-word;
     clear: both; 
     list-style: none; 
 }
 
-/* Own messages (align right, color #4a4a4a) */
+/* --- OWN MESSAGES (Right Side) --- */
 .msg.own {
     align-self: flex-end; 
     background-color: #4a4a4a; 
     color: #fff;
-    border-bottom-right-radius: 0; 
+    /* Round all corners except the one closest to the tail */
+    border-radius: 12px 12px 2px 12px;
 }
 
+/* 1. The tail itself (matches bubble color) */
 .msg.own::before {
-    /* The main body of the curved tail */
     content: '';
     position: absolute;
-    bottom: 0;
-    right: -7px; 
-    width: 20px; 
-    height: 20px; 
-    background-color: #4a4a4a; 
-    border-bottom-left-radius: 15px; 
+    bottom: -8px; 
+    right: 0; 
+    width: 15px; 
+    height: 15px; 
+    background-color: #4a4a4a; /* Bubble Color: Dark Gray */
+    border-top-left-radius: 10px;
     z-index: 1; 
 }
 
+/* 2. The 'cutout' (matches chat area background) */
 .msg.own::after {
-    /* The 'cutout' that makes the curve smooth against the background */
     content: '';
     position: absolute;
-    bottom: 0;
-    right: -24px; 
-    width: 20px; 
-    height: 20px; 
-    background-color: #1e1e1e; /* Must match chat area background! */
-    border-bottom-left-radius: 15px; 
+    bottom: -8px; 
+    right: 10px; /* Aligned to overlap ::before */
+    width: 15px; 
+    height: 25px; 
+    background-color: #1e1e1e; /* Chat Area Background: Darkest Gray */
+    border-top-left-radius: 10px; 
     z-index: 2; 
 }
 
 
-/* Other messages (align left, color #2c2c2c) */
+/* --- OTHER MESSAGES (Left Side) --- */
 .msg.other {
     align-self: flex-start; 
     background-color: #2c2c2c; 
     color: #f0f0f0;
-    border-bottom-left-radius: 0; 
+    /* Round all corners except the one closest to the tail */
+    border-radius: 12px 12px 12px 2px;
 }
 
+/* 1. The tail itself (matches bubble color) */
 .msg.other::before {
-    /* The main body of the curved tail */
     content: '';
     position: absolute;
-    bottom: 0;
-    left: -7px; 
-    width: 20px; 
-    height: 20px; 
-    background-color: #2c2c2c; 
-    border-bottom-right-radius: 15px; 
+    bottom: -8px; 
+    left: 0; 
+    width: 15px; 
+    height: 15px; 
+    background-color: #2c2c2c; /* Bubble Color: Lighter Gray */
+    border-top-right-radius: 10px; 
     z-index: 1;
 }
 
+/* 2. The 'cutout' (matches chat area background) */
 .msg.other::after {
-    /* The 'cutout' that makes the curve smooth against the background */
     content: '';
     position: absolute;
-    bottom: 0;
-    left: -24px; 
-    width: 20px; 
-    height: 20px; 
-    background-color: #1e1e1e; /* Must match chat area background! */
-    border-bottom-right-radius: 15px; 
+    bottom: -8px; 
+    left: 10px; /* Aligned to overlap ::before */
+    width: 15px; 
+    height: 25px; 
+    background-color: #1e1e1e; /* Chat Area Background: Darkest Gray */
+    border-top-right-radius: 10px; 
     z-index: 2;
 }
 
-/* System messages (centered, no tail) */
+/* System messages (No Tail) */
 .msg.system {
     float: none; 
     align-self: center; 
@@ -177,7 +179,7 @@ body {
 
 .msg.system::before,
 .msg.system::after {
-    content: none; /* No arrows for system messages */
+    content: none; /* Crucial: No arrows for system messages */
 }
 /* END Message Bubbles */
 
@@ -278,8 +280,7 @@ body {
     background-color: #555;
 }
 
-/* 7. CUSTOM SCROLLBAR STYLING (For WebKit/Chrome/Safari) */
-/* Targets the main chat message area and the sidebar's user list area */
+/* 7. CUSTOM SCROLLBAR STYLING */
 
 /* WebKit-based scrollbar styling */
 #messages::-webkit-scrollbar,
@@ -290,21 +291,21 @@ body {
     background-color: transparent; 
 }
 
-/* The track (the area the thumb moves along) */
+/* The track */
 #messages::-webkit-scrollbar-track,
 #user-info::-webkit-scrollbar-track,
 .custom-input::-webkit-scrollbar-track,
 .user-select-list::-webkit-scrollbar-track {
-    background: #1e1e1e; /* Matches the chat area background */
+    background: #1e1e1e;
     border-radius: 10px;
 }
 
-/* The thumb (the draggable scroll indicator) */
+/* The thumb */
 #messages::-webkit-scrollbar-thumb,
 #user-info::-webkit-scrollbar-thumb,
 .custom-input::-webkit-scrollbar-thumb,
 .user-select-list::-webkit-scrollbar-thumb {
-    background-color: #555; /* Darker gray for contrast */
+    background-color: #555;
     border-radius: 10px;
 }
 
@@ -313,10 +314,10 @@ body {
 #user-info::-webkit-scrollbar-thumb:hover,
 .custom-input::-webkit-scrollbar-thumb:hover,
 .user-select-list::-webkit-scrollbar-thumb:hover {
-    background-color: #777; /* Slightly lighter gray on hover */
+    background-color: #777; 
 }
 
-/* Hides the buttons at the ends of the scrollbar (the 'scroll arrows') */
+/* Hides the buttons at the ends of the scrollbar */
 #messages::-webkit-scrollbar-button,
 #user-info::-webkit-scrollbar-button,
 .custom-input::-webkit-scrollbar-button,
@@ -325,11 +326,10 @@ body {
 }
 
 /* Optional: Scrollbar for Firefox (less customizable) */
-/* For users on Firefox, this changes the color scheme */
 #messages,
 #user-info,
 .custom-input,
 .user-select-list {
-    scrollbar-color: #555 #1e1e1e; /* thumb color, track color */
-    scrollbar-width: thin; /* 'auto' or 'thin' */
+    scrollbar-color: #555 #1e1e1e;
+    scrollbar-width: thin; 
 }
