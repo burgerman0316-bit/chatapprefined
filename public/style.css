@@ -24,7 +24,8 @@ body {
 
 /* User Info Sidebar */
 #user-info {
-    width: 250px;
+    /* NEW WIDTH: 200px */
+    width: 200px; 
     padding: 15px;
     background: #2c2c2c;
     border-right: 1px solid #444;
@@ -32,7 +33,6 @@ body {
     flex-direction: column;
     overflow-y: auto;
     color: #f0f0f0; 
-    /* This ensures the sidebar maintains its size relative to the chat-area */
     flex-shrink: 0; 
 }
 
@@ -201,14 +201,14 @@ body {
     display: flex; 
     padding: 10px;
     max-width: 100% !important;
-    align-items: flex-start; /* ensures button aligns with top of input */
+    align-items: flex-start; 
 }
 
 .custom-input {
     /* --- CRITICAL FLEXBOX CONSTRAINTS --- */
     flex-grow: 1 !important; 
-    flex-shrink: 1 !important; /* Forces shrinking if parent is too small */
-    min-width: 0 !important; /* Overrides default min-content behavior */
+    flex-shrink: 1 !important; 
+    min-width: 0 !important; 
     
     padding: 10px;
     border-radius: 4px;
@@ -245,8 +245,8 @@ body {
     color: white;
     cursor: pointer;
     height: 40px; 
-    align-self: flex-end; /* Align to the bottom of the input container */
-    flex-shrink: 0; /* Prevents the button from shrinking */
+    align-self: flex-end; 
+    flex-shrink: 0; 
 }
 
 .input-container button:hover {
