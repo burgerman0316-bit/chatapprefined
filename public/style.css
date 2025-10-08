@@ -45,28 +45,23 @@ body {
 }
 
 #user-list li {
-    padding: 4px 0;
+    padding: 3px 0;
     cursor: pointer;
-    font-size: 0.9em;
-}
-
-#user-list li:hover {
-    color: #00c3ff; 
-}
-
-.admin-name-list {
-    font-weight: bold;
-    color: #ff9900;
-}
-
-.info-divider {
-    border-top: 1px solid #444;
+    color: #f0f0f0; 
 }
 
 .commands {
-    font-size: 0.8em;
-    color: #aaa;
-    margin: 2px 0;
+    font-size: 0.85em;
+    color: #f0f0f0; 
+}
+
+/* Styling for the HR dividers in the user-info panel */
+.info-divider {
+    border: 0;
+    height: 1px;
+    background-color: #444; 
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 /* Chat Area */
@@ -74,239 +69,215 @@ body {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    position: relative;
 }
 
-#chatTitle {
-    background-color: #383838;
-    padding: 10px 15px;
-    margin: 0;
-    font-size: 1.2em;
-    border-bottom: 1px solid #444;
-}
-
+/* Message Bubbles - CONTAINER AND BASE STYLES */
 #messages {
-    list-style-type: none;
-    margin: 0;
-    padding: 15px;
-    flex-grow: 1;
-    overflow-y: auto;
-    word-wrap: break-word;
-    word-break: break-word;
-}
-
-#messages li {
-    padding: 8px 12px;
-    margin-bottom: 10px;
-    border-radius: 15px;
-    max-width: 80%;
-    clear: both;
-    position: relative;
-    font-size: 0.95em;
-    /* FIX: Prevent horizontal overflow */
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    min-width: 0; 
-}
-
-/* System Messages */
-.msg.system {
-    text-align: center;
-    background: none;
-    color: #999;
-    font-style: italic;
-    font-size: 0.8em;
-    margin: 10px auto;
-    max-width: 100%;
-}
-
-/* Other User Messages */
-.msg.other {
-    background: #383838;
-    color: #f0f0f0;
-    float: left;
-    border-bottom-left-radius: 0;
-    /* FIX: Constrain width when floated */
-    width: fit-content; 
-    max-width: 80%; 
-}
-
-/* Admin Messages */
-.msg.other.admin-msg {
-    background: #334e5a; /* Darker blue/grey for admin in public chat */
-}
-
-/* Own Messages */
-.msg.own {
-    background: #007bff; 
-    color: white;
-    float: right;
-    border-bottom-right-radius: 0;
-    /* FIX: Constrain width when floated */
-    width: fit-content; 
-    max-width: 80%; 
-}
-
-.sender-name {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 2px;
-    font-size: 0.85em;
-    color: #00c3ff; 
-}
-
-.private-name {
-    color: #ff9900;
-}
-
-/* Timestamp Styling */
-.timestamp {
-    display: block;
-    text-align: right;
-    font-size: 0.7em;
-    color: rgba(255, 255, 255, 0.5);
-    margin-top: 2px;
-}
-
-/* Form Styling */
-#messageForm {
-    border-top: 1px solid #444;
+    display: flex; 
+    flex-direction: column; 
     padding: 10px;
-    background: #2c2c2c;
+    margin: 0;
+    overflow-y: auto;
+    flex-grow: 1;
 }
 
+.msg {
+    max-width: 70%; 
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    position: relative; 
+    word-wrap: break-word;
+    clear: both; 
+    list-style: none;
+    padding-top: 10px;
+    /* Removed padding adjustment for name indicator, as it was adjusted to account for the bubble tail */
+}
+
+/* --- OWN MESSAGES (Right Side) --- */
+.msg.own {
+    align-self: flex-end; 
+    background-color: #4a4a4a; 
+    color: #fff;
+    /* Round all corners for a clean, tailless bubble */
+    border-radius: 12px;
+}
+
+/* REMOVED: The tail itself and cutout */
+.msg.own::before, .msg.own::after {
+    content: none;
+}
+
+/* --- OTHER MESSAGES (Left Side) --- */
+.msg.other {
+    align-self: flex-start; 
+    background-color: #2c2c2c; 
+    color: #f0f0f0;
+    /* Round all corners for a clean, tailless bubble */
+    border-radius: 12px;
+}
+
+/* REMOVED: The tail itself and cutout */
+.msg.other::before, .msg.other::after {
+    content: none;
+}
+
+/* System messages (No Tail) */
+.msg.system {
+    float: none; 
+    align-self: center; 
+    font-style: italic;
+    color: #888;
+    background: none; 
+    text-align: center;
+    width: 100%;
+    margin: 10px auto; 
+    padding: 0; 
+    border-radius: 0; 
+}
+
+.msg.system::before,
+.msg.system::after {
+    content: none; /* Crucial: No arrows for system messages */
+}
+/* END Message Bubbles */
+
+
+/* Styles for sender name indicator */
+.sender-name {
+    position: absolute;
+    top: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.msg.own .sender-name {
+    right: 12px;
+    color: #99cfff; /* Light blue for your own name */
+}
+
+.msg.other .sender-name {
+    left: 12px;
+    color: #c0c0c0; /* Gray or white for other users' names */
+}
+
+/* Styles for stacking messages from the same user */
+.msg.own + .msg.own {
+    margin-top: -8px; /* Reduce space between consecutive messages from you */
+    border-radius: 12px; /* Set uniform border radius */
+}
+
+.msg.own + .msg.own .sender-name {
+    display: none; /* Hide name for consecutive messages */
+}
+
+.msg.other + .msg.other {
+    margin-top: -8px; /* Reduce space between consecutive messages from others */
+    border-radius: 12px; /* Set uniform border radius */
+}
+
+.msg.other + .msg.other .sender-name {
+    display: none; /* Hide name for consecutive messages */
+}
+
+
+/* Input Box */
 .input-container {
     display: flex;
-    align-items: flex-start; 
+    padding: 10px;
+    background-color: #2c2c2c;
+    border-top: 1px solid #444;
 }
 
 .custom-input {
     flex-grow: 1;
-    min-height: 40px; 
-    max-height: 100px; 
     padding: 10px;
-    margin-right: 10px;
-    border: 1px solid #555;
-    border-radius: 5px;
-    background: #1e1e1e;
+    border-radius: 4px;
+    background-color: #383838;
     color: #f0f0f0;
-    resize: none;
+    border: 1px solid #555;
+    margin-right: 8px;
+    min-height: 40px;
+    max-height: 80px;
     overflow-y: auto;
-    line-height: 1.5;
-    white-space: pre-wrap;
+    -webkit-user-modify: read-write-plaintext-only;
     /* --- CRITICAL FIX FOR HORIZONTAL OVERFLOW --- */
-    overflow-x: hidden; 
-    word-break: break-all; /* Changed to break-all as a last resort */
-    min-width: 0; 
+    min-width: 0;      /* Allows flex item to shrink below content width */
+    word-break: break-all; /* Forces wrapping of continuous, unbroken text */
+    overflow-x: hidden; /* Clips any remaining overflow */
 }
 
-/* Placeholder using data-placeholder attribute for contenteditable */
-.custom-input:empty:before {
+.custom-input:empty::before {
     content: attr(data-placeholder);
     color: #888;
-    pointer-events: none;
-}
-.custom-input:focus {
-    outline: none;
-    border-color: #007bff;
 }
 
-#messageForm button {
-    padding: 10px 20px;
+.input-container button {
+    padding: 10px 15px;
+    border-radius: 4px;
     border: none;
-    border-radius: 5px;
-    background: #007bff;
+    background-color: #585858;
     color: white;
     cursor: pointer;
-    font-weight: bold;
-    height: 40px; 
-    align-self: flex-end; 
 }
 
-#messageForm button:hover {
-    background: #0056b3;
+.input-container button:hover {
+    background-color: #4a4a4a;
 }
 
-/* Character Count Display (NEW) */
-.char-count-display {
-    text-align: right;
-    margin-top: 5px;
-    font-size: 0.7em;
-    color: #ccc;
-    padding-right: 5px;
-}
-
-/* Bootstrap Modal Adjustments for Dark Theme */
+/* Modals & Bootstrap Overrides */
 .modal-content {
     background-color: #2c2c2c !important;
     color: #f0f0f0 !important;
+    border: 1px solid #444 !important;
 }
 
-/* FIX: Ensure muted text is white in the dark modal */
-.modal-content .text-muted {
-    color: #f0f0f0 !important; 
-}
-
-.modal-title {
-    color: #fff !important;
-}
 .modal-header {
     border-bottom: 1px solid #444 !important;
 }
-.modal-footer {
-    border-top: 1px solid #444 !important;
+
+.form-control {
+    background-color: #383838 !important;
+    color: #f0f0f0 !important;
+    border: 1px solid #555 !important;
 }
 
-/* Admin Panel Specific Styles */
-#adminPanelModal h5 {
-    color: #ff9900;
+.form-control:focus {
+    background-color: #383838 !important;
+    color: #f0f0f0 !important;
+    border-color: #777 !important;
+    box-shadow: 0 0 0 0.25rem rgba(119, 119, 119, 0.25) !important;
+}
+
+.btn-primary {
+    background-color: #585858 !important;
+    border-color: #585858 !important;
+}
+
+.btn-primary:hover {
+    background-color: #4a4a4a !important;
+    border-color: #4a4a4a !important;
+}
+
+.btn-close {
+    filter: invert(1);
 }
 
 .user-select-list {
     list-style: none;
     padding: 0;
-    max-height: 300px;
+    margin: 0;
+    max-height: 200px;
     overflow-y: auto;
-    background: #1e1e1e;
-    border-radius: 5px;
 }
 
 .user-select-list li {
-    padding: 8px 10px;
-    border-bottom: 1px solid #383838;
+    padding: 8px;
+    border-bottom: 1px solid #444;
     cursor: pointer;
 }
 
 .user-select-list li:hover {
     background-color: #555;
-}
-
-/* Tab Styling (NEW) */
-.chat-tabs {
-    display: flex;
-    margin-bottom: 15px;
-    margin-top: 10px;
-    border-bottom: 1px solid #444;
-}
-
-.chat-tab {
-    padding: 8px 12px;
-    cursor: pointer;
-    font-weight: bold;
-    color: #aaa;
-    border-radius: 5px 5px 0 0;
-}
-
-.chat-tab:hover {
-    color: #fff;
-    background-color: #383838;
-}
-
-.chat-tab.active {
-    color: #007bff;
-    background-color: #1e1e1e;
-    border: 1px solid #444;
-    border-bottom: none;
 }
 
 /* CUSTOM SCROLLBAR STYLING */
@@ -343,4 +314,21 @@ body {
 .custom-input::-webkit-scrollbar-thumb:hover,
 .user-select-list::-webkit-scrollbar-thumb:hover {
     background-color: #777; 
+}
+
+/* Hides the buttons at the ends of the scrollbar */
+#messages::-webkit-scrollbar-button,
+#user-info::-webkit-scrollbar-button,
+.custom-input::-webkit-scrollbar-button,
+.user-select-list::-webkit-scrollbar-button {
+    display: none;
+}
+
+/* Optional: Scrollbar for Firefox (less customizable) */
+#messages,
+#user-info,
+.custom-input,
+.user-select-list {
+    scrollbar-color: #555 #1e1e1e;
+    scrollbar-width: thin; 
 }
