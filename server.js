@@ -30,7 +30,7 @@ const adminChatHistory = [];
 
 const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, fingerprintId, chatContext }
 const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
-const fpBanList = new Map(); // fingerprintId -> { banUntil: Date, reason: string } // CHANGED to Fingerprint Ban List
+const fpBanList = new Map(); // fingerprintId -> { banUntil: Date, reason: string } 
 
 // --- STATIC FILE SERVING ---
 app.use(express.static(path.join(__dirname, 'public')));
@@ -608,6 +608,9 @@ io.on('connection', socket => {
   });
 });
 
-server.listen(3000, () => {
-  console.log('Listening on http://localhost:3000');
+// FIX: Listen on the dynamically assigned PORT environment variable,
+// or fall back to 3000 for local development.
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Listening on port ${PORT}`);
 });
