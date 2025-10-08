@@ -194,6 +194,9 @@ body {
     overflow-y: auto;
     line-height: 1.5;
     white-space: pre-wrap;
+    /* --- FIX FOR HORIZONTAL OVERFLOW --- */
+    min-width: 0; 
+    word-break: break-word;
 }
 
 /* Placeholder using data-placeholder attribute for contenteditable */
@@ -238,9 +241,9 @@ body {
     color: #f0f0f0 !important;
 }
 
-/* FIX: Ensure muted text is visible in the dark modal */
+/* FIX: Ensure muted text is white in the dark modal */
 .modal-content .text-muted {
-    color: #f0f0f0 !important; /* Changed to white */
+    color: #f0f0f0 !important; 
 }
 
 .modal-title {
