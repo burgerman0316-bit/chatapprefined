@@ -3,7 +3,7 @@ body {
     margin: 0;
     font-family: Arial, sans-serif;
     background-color: #000 !important;
-    color: #f0f0f0; 
+    color: #f0f0f0; /* SET TEXT TO LIGHT GRAY/WHITE */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -24,8 +24,7 @@ body {
 
 /* User Info Sidebar */
 #user-info {
-    /* NEW WIDTH: 200px */
-    width: 200px; 
+    width: 220px; /* Slightly wider for the buttons */
     padding: 15px;
     background: #2c2c2c;
     border-right: 1px solid #444;
@@ -38,6 +37,53 @@ body {
 
 #user-info h2 { 
     color: #fff;
+    font-size: 1.5rem;
+}
+
+#user-info p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Rename Button Styling */
+#renameBtn {
+    margin-top: 5px;
+    color: #ccc;
+    border-color: #555;
+}
+
+#renameBtn:hover {
+    background-color: #444;
+}
+
+/* Chat Tabs */
+.chat-tabs {
+    display: flex;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #444;
+}
+
+.chat-tab {
+    flex-grow: 1;
+    text-align: center;
+    padding: 5px 0;
+    cursor: pointer;
+    background-color: #383838;
+    font-size: 0.8rem;
+    transition: background-color 0.2s;
+}
+
+.chat-tab:hover {
+    background-color: #4a4a4a;
+}
+
+.chat-tab.active {
+    background-color: #007bff;
+    color: #fff;
+    font-weight: bold;
 }
 
 #user-list {
@@ -46,278 +92,247 @@ body {
     margin: 0;
 }
 
-#user-list li {
-    padding: 3px 0;
-    cursor: pointer;
-    color: #f0f0f0; 
-}
-
-.commands {
-    font-size: 0.85em;
-    color: #f0f0f0; 
-}
-
-/* Styling for the HR dividers in the user-info panel */
-.info-divider {
-    border: 0;
-    height: 1px;
-    background-color: #444; 
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-
-/* Chat Area */
-#chat-area {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden !important; 
-}
-
-/* --- CHAT TITLE FIX (Public Chat Title) --- */
-#chatTitle {
-    color: #f0f0f0; 
-    padding: 15px; 
-    font-weight: bold;
-    font-size: 1.2em;
-    border-bottom: 1px solid #444;
-    background-color: #383838;
-}
-
-/* Message Bubbles - CONTAINER AND BASE STYLES */
-#messages {
-    display: flex; 
-    flex-direction: column; 
-    padding: 10px;
-    margin: 0;
-    overflow-y: auto;
-    flex-grow: 1;
-}
-
-.msg {
-    max-width: 70%; 
-    margin-bottom: 10px;
-    padding: 8px 10px;
-    position: relative; 
-    word-wrap: break-word;
-    clear: both; 
-    list-style: none;
-    padding-top: 10px;
-}
-
-/* --- OWN MESSAGES (Right Side) --- */
-.msg.own {
-    align-self: flex-end; 
-    background-color: #4a4a4a; 
-    color: #fff;
-    border-radius: 12px;
-}
-
-.msg.own::before, .msg.own::after {
-    content: none;
-}
-
-/* --- OTHER MESSAGES (Left Side) --- */
-.msg.other {
-    align-self: flex-start; 
-    background-color: #2c2c2c; 
-    color: #f0f0f0;
-    border-radius: 12px;
-}
-
-.msg.other::before, .msg.other::after {
-    content: none;
-}
-
-/* System messages (No Tail) */
-.msg.system {
-    float: none; 
-    align-self: center; 
-    font-style: italic;
-    color: #888;
-    background: none; 
-    text-align: center;
-    width: 100%;
-    margin: 10px auto; 
-    padding: 0; 
-    border-radius: 0; 
-}
-
-.msg.system::before,
-.msg.system::after {
-    content: none; 
-}
-
-
-/* Styles for sender name indicator */
-.sender-name {
-    position: absolute;
-    top: 4px;
-    font-size: 0.8em;
-    font-weight: bold;
-}
-
-.msg.own .sender-name {
-    right: 12px;
-    color: #99cfff; 
-}
-
-.msg.other .sender-name {
-    left: 12px;
-    color: #c0c0c0; 
-}
-
-/* Styles for stacking messages from the same user */
-.msg.own + .msg.own {
-    margin-top: -8px; 
-    border-radius: 12px; 
-}
-
-.msg.own + .msg.own .sender-name {
-    display: none; 
-}
-
-.msg.other + .msg.other {
-    margin-top: -8px; 
-    border-radius: 12px; 
-}
-
-.msg.other + .msg.other .sender-name {
-    display: none; 
-}
-
-
-/* Input Box */
-#messageForm {
-    min-width: 0 !important; 
-    max-width: 100% !important; 
-    padding: 0;
-    background-color: #2c2c2c;
-    border-top: 1px solid #444;
-}
-
-.input-container {
-    /* --- REVERT TO FLEXBOX, but keep constraints --- */
-    display: flex; 
-    padding: 10px;
-    max-width: 100% !important;
-    align-items: flex-start; 
-}
-
-.custom-input {
-    /* --- CRITICAL FLEXBOX CONSTRAINTS --- */
-    flex-grow: 1 !important; 
-    flex-shrink: 1 !important; 
-    min-width: 0 !important; 
-    
-    padding: 10px;
-    border-radius: 4px;
-    background-color: #383838;
-    color: #f0f0f0;
-    border: 1px solid #555;
-    margin-right: 8px;
-    min-height: 40px;
-    max-height: 80px;
-    overflow-y: auto;
-    -webkit-user-modify: read-write-plaintext-only;
-    
-    /* Ultimate Breaking/Constraint Properties */
-    box-sizing: border-box !important; 
-    -webkit-box-sizing: border-box !important; 
-    word-break: break-all !important; 
-    overflow-wrap: break-word !important; 
-    overflow-x: hidden !important; 
-    white-space: normal !important; 
-    resize: none !important; 
-}
-
-.custom-input:empty::before {
-    content: attr(data-placeholder);
-    color: #888;
-}
-
-.input-container button {
-    /* Set button size, relies on flex positioning */
-    padding: 10px 15px;
-    border-radius: 4px;
-    border: none;
-    background-color: #585858;
-    color: white;
-    cursor: pointer;
-    height: 40px; 
-    align-self: flex-end; 
-    flex-shrink: 0; 
-}
-
-.input-container button:hover {
-    background-color: #4a4a4a;
-}
-
-/* --- WORD COUNT DISPLAY FIX (Positioning) --- */
-.char-count-display {
-    text-align: right;
-    font-size: 0.8em;
-    color: #aaa;
-    margin-top: 5px; 
-    padding-right: 15px; 
-    padding-bottom: 5px;
-}
-
-/* Modals & Bootstrap Overrides */
-/* --- FIX FOR DARK MODALS --- */
-.modal-content {
-    background-color: #2c2c2c !important;
-    color: #f0f0f0 !important;
-    border: 1px solid #444 !important;
-}
-
-.modal-header {
-    border-bottom: 1px solid #444 !important;
-}
-
-.form-control {
-    background-color: #383838 !important;
-    color: #f0f0f0 !important;
-    border: 1px solid #555 !important;
-}
-
-.form-control:focus {
-    background-color: #383838 !important;
-    color: #f0f0f0 !important;
-    border-color: #777 !important;
-    box-shadow: 0 0 0 0.25rem rgba(119, 119, 119, 0.25) !important;
-}
-
-.btn-primary {
-    background-color: #585858 !important;
-    border-color: #585858 !important;
-}
-
-.btn-primary:hover {
-    background-color: #4a4a4a !important;
-    border-color: #4a4a4a !important;
-}
-
-.btn-close {
-    filter: invert(1);
-}
-
-.user-select-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    max-height: 200px;
-    overflow-y: auto;
-}
-
 .user-select-list li {
-    padding: 8px;
-    border-bottom: 1px solid #444;
+    padding: 5px 0;
     cursor: pointer;
+    transition: background-color 0.1s;
+    font-size: 0.9rem;
 }
 
 .user-select-list li:hover {
-    background-color: #555;
+    background-color: #3a3a3a;
+}
+
+.admin-name-list {
+    color: gold;
+    font-weight: bold;
+}
+
+.info-divider {
+    border-top: 1px solid #444;
+    margin: 10px 0;
+}
+
+/* Chat Window */
+#chat-window {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background: #1e1e1e;
+    position: relative;
+}
+
+#chatTitle {
+    background: #2c2c2c;
+    padding: 10px 15px;
+    border-bottom: 1px solid #444;
+    margin: 0;
+    font-size: 1.2rem;
+    color: #fff;
+}
+
+#messages {
+    list-style: none;
+    padding: 15px;
+    margin: 0;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+#messageForm {
+    display: flex;
+    padding: 10px 15px;
+    border-top: 1px solid #444;
+    background: #2c2c2c;
+    align-items: flex-end; /* Align to bottom for multi-line input */
+}
+
+/* Custom Input Field (Contenteditable) */
+.custom-input {
+    flex-grow: 1;
+    background: #383838;
+    border: 1px solid #444;
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin-right: 10px;
+    min-height: 40px; 
+    max-height: 100px;
+    overflow-y: auto;
+    color: #fff;
+    cursor: text;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.4;
+    font-size: 0.9rem;
+}
+
+.custom-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* Custom Placeholder for Contenteditable */
+[contenteditable="true"]:empty:before {
+    content: attr(placeholder);
+    color: #888;
+    pointer-events: none;
+}
+
+#messageForm button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+#messageForm button:hover {
+    background-color: #0056b3;
+}
+
+/* Message Styles */
+.msg {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    max-width: 80%;
+    word-wrap: break-word;
+    line-height: 1.4;
+    font-size: 0.9rem;
+    position: relative;
+}
+
+.msg .sender-name {
+    display: block;
+    font-weight: bold;
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+    color: #007bff;
+}
+
+/* Admin Message (Gold Border) */
+.msg.admin-msg.other {
+    border: 1px solid gold;
+    background-color: #2e2e2e;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.msg.admin-msg.other .sender-name {
+    color: gold;
+}
+
+/* Messages I send */
+.msg.own {
+    background-color: #007bff;
+    color: white;
+    align-self: flex-end;
+    margin-left: auto;
+    border-bottom-right-radius: 2px;
+}
+
+.msg.own .sender-name {
+    color: #eee;
+}
+
+/* Messages Others send */
+.msg.other {
+    background-color: #383838;
+    color: #f0f0f0;
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+}
+
+/* System Messages */
+.msg.system {
+    text-align: center;
+    background: none;
+    border: none;
+    color: #aaa;
+    font-style: italic;
+    font-size: 0.8rem;
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 5px 0;
+}
+
+.msg .timestamp {
+    display: block;
+    font-size: 0.65rem;
+    color: #999;
+    text-align: right;
+    margin-top: 2px;
+}
+
+.msg.own .timestamp {
+    color: #ccc;
+}
+
+.msg.other .timestamp {
+    color: #999;
+}
+
+/* Private Messages */
+.sender-name.private-name {
+    color: #28a745 !important;
+}
+
+.msg.own .sender-name.private-name {
+    color: #fff !important;
+}
+
+/* Character Count */
+.char-count-container {
+    position: absolute;
+    bottom: 15px;
+    right: 160px; /* Positioned next to the input */
+    font-size: 0.75rem;
+    color: #ccc;
+    padding: 2px 5px;
+    background: transparent;
+    pointer-events: none; /* Allows clicks/focus on the input underneath */
+    z-index: 10;
+}
+
+/* MODAL STYLING */
+.modal-content {
+    background-color: #2c2c2c;
+    color: #fff;
+    border: 1px solid #444;
+}
+
+.modal-header {
+    border-bottom: 1px solid #444;
+}
+
+.modal-footer {
+    border-top: 1px solid #444;
+}
+
+.form-control {
+    background-color: #383838;
+    border: 1px solid #444;
+    color: #fff;
+}
+
+.form-control:focus {
+    background-color: #383838;
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+    color: #fff;
+}
+
+.admin-management-list {
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid #444;
+    padding: 5px;
+    border-radius: 4px;
 }
 
 /* CUSTOM SCROLLBAR STYLING */
@@ -325,7 +340,8 @@ body {
 #messages::-webkit-scrollbar,
 #user-info::-webkit-scrollbar,
 .custom-input::-webkit-scrollbar,
-.user-select-list::-webkit-scrollbar {
+.user-select-list::-webkit-scrollbar,
+.admin-management-list::-webkit-scrollbar {
     width: 8px;
     background-color: transparent; 
 }
@@ -334,7 +350,8 @@ body {
 #messages::-webkit-scrollbar-track,
 #user-info::-webkit-scrollbar-track,
 .custom-input::-webkit-scrollbar-track,
-.user-select-list::-webkit-scrollbar-track {
+.user-select-list::-webkit-scrollbar-track,
+.admin-management-list::-webkit-scrollbar-track {
     background: #1e1e1e;
     border-radius: 10px;
 }
@@ -343,7 +360,8 @@ body {
 #messages::-webkit-scrollbar-thumb,
 #user-info::-webkit-scrollbar-thumb,
 .custom-input::-webkit-scrollbar-thumb,
-.user-select-list::-webkit-scrollbar-thumb {
+.user-select-list::-webkit-scrollbar-thumb,
+.admin-management-list::-webkit-scrollbar-thumb {
     background-color: #555;
     border-radius: 10px;
 }
@@ -352,23 +370,7 @@ body {
 #messages::-webkit-scrollbar-thumb:hover,
 #user-info::-webkit-scrollbar-thumb:hover,
 .custom-input::-webkit-scrollbar-thumb:hover,
-.user-select-list::-webkit-scrollbar-thumb:hover {
+.user-select-list::-webkit-scrollbar-thumb:hover,
+.admin-management-list::-webkit-scrollbar-thumb:hover {
     background-color: #777; 
-}
-
-/* Hides the buttons at the ends of the scrollbar */
-#messages::-webkit-scrollbar-button,
-#user-info::-webkit-scrollbar-button,
-.custom-input::-webkit-scrollbar-button,
-.user-select-list::-webkit-scrollbar-button {
-    display: none;
-}
-
-/* Optional: Scrollbar for Firefox (less customizable) */
-#messages,
-#user-info,
-.custom-input,
-.user-select-list {
-    scrollbar-color: #555 #1e1e1e;
-    scrollbar-width: thin; 
 }
