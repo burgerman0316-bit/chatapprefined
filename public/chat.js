@@ -22,7 +22,7 @@ const charCountContainer = document.getElementById('charCountContainer');
 const userListEl = document.getElementById('user-list');
 const userCountEl = document.getElementById('user-count');
 const adminUserListEl = document.getElementById('admin-user-list'); 
-const bannedUserListEl = document.getElementById('banned-user-list'); // NEW REFERENCE
+const bannedUserListEl = document.getElementById('banned-user-list'); 
 
 const adminPanelBtn = document.getElementById('adminPanelBtn');
 const adminModalEl = document.getElementById('adminPanelModal'); 
@@ -271,7 +271,7 @@ nameForm.addEventListener('submit', e => {
     socket.emit('check_staff_status', name);
 });
 
-// 2. Handle Message Form Submission 
+// 2. Handle Message Form Submission (FIXED COMMAND LOGIC)
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
     const content = messageInputDiv.innerText.trim();
@@ -307,10 +307,29 @@ messageForm.addEventListener('submit', e => {
                  appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg [username] [message]', timestamp: new Date(), type: 'system' });
             }
         } 
-        else if (command === '/kick' || command === '/clear') {
-            // These commands are blocked in the chat to encourage using the Admin Panel
-            appendMessage({ username: 'System', content: `Please use the Admin Panel buttons for the ${command} command.`, timestamp: new Date(), type: 'system' });
+        
+        // --- ADMIN COMMAND HANDLING ---
+        else if (isAdmin && command === '/clear') {
+            // Admin: /clear command - clears current chat context
+            socket.emit('admin:clear_history', currentChatContext);
+            appendMessage({ username: 'System', content: `Attempting to clear history for the ${currentChatContext} chat...`, timestamp: new Date(), type: 'system' });
+        } 
+        else if (isAdmin && command === '/kick') {
+            // Admin: /kick [username]
+            const targetName = args;
+            if (targetName) {
+                socket.emit('admin:kick_user', { targetName: targetName });
+                appendMessage({ username: 'System', content: `Attempting to kick user: ${targetName}...`, timestamp: new Date(), type: 'system' });
+            } else {
+                appendMessage({ username: 'System', content: 'Invalid /kick command. Usage: /kick [username]', timestamp: new Date(), type: 'system' });
+            }
         }
+        else if ((command === '/clear' || command === '/kick') && !isAdmin) {
+             // Block non-admins from using admin commands
+            appendMessage({ username: 'System', content: `Command **${command}** requires administrator privileges.`, timestamp: new Date(), type: 'system' });
+        }
+        // --- END ADMIN COMMAND HANDLING ---
+        
         else {
              appendMessage({ username: 'System', content: `Unknown command: ${command}`, timestamp: new Date(), type: 'system' });
         }
@@ -534,10 +553,6 @@ socket.on('admin:history_cleared', data => {
         messagesDiv.innerHTML = '';
         appendMessage(data.clearMsg);
     }
-    // Also append to the other chat if it's a system message that should be seen everywhere
-    if (data.targetChatId === 'public') {
-        // Do nothing, the server already broadcast the system message to public and admin chat history.
-    }
 });
 
 // 11. System Alerts (non-fatal, like name change alerts)
@@ -555,7 +570,6 @@ socket.on('system_error', message => {
 socket.on('name_updated_ui', newName => {
     displayName = newName;
     displayNameEl.textContent = displayName + (isAdmin ? ' (MOD)' : '');
-    // Renames do not change context, history re-send happens naturally.
 });
 
 // 14. Trigger Login Modal
