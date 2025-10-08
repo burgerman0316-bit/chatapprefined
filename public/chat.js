@@ -1,8 +1,14 @@
-// chat.js - FINAL SCRIPT WITH MESSAGE BUBBLE FIX
+// chat.js - FINAL STABLE SCRIPT
 
 // Import the Bootstrap namespace to use its functions
+// NOTE: These must be initialized AFTER DOMContentLoaded, but Bootstrap handles this well.
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
 const renameModal = new bootstrap.Modal(document.getElementById('renameModal')); 
+const clearConfirmModal = new bootstrap.Modal(document.getElementById('clearConfirmModal'));
+const kickConfirmModal = new bootstrap.Modal(document.getElementById('kickConfirmModal'));
+const banModal = new bootstrap.Modal(document.getElementById('ipBanModal'));
+const bannedModal = new bootstrap.Modal(document.getElementById('bannedModal'));
+
 
 // Socket connection
 const socket = io();
@@ -32,19 +38,13 @@ const publicChatTab = document.getElementById('publicChatTab');
 const adminChatTab = document.getElementById('adminChatTab');
 
 // Modal Elements for Clear History
-const clearConfirmModalEl = document.getElementById('clearConfirmModal');
-const clearConfirmModal = new bootstrap.Modal(clearConfirmModalEl);
 const clearConfirmBtn = document.getElementById('clearConfirmBtn');
 const clearConfirmTargetName = document.getElementById('clearConfirmTargetName');
 
 // Modal Elements for Kick Confirmation (Manage User)
-const kickConfirmModalEl = document.getElementById('kickConfirmModal');
-const kickConfirmModal = new bootstrap.Modal(kickConfirmModalEl);
 const kickConfirmBody = document.getElementById('kickConfirmBody');
 
 // Modal Elements for IP Ban
-const banModalEl = document.getElementById('ipBanModal');
-const banModal = new bootstrap.Modal(banModalEl);
 const banConfirmBtn = document.getElementById('banConfirmBtn');
 const banTargetNameSpan = document.getElementById('banTargetName');
 const banDurationDaysInput = document.getElementById('banDurationDays');
@@ -55,7 +55,7 @@ const banReasonInput = document.getElementById('banReason');
 let displayName = '';
 let isAdmin = false;
 let userToKick = null; 
-let userIpToBan = null; // Stores the raw IP for the ban function
+let userIpToBan = null; 
 let currentChatContext = 'public'; 
 const MAX_CHARS = 256;
 const ADMIN_CHAT_ID = 'admin_chat';
@@ -76,7 +76,7 @@ function appendMessage(msg) {
         item.classList.add('system');
         item.textContent = msg.content;
     } 
-    // FIX: Corrected logic for identifying and formatting the user's own messages
+    // FIXED: Corrected logic for identifying and formatting the user's own messages
     else if (msg.username === displayName || (msg.username === 'You' && msg.isPrivate)) {
         item.classList.add('own');
         
@@ -111,8 +111,8 @@ function appendMessage(msg) {
 
 // Utility: Updates the online user list for ALL clients (Public list)
 function updatePublicUserList(data) {
-    const userList = data.userList; // Sorted list of display names
-    const publicUserMap = data.usersMap; // Map of displayName -> { isAdmin }
+    const userList = data.userList;
+    const publicUserMap = data.usersMap;
     
     // 1. Public Info Panel
     userCountEl.textContent = userList.length;
@@ -120,13 +120,10 @@ function updatePublicUserList(data) {
     
     userList.forEach(userDisplayName => {
         const li = document.createElement('li');
-        
-        // Find user status
         const userEntry = publicUserMap[userDisplayName] || {};
         
         li.textContent = userDisplayName;
         
-        // Display MOD tag in the public list
         if (userEntry.isAdmin) { 
              li.textContent += ' (MOD)'; 
              li.classList.add('admin-name-list'); 
@@ -143,16 +140,14 @@ function updatePublicUserList(data) {
 
 // Utility: Updates the admin management list (Admin only)
 function updateAdminManagementList(adminUsersMap) {
-    if (!isAdmin) return; // Should only run for admins
+    if (!isAdmin) return;
 
     adminUserListEl.innerHTML = ''; 
     
-    // Iterate over the full admin map (includes IP)
     Object.keys(adminUsersMap).forEach(key => {
          const user = adminUsersMap[key];
          const userDisplayName = user.displayName;
          
-         // Only display users in public chat or currently logged-in admins
          if (user.chatContext !== 'public' && !user.isAdmin) return;
          
          const adminLi = document.createElement('li');
@@ -172,11 +167,11 @@ function updateAdminManagementList(adminUsersMap) {
              userToKick = userDisplayName; 
              userIpToBan = user.ip; // Store RAW IP for server ban
              
-             // Display RAW IP
+             // Display CLEANED IP
              kickConfirmBody.innerHTML = `Manage user: <strong>${userDisplayName}</strong><br>IP: ${user.ip}<br>Admin Status: ${user.isAdmin ? 'Yes' : 'No'}`;
              
-             const adminModal = bootstrap.Modal.getInstance(adminModalEl);
-             if (adminModal) adminModal.hide(); 
+             const adminModalInstance = bootstrap.Modal.getInstance(adminModalEl);
+             if (adminModalInstance) adminModalInstance.hide(); 
              kickConfirmModal.show();
          });
          
@@ -223,11 +218,10 @@ messageForm.addEventListener('submit', e => {
     
     messageInputDiv.innerText = ''; 
     charCountSpan.textContent = `0/${MAX_CHARS}`; 
-    charCountContainer.style.color = '#ccc'; // Reset color
+    charCountContainer.style.color = '#ccc';
 
     if (!content || content.length > MAX_CHARS) return;
 
-    // Command Check
     if (content.startsWith('/')) {
         const parts = content.split(' ');
         const command = parts[0].toLowerCase();
@@ -269,12 +263,11 @@ messageForm.addEventListener('submit', e => {
              appendMessage({ username: 'System', content: `Unknown command: ${command}`, timestamp: new Date(), type: 'system' });
         }
     } else {
-        // Regular public/admin chat message
         socket.emit('chat message', { content }); 
     }
 });
 
-// 3. Input Character Counter (Visibility improved via CSS)
+// 3. Input Character Counter
 messageInputDiv.addEventListener('input', () => {
     const currentLength = messageInputDiv.innerText.length;
     
@@ -285,7 +278,6 @@ messageInputDiv.addEventListener('input', () => {
         charCountSpan.textContent = `${currentLength}/${MAX_CHARS}`;
     }
     
-    // Style change
     if (currentLength >= MAX_CHARS * 0.9) {
         charCountContainer.style.color = '#ff4d4d'; 
     } else {
@@ -305,8 +297,8 @@ messageInputDiv.addEventListener('keydown', e => {
 document.getElementById('clearChatBtn').addEventListener('click', () => {
     clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';
     clearConfirmModal.show();
-    const adminModal = bootstrap.Modal.getInstance(adminModalEl);
-    if (adminModal) adminModal.hide();
+    const adminModalInstance = bootstrap.Modal.getInstance(adminModalEl);
+    if (adminModalInstance) adminModalInstance.hide();
 });
 
 // 5. Clear History Confirmation Click 
@@ -357,8 +349,8 @@ banConfirmBtn.addEventListener('click', () => {
     const minutes = parseInt(banDurationMinutesInput.value);
     const reason = banReasonInput.value;
     
-    if (isNaN(days) || isNaN(hours) || isNaN(minutes) || (days === 0 && hours === 0 && minutes === 0) || days > 999 || hours > 99 || minutes > 99) {
-        alert('Invalid duration. Max: 999 days, 99 hours, 99 minutes. Duration must be > 0.');
+    if (isNaN(days) || isNaN(hours) || isNaN(minutes) || (days === 0 && hours === 0 && minutes === 0)) {
+        alert('Invalid duration. Duration must be greater than 0.');
         return;
     }
     
@@ -413,6 +405,7 @@ function handleSuccessfulLogin(data) {
     currentChatContext = data.currentContext || 'public';
     
     myModal.hide(); 
+    // THIS is the crucial line that makes the chat appear
     container.style.display = 'flex'; 
 
     adminPanelBtn.style.display = isAdmin ? 'block' : 'none';
@@ -486,7 +479,7 @@ socket.on('banned_modal', data => {
     const banDurationMs = data.banDurationMs;
     
     const bannedModalBody = document.getElementById('bannedModalBody');
-    const bannedModal = new bootstrap.Modal(document.getElementById('bannedModal'));
+    // Banned modal instance is already defined at the top
     
     bannedModalBody.innerHTML = `You are BANNED from the chat.<br>Reason: <strong>${banReason}</strong><br>Time remaining: <span id="banTimer"></span>`;
     bannedModal.show();
