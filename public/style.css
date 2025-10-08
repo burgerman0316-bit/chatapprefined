@@ -196,7 +196,7 @@ body {
     white-space: pre-wrap;
     /* --- CRITICAL FIX FOR HORIZONTAL OVERFLOW --- */
     overflow-x: hidden; 
-    word-break: break-word;
+    word-break: break-all; /* Changed to break-all as a last resort */
     min-width: 0; 
 }
 
