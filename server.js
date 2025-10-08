@@ -103,7 +103,13 @@ function broadcastUserCount() {
 
 // --- SOCKET LOGIC ---
 io.on('connection', socket => {
-  const userIp = socket.handshake.address;
+  let userIp = socket.handshake.address;
+
+  // FIX: Clean up IPv6-mapped IPv4 address (e.g., '::ffff:192.168.1.1' -> '192.168.1.1')
+  if (userIp.startsWith('::ffff:')) {
+      userIp = userIp.substring(7);
+  }
+
   console.log('Client connected:', socket.id, 'IP:', userIp);
 
   // 0. IP Ban Check
