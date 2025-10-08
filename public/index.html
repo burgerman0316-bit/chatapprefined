@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,62 +13,62 @@
         <div id="user-info">
             <h2>Chat Info</h2>
             
-            <hr class="info-divider"> <p>Welcome, <span id="display-name">Guest</span>! <button id="renameBtn" class="btn btn-sm btn-outline-light ms-2" style="display: none;">Rename</button></p>
+            <hr class="info-divider"> 
+            
+            <p>Welcome, <span id="display-name">Guest</span>!</p>
+            <button id="renameBtn" class="btn btn-sm btn-outline-light mb-2" style="display: none;">Rename</button>
+            
             <div class="chat-tabs">
-                <div id="publicChatTab" class="chat-tab active">Public</div>
-                <div id="adminChatTab" class="chat-tab" style="display: none;">Admin</div>
+                <div id="publicChatTab" class="chat-tab active">Public Chat</div>
+                <div id="adminChatTab" class="chat-tab" style="display: none;">Admin Chat</div>
             </div>
+            
+            <button id="adminPanelBtn" class="btn btn-warning w-100 mt-2 mb-3" style="display: none;" data-bs-toggle="modal" data-bs-target="#adminPanelModal">Admin Panel</button>
             <p>Users Online: <span id="user-count">0</span></p>
             
-            <hr class="info-divider"> <div id="user-list-container">
+            <hr class="info-divider"> 
+            <div id="user-list-container">
                 <h4>Online Users:</h4>
-                <ul id="user-list"></ul>
+                <ul id="user-list" class="user-select-list"></ul>
             </div>
             
-            <hr class="info-divider"> <p class="commands">**Commands:**</p>
-            <p class="commands">/msg [user] [message]</p>
-            <p class="commands">/clear (Mod only)</p>
-            
-            <button id="adminPanelBtn" class="btn btn-secondary mt-3" style="display: none;" data-bs-toggle="modal" data-bs-target="#adminPanelModal">Admin Panel</button>
-            <button id="adminLogoutBtn" class="btn btn-sm btn-outline-danger mt-3" style="display: none;">Go Anonymous</button>
+            <hr class="info-divider"> 
+            <p class="commands">Commands: ** /msg [user] [message] **</p>
         </div>
-
-        <div id="chat-area">
+        
+        <div id="chat-window">
             <h3 id="chatTitle">Public Chat</h3>
             <ul id="messages"></ul>
-            <form id="messageForm" action="">
-                <div class="input-container">
-                    <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message or command..."></div>
-                    <button type="submit">Send</button>
-                </div>
-                <div id="charCountContainer" class="char-count-display">
+            <form id="messageForm">
+                <div id="messageInput" class="custom-input" contenteditable="true" placeholder="Type a message or command..."></div>
+                <div id="charCountContainer" class="char-count-container">
                     <span id="char-count">0/500</span>
                 </div>
+                <button type="submit" id="msg-btn">Send</button>
             </form>
         </div>
     </div>
 
     <div class="modal fade" id="nameModal" tabindex="-1" aria-labelledby="nameModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title" id="nameModalLabel">Join The Chat</h5>
+                    <h5 class="modal-title" id="nameModalLabel">Welcome to the Chat</h5>
                 </div>
                 <div class="modal-body">
                     <form id="name-form">
-                        <div class="mb-3">
-                            <label for="name-input" class="form-label">Username (or Admin Key):</label>
-                            <input type="text" class="form-control" id="name-input" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Join Chat</button>
+                        <input type="text" id="name-input" class="form-control" placeholder="Enter your display name or secure admin key" required maxlength="20">
                     </form>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="submit" form="name-form" class="btn btn-primary">Join Chat</button>
                 </div>
             </div>
         </div>
     </div>
     
     <div class="modal fade" id="renameModal" tabindex="-1" aria-labelledby="renameModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="renameModalLabel">Change Display Name</h5>
@@ -77,88 +76,92 @@
                 </div>
                 <div class="modal-body">
                     <form id="rename-form">
-                        <div class="mb-3">
-                            <label for="new-name-input" class="form-label">New Username:</label>
-                            <input type="text" class="form-control" id="new-name-input" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Update Name</button>
+                        <input type="text" id="new-name-input" class="form-control" placeholder="Enter new display name or admin key" required maxlength="20">
                     </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" form="rename-form" class="btn btn-primary">Update Name</button>
                 </div>
             </div>
         </div>
     </div>
-
-    <div class="modal fade" id="adminPanelModal" tabindex="-1" aria-labelledby="adminPanelLabel" aria-hidden="true">
-        <div class="modal-dialog">
+    
+    <div class="modal fade" id="adminPanelModal" tabindex="-1" aria-labelledby="adminPanelModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="adminPanelLabel">Admin Control Panel</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title" id="adminPanelModalLabel">Moderator Management Panel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <button id="clearChatBtn" class="btn btn-danger mb-4 w-100">Clear Current Chat History</button>
                     
-                    <h6 class="text-white">Click a user to Manage/Kick/Ban:</h6>
-                    <ul id="admin-user-list" class="user-select-list">
-                    </ul>
+                    <h6 class="text-warning">Moderator Tools</h6>
+                    <button id="clearChatBtn" class="btn btn-danger me-2">Clear Current Chat History</button>
+                    <button id="adminLogoutBtn" class="btn btn-secondary">Go Anonymous (Log Out)</button>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-6">
+                            <h6 class="text-warning">Online Users for Management (Click to Manage)</h6>
+                            <ul id="admin-user-list" class="user-select-list admin-management-list">
+                                </ul>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-warning">Active IP Bans</h6>
+                            <ul id="banned-user-list" class="user-select-list admin-management-list">
+                                </ul>
+                        </div>
+                    </div>
+                    
                 </div>
             </div>
         </div>
     </div>
     
     <div class="modal fade" id="kickConfirmModal" tabindex="-1" aria-labelledby="kickConfirmModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="kickConfirmModalLabel">Confirm User Management</h5>
+                    <h5 class="modal-title" id="kickConfirmModalLabel">Manage User</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" id="kickConfirmBody">
-                    Manage user: <strong>[User Name]</strong><br>IP: [IP Address]<br>Admin Status: No
-                </div>
+                    </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-danger" id="kickDirectlyBtn">Kick Directly</button> 
-                    <button type="button" class="btn btn-warning" id="kickToBanBtn">Kick & Ban (Duration)</button>
+                    <button type="button" class="btn btn-outline-danger" id="kickDirectlyBtn">Kick (No Ban)</button>
+                    <button type="button" class="btn btn-danger" id="kickToBanBtn">Kick and Ban IP</button>
                 </div>
             </div>
         </div>
     </div>
-
+    
     <div class="modal fade" id="ipBanModal" tabindex="-1" aria-labelledby="ipBanModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="ipBanModalLabel">IP Ban User: <span id="banTargetName"></span></h5>
+                    <h5 class="modal-title text-danger" id="ipBanModalLabel">IP Ban User: <span id="banTargetName"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="ip-ban-form">
-                        <div class="mb-3">
-                            <label class="form-label">Ban Duration</label>
-                            <div class="row g-2">
-                                <div class="col">
-                                    <label for="banDurationDays" class="form-label visually-hidden">Days</label>
-                                    <input type="number" class="form-control text-center" id="banDurationDays" value="0" min="0" max="999">
-                                    <small class="text-muted d-block text-center">Days</small>
-                                </div>
-                                <div class="col">
-                                    <label for="banDurationHours" class="form-label visually-hidden">Hours</label>
-                                    <input type="number" class="form-control text-center" id="banDurationHours" value="0" min="0" max="99">
-                                    <small class="text-muted d-block text-center">Hours</small>
-                                </div>
-                                <div class="col">
-                                    <label for="banDurationMinutes" class="form-label visually-hidden">Minutes</label>
-                                    <input type="number" class="form-control text-center" id="banDurationMinutes" value="30" min="0" max="99">
-                                    <small class="text-muted d-block text-center">Minutes</small>
-                                </div>
+                    <div class="mb-3">
+                        <label class="form-label">Duration:</label>
+                        <div class="row">
+                            <div class="col">
+                                <input type="number" id="banDurationDays" class="form-control" placeholder="Days" min="0" max="999" value="0">
+                            </div>
+                            <div class="col">
+                                <input type="number" id="banDurationHours" class="form-control" placeholder="Hours" min="0" max="99" value="0">
+                            </div>
+                            <div class="col">
+                                <input type="number" id="banDurationMinutes" class="form-control" placeholder="Minutes" min="0" max="99" value="30">
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="banReason" class="form-label">Reason for Ban</label>
-                            <input type="text" class="form-control" id="banReason" value="Spam/Hate Speech">
-                        </div>
-                    </form>
+                    </div>
+                    <div class="mb-3">
+                        <label for="banReason" class="form-label">Reason:</label>
+                        <input type="text" id="banReason" class="form-control" placeholder="e.g., Spamming, Hate Speech" value="Spam/Hate Speech" maxlength="100">
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -167,16 +170,17 @@
             </div>
         </div>
     </div>
-    
+
+
     <div class="modal fade" id="clearConfirmModal" tabindex="-1" aria-labelledby="clearConfirmModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="clearConfirmModalLabel">Admin Confirmation</h5>
+                    <h5 class="modal-title" id="clearConfirmModalLabel">Confirm History Clear</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    Are you absolutely sure you want to clear the chat history for <strong id="clearConfirmTargetName"></strong>?
+                    Are you absolutely sure you want to clear the chat history for <strong id="clearConfirmTargetName"></strong>? This action is irreversible.
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="clearCancelBtn">Cancel</button>
@@ -201,7 +205,7 @@
 
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="chat.js"></script>
 </body>
 </html>
