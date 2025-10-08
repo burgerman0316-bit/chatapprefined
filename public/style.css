@@ -194,9 +194,10 @@ body {
     overflow-y: auto;
     line-height: 1.5;
     white-space: pre-wrap;
-    /* --- FIX FOR HORIZONTAL OVERFLOW --- */
-    overflow-x: hidden; /* Force horizontal containment */
+    /* --- CRITICAL FIX FOR HORIZONTAL OVERFLOW --- */
+    overflow-x: hidden; 
     word-break: break-word;
+    min-width: 0; 
 }
 
 /* Placeholder using data-placeholder attribute for contenteditable */
