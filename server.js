@@ -27,7 +27,7 @@ app.get('/', (req, res) => {
 // --- Middleware to Check Bans (Crucial for short bans and device bans) ---
 io.use((socket, next) => {
     const attemptingName = socket.handshake.query.name;
-    const deviceFingerprint = socket.handshake.query.fingerprint; // NEW: Get the device ID
+    const deviceFingerprint = socket.handshake.query.fingerprint;
 
     // --- 1. Check for Name Ban ---
     if (attemptingName && bannedUsers[attemptingName]) {
@@ -36,7 +36,6 @@ io.use((socket, next) => {
         if (Date.now() < banExpiry) {
             const remainingTimeSec = Math.ceil((banExpiry - Date.now()) / 1000);
             console.log(`[SERVER] Blocked banned user ${attemptingName}. ${remainingTimeSec}s remaining.`);
-            // Reject the connection
             return next(new Error(`Your username is banned for ${remainingTimeSec} more seconds.`));
         } else {
             // Ban expired, clear the entry
@@ -53,7 +52,6 @@ io.use((socket, next) => {
         if (Date.now() < banExpiry) {
             const remainingTimeSec = Math.ceil((banExpiry - Date.now()) / 1000);
             console.log(`[SERVER] Blocked banned device ${deviceFingerprint}. ${remainingTimeSec}s remaining.`);
-            // Reject the connection
             return next(new Error(`Your device is banned for ${remainingTimeSec} more seconds.`));
         } else {
             // Ban expired, remove it
@@ -62,9 +60,9 @@ io.use((socket, next) => {
         }
     }
 
-    // Attach the fingerprint to the socket for easy access later
+    // Attach the fingerprint and name to the socket for easy access later and initial name check
     socket.deviceFingerprint = deviceFingerprint;
-
+    
     next();
 });
 
@@ -72,7 +70,7 @@ io.use((socket, next) => {
 
 function updateOnlineUsers() {
     const users = Object.values(userList).map(u => u.username).filter(name => name);
-    // Remove duplicates from the list (important if a user tries to connect with the same name multiple times)
+    // Use Set to ensure unique usernames are counted
     const uniqueUsers = Array.from(new Set(users)); 
 
     io.emit('user count', {
@@ -82,11 +80,10 @@ function updateOnlineUsers() {
 }
 
 function staffLogin(socket, name) {
-    // Check if the name is already in use by a non-staff member
-    const existingUser = Object.values(userList).find(u => u.username === name && !u.isStaff);
+    // Check if the name is already in use
+    const existingUser = Object.values(userList).find(u => u.username === name);
     if (existingUser) {
-        // Prevent staff from taking a normal user's name
-        return socket.emit('name_in_use_modal', 'That name is already in use by a normal user.');
+        return socket.emit('name_in_use_modal', 'That name is already in use.');
     }
     
     // Check for staff code
@@ -94,7 +91,6 @@ function staffLogin(socket, name) {
 
     if (isStaff) {
         socket.isStaff = true;
-        // The display name for staff is often capitalized for clarity
         const displayName = name.charAt(0).toUpperCase() + name.slice(1);
         userList[socket.id] = { username: displayName, isStaff: true };
         
@@ -102,9 +98,10 @@ function staffLogin(socket, name) {
         socket.broadcast.emit('system_alert', `${displayName} (STAFF) has joined the chat.`);
         console.log(`Staff ${displayName} connected.`);
     } else {
-        // If it was a staff check but not a staff code, emit reserved message
-        socket.emit('staff_name_reserved_modal', 'That name is reserved for staff login.');
+        // This case should not be reached if client logic works, but kept for safety
+        socket.emit('staff_name_reserved_modal', 'Staff code invalid.');
     }
+    updateOnlineUsers();
 }
 
 function handleNameAcceptance(socket, name) {
@@ -146,114 +143,127 @@ io.on('connection', (socket) => {
     // 2. Chat Messages
     socket.on('chat message', (msg) => {
         const user = userList[socket.id];
-        if (!user) return;
+        if (!user) return; // User not registered, ignore message
 
         // --- COMMANDS ---
-        if (msg.content.startsWith('/kick ') && user.isStaff) {
-            const targetName = msg.content.split(' ')[1];
-            const targetSocketId = Object.keys(userList).find(id => userList[id].username === targetName);
+        if (user.isStaff) {
+            const content = msg.content;
 
-            if (targetSocketId) {
-                const targetSocket = io.sockets.sockets.get(targetSocketId);
-                targetSocket?.disconnect(true);
-                const kickMessage = `${targetName} was kicked by ${user.username}.`;
-                io.emit('system_alert', kickMessage);
-                console.log(kickMessage);
-            } else {
-                socket.emit('system_error', `User ${targetName} not found.`);
-            }
-            return;
-        } 
-        
-        // NEW: /ban [username] [seconds] command
-        if (msg.content.startsWith('/ban ') && user.isStaff) {
-            const parts = msg.content.split(' ');
-            const targetName = parts[1];
-            const durationSeconds = parseInt(parts[2], 10);
-            
-            if (targetName && durationSeconds && !isNaN(durationSeconds)) {
+            // Helper function to find the target socket by username
+            const findTargetSocket = (targetName) => {
                 const targetSocketId = Object.keys(userList).find(id => userList[id].username === targetName);
-                const targetSocket = io.sockets.sockets.get(targetSocketId);
+                return targetSocketId ? io.sockets.sockets.get(targetSocketId) : null;
+            };
+
+            // /kick [username] command
+            if (content.startsWith('/kick ')) {
+                const targetName = content.split(' ')[1];
+                const targetSocket = findTargetSocket(targetName);
 
                 if (targetSocket) {
-                    const banDurationMs = durationSeconds * 1000;
-                    const banExpiry = Date.now() + banDurationMs;
-
-                    bannedUsers[targetName] = { 
-                        expiry: banExpiry, 
-                        reason: 'Username Ban', 
-                        admin: user.username 
-                    };
-
-                    const banMessage = `${targetName} has been banned for ${durationSeconds} seconds by ${user.username}.`;
-                    io.emit('system_alert', banMessage);
-                    targetSocket.emit('system_error', `You have been banned for ${durationSeconds} seconds.`);
+                    const kickMessage = `${targetName} was kicked by ${user.username}.`;
+                    io.emit('system_alert', kickMessage);
                     targetSocket.disconnect(true);
-                    
-                    console.log(`User ${targetName} banned until ${new Date(banExpiry)}`);
-
-                    setTimeout(() => {
-                        if (bannedUsers[targetName]) {
-                            delete bannedUsers[targetName];
-                            io.emit('system_alert', `${targetName}'s username ban has expired. They may now reconnect.`);
-                            console.log(`User ${targetName} unbanned.`);
-                        }
-                    }, banDurationMs);
-
+                    console.log(kickMessage);
                 } else {
                     socket.emit('system_error', `User ${targetName} not found or not currently online.`);
                 }
-            } else {
-                socket.emit('system_error', 'Invalid /ban command. Usage: /ban [username] [seconds]');
-            }
-            return; 
-        }
-
-        // NEW: /deviceban [username] [seconds] command
-        if (msg.content.startsWith('/deviceban ') && user.isStaff) {
-            const parts = msg.content.split(' ');
-            const targetName = parts[1];
-            const durationSeconds = parseInt(parts[2], 10);
+                return;
+            } 
             
-            if (targetName && durationSeconds && !isNaN(durationSeconds)) {
-                const targetSocketId = Object.keys(userList).find(id => userList[id].username === targetName);
-                const targetSocket = io.sockets.sockets.get(targetSocketId);
+            // /ban [username] [seconds] command
+            if (content.startsWith('/ban ')) {
+                const parts = content.split(' ');
+                const targetName = parts[1];
+                const durationSeconds = parseInt(parts[2], 10);
+                
+                if (targetName && durationSeconds && !isNaN(durationSeconds)) {
+                    const targetSocket = findTargetSocket(targetName);
 
-                if (targetSocket && targetSocket.deviceFingerprint) {
-                    const fingerprint = targetSocket.deviceFingerprint;
-                    const banDurationMs = durationSeconds * 1000;
-                    const banExpiry = Date.now() + banDurationMs;
+                    if (targetSocket) {
+                        const banDurationMs = durationSeconds * 1000;
+                        const banExpiry = Date.now() + banDurationMs;
 
-                    bannedFingerprints[fingerprint] = { 
-                        expiry: banExpiry, 
-                        reason: 'Device Ban', 
-                        admin: user.username 
-                    };
+                        bannedUsers[targetName] = { 
+                            expiry: banExpiry, 
+                            reason: 'Username Ban', 
+                            admin: user.username 
+                        };
 
-                    const banMessage = `${targetName}'s device has been banned for ${durationSeconds} seconds by ${user.username}.`;
-                    io.emit('system_alert', banMessage);
-                    targetSocket.emit('system_error', `Your device has been banned for ${durationSeconds} seconds.`);
-                    targetSocket.disconnect(true);
-                    
-                    console.log(`Device ${fingerprint} banned until ${new Date(banExpiry)}`);
+                        const banMessage = `${targetName} has been banned for ${durationSeconds} seconds by ${user.username}.`;
+                        io.emit('system_alert', banMessage);
+                        targetSocket.emit('system_error', `You have been banned for ${durationSeconds} seconds.`);
+                        targetSocket.disconnect(true);
+                        
+                        console.log(`User ${targetName} banned until ${new Date(banExpiry)}`);
 
-                    setTimeout(() => {
-                        if (bannedFingerprints[fingerprint]) {
-                             delete bannedFingerprints[fingerprint];
-                             io.emit('system_alert', `A device ban has expired. Affected users may now reconnect.`);
-                        }
-                    }, banDurationMs);
+                        setTimeout(() => {
+                            if (bannedUsers[targetName]) {
+                                delete bannedUsers[targetName];
+                                io.emit('system_alert', `${targetName}'s username ban has expired. They may now reconnect.`);
+                                console.log(`User ${targetName} unbanned.`);
+                            }
+                        }, banDurationMs);
 
+                    } else {
+                        socket.emit('system_error', `User ${targetName} not found or not currently online.`);
+                    }
                 } else {
-                    socket.emit('system_error', `User ${targetName} not found or their device ID is missing.`);
+                    socket.emit('system_error', 'Invalid /ban command. Usage: /ban [username] [seconds]');
                 }
-            } else {
-                socket.emit('system_error', 'Invalid /deviceban command. Usage: /deviceban [username] [seconds]');
+                return; 
             }
-            return; 
-        }
 
-        // ... Existing chat message logic ...
+            // /deviceban [username] [seconds] command
+            if (content.startsWith('/deviceban ')) {
+                const parts = content.split(' ');
+                const targetName = parts[1];
+                const durationSeconds = parseInt(parts[2], 10);
+                
+                if (targetName && durationSeconds && !isNaN(durationSeconds)) {
+                    const targetSocket = findTargetSocket(targetName);
+
+                    if (targetSocket && targetSocket.deviceFingerprint) {
+                        const fingerprint = targetSocket.deviceFingerprint;
+                        const banDurationMs = durationSeconds * 1000;
+                        const banExpiry = Date.now() + banDurationMs;
+
+                        bannedFingerprints[fingerprint] = { 
+                            expiry: banExpiry, 
+                            reason: 'Device Ban', 
+                            admin: user.username 
+                        };
+
+                        const banMessage = `${targetName}'s device has been banned for ${durationSeconds} seconds by ${user.username}.`;
+                        io.emit('system_alert', banMessage);
+                        targetSocket.emit('system_error', `Your device has been banned for ${durationSeconds} seconds.`);
+                        targetSocket.disconnect(true);
+                        
+                        console.log(`Device ${fingerprint} banned until ${new Date(banExpiry)}`);
+
+                        setTimeout(() => {
+                            if (bannedFingerprints[fingerprint]) {
+                                 delete bannedFingerprints[fingerprint];
+                                 io.emit('system_alert', `A device ban has expired. Affected users may now reconnect.`);
+                            }
+                        }, banDurationMs);
+
+                    } else {
+                        socket.emit('system_error', `User ${targetName} not found or their device ID is missing.`);
+                    }
+                } else {
+                    socket.emit('system_error', 'Invalid /deviceban command. Usage: /deviceban [username] [seconds]');
+                }
+                return; 
+            }
+
+            // Admin command was used, and none of the above matched, ignore the message.
+            if (content.startsWith('/')) {
+                return;
+            }
+        }
+        
+        // --- REGULAR MESSAGE LOGIC ---
         
         const timestamp = new Date().getTime();
         const fullMsg = {
@@ -274,7 +284,8 @@ io.on('connection', (socket) => {
         const sender = userList[socket.id];
         if (!sender) return;
 
-        const recipientSocket = Object.keys(userList).find(id => userList[id].username === msg.recipient);
+        // Find the socket ID of the recipient
+        const recipientSocketId = Object.keys(userList).find(id => userList[id].username === msg.recipient);
 
         const timestamp = new Date().getTime();
         const fullMsg = {
@@ -286,8 +297,8 @@ io.on('connection', (socket) => {
         };
 
         // Send to recipient
-        if (recipientSocket) {
-            io.to(recipientSocket).emit('private message', fullMsg);
+        if (recipientSocketId) {
+            io.to(recipientSocketId).emit('private message', fullMsg);
         } else {
             socket.emit('system_error', `User ${msg.recipient} not found or not online.`);
         }
@@ -314,10 +325,7 @@ io.on('connection', (socket) => {
         console.log(`Chat history cleared by ${data.username}.`);
     });
 
-    // 5. Admin Kick User (now also handled by /kick command in chat message)
-    // Removed old separate 'admin:kick_user' event logic to simplify to /kick command.
-
-    // 6. Disconnect
+    // 5. Disconnect
     socket.on('disconnect', () => {
         const user = userList[socket.id];
         if (user) {
