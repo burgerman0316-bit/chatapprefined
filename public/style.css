@@ -127,7 +127,7 @@ body {
     flex-grow: 1;
     overflow-y: auto;
     scroll-behavior: smooth;
-    background: #1e1e1e;
+    background: #fff;
 }
 
 .msg {
@@ -393,3 +393,4 @@ body {
 .user-select-list::-webkit-scrollbar-thumb:hover {
     background-color: #777; 
 }
+
