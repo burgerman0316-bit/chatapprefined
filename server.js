@@ -1,4 +1,3 @@
-
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -29,9 +28,13 @@ const STAFF_LIST = [
 const chatHistory = [];
 const adminChatHistory = []; 
 
+// ipBanList now stores the user's last known displayName for the unban menu
+// ipAddress -> { banUntil: Date, reason: string, lastDisplayName: string }
+const ipBanList = new Map(); 
+
 const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext }
 const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
-const ipBanList = new Map(); // ipAddress -> { banUntil: Date, reason: string }
+
 
 // --- STATIC FILE SERVING ---
 app.use(express.static(path.join(__dirname, 'public')));
@@ -46,6 +49,7 @@ function cleanUpUser(socketId) {
 
     const lower = user.displayName.toLowerCase();
     
+    // Check if the current socket holds the unique name lock
     if (usernamesMap.has(lower) && usernamesMap.get(lower) === socketId) {
         usernamesMap.delete(lower);
     }
@@ -87,24 +91,26 @@ function pushHistory(msg, target = 'public') {
 function broadcastUserCount() {
   const userMap = {};
   users.forEach(user => {
+    // Only users in public chat or admins (regardless of their chatContext) are public
     if (user.chatContext === 'public' || user.isAdmin) {
-        // FIX: Include isAdmin status for all clients to see who is a moderator
         userMap[user.displayName] = { 
             isAdmin: user.isAdmin
-            // IP address removed from public broadcast for security
         };
     }
   });
 
   io.emit('user count', { userList: Object.keys(userMap).sort(), usersMap: userMap });
   
-  // This event remains for admin-only tools (it includes IP and secureName)
+  // Admin map for user management (includes IP and all online users)
   io.to(STAFF_ROOM).emit('admin_user_map', Object.fromEntries(users));
+  // Send the current ban list to admins
+  io.to(STAFF_ROOM).emit('admin:ban_list', Array.from(ipBanList));
 }
 
 // --- SOCKET LOGIC ---
 io.on('connection', socket => {
-  const userIp = socket.handshake.address;
+  // Use a simple identifier for IP logging
+  const userIp = socket.handshake.address; 
   console.log('Client connected:', socket.id, 'IP:', userIp);
 
   // 0. IP Ban Check
@@ -228,6 +234,15 @@ io.on('connection', socket => {
         socket.emit('system_error', 'You must set a name first.');
         return;
     }
+    
+    // Private messages only allowed in public context
+    if (msg.isPrivate && user.chatContext !== 'public') {
+        socket.emit('system_error', 'Private messages only allowed in public chat.');
+        return;
+    }
+    
+    // Command messages are handled on the client, only raw text comes here
+
     const content = (msg.content || '').trim();
     if (!content || content.length > CONTENT_MAX_CHARS) return;
     if (isContentBanned(content)) {
@@ -240,15 +255,14 @@ io.on('connection', socket => {
       content: content,
       timestamp: new Date(),
       isAdmin: user.isAdmin,
-      type: 'public'
+      type: user.chatContext // Use chatContext to determine type for history
     };
     
     const targetHistory = user.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public';
-    const targetRoom = user.chatContext === ADMIN_CHAT_ID ? STAFF_ROOM : 'public'; 
-
+    
     pushHistory(messageData, targetHistory);
     
-    if (targetRoom === STAFF_ROOM) {
+    if (user.chatContext === ADMIN_CHAT_ID) {
         io.to(STAFF_ROOM).emit('admin chat message', messageData);
     } else {
         io.emit('chat message', messageData);
@@ -269,6 +283,57 @@ io.on('connection', socket => {
     
     if (trimmedNewName === user.displayName || !trimmedNewName) return; 
     
+    // Check for admin key re-entry
+    const staffReentryAttempt = STAFF_LIST.find(s => s.loginName === trimmedNewName);
+    
+    if (staffReentryAttempt) {
+        const staffName = staffReentryAttempt.displayName;
+        const staffLower = staffName.toLowerCase();
+
+        if (usernamesMap.has(staffLower) && usernamesMap.get(staffLower) !== socket.id) {
+            socket.emit('system_error', `The staff display name '${staffName}' is already in use.`);
+            return;
+        }
+
+        // Promote to admin
+        const oldName = user.displayName;
+        if(usernamesMap.has(oldName.toLowerCase())) {
+            usernamesMap.delete(oldName.toLowerCase());
+        }
+        
+        user.isAdmin = true;
+        user.displayName = staffName;
+        user.secureName = staffReentryAttempt.loginName;
+        users.set(socket.id, user); 
+        usernamesMap.set(staffLower, socket.id);
+        socket.join(STAFF_ROOM);
+        
+        socket.emit('staff_status_update', { isAdmin: true, displayName: staffName, secureName: staffReentryAttempt.loginName, currentContext: user.chatContext });
+        socket.emit('system_alert', `Welcome back, ${staffName}. You have re-gained moderator status.`);
+        
+        const adminChangeMsg = {
+            username: 'System',
+            content: `**[Admin]** ${oldName} has re-gained moderator status as ${staffName}.`,
+            timestamp: new Date(),
+            isAdmin: true,
+            type: 'system'
+        };
+        io.to(STAFF_ROOM).emit('admin chat message', adminChangeMsg);
+        
+        const publicMsg = {
+            username: 'System',
+            content: `A moderator has entered the chat.`,
+            timestamp: new Date(),
+            isAdmin: true,
+            type: 'system'
+        };
+        pushHistory(publicMsg, 'public');
+        io.emit('chat message', publicMsg);
+        broadcastUserCount();
+        return;
+    }
+    
+    // Handle regular name change
     if (isNameReservedOrBanned(trimmedNewName)) {
         socket.emit('system_error', 'That name is either reserved for staff or not allowed.');
         return;
@@ -318,18 +383,20 @@ io.on('connection', socket => {
       const oldAdminName = user.displayName;
       cleanUpUser(socket.id); 
       
-      const newAnonName = `Anon_${Math.floor(Math.random() * 1000)}`;
+      const newAnonName = `Guest`;
 
       user.isAdmin = false;
       user.displayName = newAnonName;
       user.secureName = newAnonName; 
       user.chatContext = 'public'; 
       users.set(socket.id, user); 
-      usernamesMap.set(newAnonName.toLowerCase(), socket.id);
+      // Do not add 'Guest' to usernamesMap - it's a temporary, non-addressable state
       socket.leave(STAFF_ROOM);
       
+      // Update client UI to non-admin state and prompt for new name
       socket.emit('staff_status_update', { isAdmin: false, displayName: newAnonName, secureName: newAnonName, currentContext: 'public' });
-      socket.emit('system_alert', `You have gone anonymous. Your new name is ${newAnonName}.`);
+      socket.emit('system_alert', `You have gone anonymous. Please log in with a new name or your admin key.`);
+      socket.emit('show_login_modal'); // Trigger client to show name modal
       
       const adminChangeMsg = {
         username: 'System',
@@ -391,7 +458,7 @@ io.on('connection', socket => {
       io.to(recSocketId).emit('chat message', messageData); 
       socket.emit('chat message', {
         ...messageData,
-        username: 'You', 
+        username: sender.displayName, // Client side will handle the 'You' display
       }); 
     } else {
       socket.emit('system_error', `User '${recipient}' not found or offline.`);
@@ -459,8 +526,16 @@ io.on('connection', socket => {
         isAdmin: true,
         type: 'system'
       };
-      pushHistory(kickMsg, targetUser.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public');
-      io.emit('chat message', kickMsg);
+      
+      // Route system message to appropriate history
+      const targetHistory = targetUser.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public';
+      pushHistory(kickMsg, targetHistory);
+      
+      if (targetUser.chatContext === ADMIN_CHAT_ID) {
+        io.to(STAFF_ROOM).emit('admin chat message', kickMsg);
+      } else {
+        io.emit('chat message', kickMsg);
+      }
       
       const targetSocket = io.sockets.sockets.get(targetSocketId);
       if (targetSocket) {
@@ -501,7 +576,8 @@ io.on('connection', socket => {
       banUntil.setHours(banUntil.getHours() + hours);
       banUntil.setMinutes(banUntil.getMinutes() + minutes);
 
-      ipBanList.set(targetIp, { banUntil, reason });
+      // Store the ban with the last known display name
+      ipBanList.set(targetIp, { banUntil, reason, lastDisplayName: targetName });
 
       if (targetSocketId) {
           io.to(targetSocketId).emit('system_error', `You have been IP BANNED by Moderator ${admin.displayName} for ${days}d ${hours}h ${minutes}m (${reason}).`);
@@ -511,36 +587,105 @@ io.on('connection', socket => {
       
       const banMsg = {
         username: 'System',
-        content: `Moderator ${admin.displayName} has IP BANNED ${targetName || targetIp} for ${days}d ${hours}h ${minutes}m.`,
+        content: `Moderator ${admin.displayName} has IP BANNED ${targetName} (${targetIp}) for ${days}d ${hours}h ${minutes}m.`,
         timestamp: new Date(),
         isAdmin: true,
         type: 'system'
       };
-      pushHistory(banMsg, admin.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public');
-      io.emit('chat message', banMsg);
+      
+      const targetHistory = admin.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public';
+      pushHistory(banMsg, targetHistory);
+      
+      if (targetHistory === 'admin') {
+          io.to(STAFF_ROOM).emit('admin chat message', banMsg);
+      } else {
+          io.emit('chat message', banMsg);
+      }
       
       broadcastUserCount();
   });
+  
+  // 10. Admin: IP Unban User
+  socket.on('admin:ip_unban_user', ipToUnban => {
+      const admin = users.get(socket.id);
+      
+      if (!admin || !admin.isAdmin || !ipToUnban) {
+          socket.emit('system_error', 'Unban failed: Unauthorized or missing IP.');
+          return;
+      }
+      
+      const banEntry = ipBanList.get(ipToUnban);
+      if (!banEntry) {
+          socket.emit('system_error', `IP ${ipToUnban} is not currently banned.`);
+          return;
+      }
+      
+      ipBanList.delete(ipToUnban);
+      
+      const unbanMsg = {
+        username: 'System',
+        content: `Moderator ${admin.displayName} has UNBANNED ${banEntry.lastDisplayName} (${ipToUnban}).`,
+        timestamp: new Date(),
+        isAdmin: true,
+        type: 'system'
+      };
+      
+      const targetHistory = admin.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public';
+      pushHistory(unbanMsg, targetHistory);
+      
+      if (targetHistory === 'admin') {
+          io.to(STAFF_ROOM).emit('admin chat message', unbanMsg);
+      } else {
+          io.emit('chat message', unbanMsg);
+      }
+      
+      socket.emit('system_alert', `Successfully unbanned IP ${ipToUnban}.`);
+      broadcastUserCount(); // Update ban list on all admin clients
+  });
 
 
-  // 10. Disconnect 
+  // 11. Disconnect 
   socket.on('disconnect', () => {
     const user = users.get(socket.id);
     if (!user) return;
 
+    const name = user.displayName;
+    const wasAdmin = user.isAdmin;
+    
     cleanUpUser(socket.id);
 
-    const leaveMsg = {
-      username: 'System',
-      content: `${user.displayName} has left the chat.`,
-      timestamp: new Date(),
-      isAdmin: user.isAdmin,
-      type: 'system'
-    };
-    
-    if (user.chatContext === 'public' && !user.isAdmin) {
+    // Only send system message if they were a public user
+    if (user.chatContext === 'public' && !wasAdmin) {
+        const leaveMsg = {
+          username: 'System',
+          content: `${name} has left the chat.`,
+          timestamp: new Date(),
+          isAdmin: wasAdmin,
+          type: 'system'
+        };
         pushHistory(leaveMsg, 'public');
         io.emit('chat message', leaveMsg);
+    } else if (wasAdmin) {
+         // Send an admin-only message if the admin was logged in as a moderator
+        const adminLeaveMsg = {
+            username: 'System',
+            content: `**[Admin]** Moderator ${name} has disconnected.`,
+            timestamp: new Date(),
+            isAdmin: true,
+            type: 'system'
+        };
+        io.to(STAFF_ROOM).emit('admin chat message', adminLeaveMsg);
+        
+        // Send a public system message if they were an active admin
+        const publicLeaveMsg = {
+          username: 'System',
+          content: `A moderator has left the chat.`,
+          timestamp: new Date(),
+          isAdmin: true,
+          type: 'system'
+        };
+        pushHistory(publicLeaveMsg, 'public');
+        io.emit('chat message', publicLeaveMsg);
     }
     
     broadcastUserCount();
