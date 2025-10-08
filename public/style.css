@@ -1,366 +1,374 @@
 /* Reset & Body */
 body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #000 !important;
-  color: #f0f0f0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #000 !important;
+    color: #f0f0f0; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
 }
 
 /* Container */
 #container {
-  display: flex;
-  width: 90%;
-  max-width: 1000px;
-  height: 90vh;
-  background: #1e1e1e;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    display: flex;
+    width: 90%;
+    max-width: 1000px;
+    height: 90vh;
+    background: #1e1e1e;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 
 /* User Info Sidebar */
 #user-info {
-  width: 200px;
-  padding: 15px;
-  background: #2c2c2c;
-  border-right: 1px solid #444;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  color: #f0f0f0;
-  flex-shrink: 0;
+    /* NEW WIDTH: 200px */
+    width: 200px; 
+    padding: 15px;
+    background: #2c2c2c;
+    border-right: 1px solid #444;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    color: #f0f0f0; 
+    flex-shrink: 0; 
 }
 
-#user-info h2 {
-  color: #fff;
+#user-info h2 { 
+    color: #fff;
 }
 
 #user-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
 #user-list li {
-  padding: 3px 0;
-  cursor: pointer;
-  color: #f0f0f0;
+    padding: 3px 0;
+    cursor: pointer;
+    color: #f0f0f0; 
 }
 
 .commands {
-  font-size: 0.85em;
-  color: #f0f0f0;
+    font-size: 0.85em;
+    color: #f0f0f0; 
 }
 
 /* Styling for the HR dividers in the user-info panel */
 .info-divider {
-  border: 0;
-  height: 1px;
-  background-color: #444;
-  margin-top: 10px;
-  margin-bottom: 10px;
+    border: 0;
+    height: 1px;
+    background-color: #444; 
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 /* Chat Area */
 #chat-area {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  overflow-x: hidden !important;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden !important; 
 }
 
-/* Chat Title */
+/* --- CHAT TITLE FIX (Public Chat Title) --- */
 #chatTitle {
-  color: #f0f0f0;
-  padding: 15px;
-  font-weight: bold;
-  font-size: 1.2em;
-  border-bottom: 1px solid #444;
-  background-color: #383838;
+    color: #f0f0f0; 
+    padding: 15px; 
+    font-weight: bold;
+    font-size: 1.2em;
+    border-bottom: 1px solid #444;
+    background-color: #383838;
 }
 
-/* Message Bubbles */
+/* Message Bubbles - CONTAINER AND BASE STYLES */
 #messages {
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-  margin: 0;
-  overflow-y: auto;
-  flex-grow: 1;
+    display: flex; 
+    flex-direction: column; 
+    padding: 10px;
+    margin: 0;
+    overflow-y: auto;
+    flex-grow: 1;
 }
 
 .msg {
-  max-width: 70%;
-  margin-bottom: 10px;
-  padding: 8px 10px;
-  position: relative;
-  word-wrap: break-word;
-  clear: both;
-  list-style: none;
-  padding-top: 10px;
-  border-radius: 12px;
+    max-width: 70%; 
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    position: relative; 
+    word-wrap: break-word;
+    clear: both; 
+    list-style: none;
+    padding-top: 10px;
 }
 
-/* Own messages on right */
+/* --- OWN MESSAGES (Right Side) --- */
 .msg.own {
-  align-self: flex-end;
-  background-color: #4a4a4a;
-  color: #fff;
-  border-radius: 12px;
+    align-self: flex-end; 
+    background-color: #4a4a4a; 
+    color: #fff;
+    border-radius: 12px;
 }
 
-.msg.own::before,
-.msg.own::after {
-  content: none;
+.msg.own::before, .msg.own::after {
+    content: none;
 }
 
-/* Other messages on left */
+/* --- OTHER MESSAGES (Left Side) --- */
 .msg.other {
-  align-self: flex-start;
-  background-color: #2c2c2c;
-  color: #f0f0f0;
-  border-radius: 12px;
+    align-self: flex-start; 
+    background-color: #2c2c2c; 
+    color: #f0f0f0;
+    border-radius: 12px;
 }
 
-.msg.other::before,
-.msg.other::after {
-  content: none;
+.msg.other::before, .msg.other::after {
+    content: none;
 }
 
-/* Admin message gold border */
-.msg.admin-msg {
-  border: 2px solid gold !important;
-}
-
-/* System messages */
+/* System messages (No Tail) */
 .msg.system {
-  float: none;
-  align-self: center;
-  font-style: italic;
-  color: #888;
-  background: none;
-  text-align: center;
-  width: 100%;
-  margin: 10px auto;
-  padding: 0;
-  border-radius: 0;
+    float: none; 
+    align-self: center; 
+    font-style: italic;
+    color: #888;
+    background: none; 
+    text-align: center;
+    width: 100%;
+    margin: 10px auto; 
+    padding: 0; 
+    border-radius: 0; 
 }
 
 .msg.system::before,
 .msg.system::after {
-  content: none;
+    content: none; 
 }
 
-/* Sender name positioning */
+
+/* Styles for sender name indicator */
 .sender-name {
-  position: absolute;
-  top: 4px;
-  font-size: 0.8em;
-  font-weight: bold;
+    position: absolute;
+    top: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
 }
 
 .msg.own .sender-name {
-  right: 12px;
-  color: #99cfff;
+    right: 12px;
+    color: #99cfff; 
 }
 
 .msg.other .sender-name {
-  left: 12px;
-  color: #c0c0c0;
+    left: 12px;
+    color: #c0c0c0; 
 }
 
-/* Fix stacking messages from same user - always show name */
+/* Styles for stacking messages from the same user */
 .msg.own + .msg.own {
-  margin-top: 10px;
-  border-radius: 12px;
+    margin-top: -8px; 
+    border-radius: 12px; 
 }
 
 .msg.own + .msg.own .sender-name {
-  display: inline;
+    display: none; 
 }
 
 .msg.other + .msg.other {
-  margin-top: 10px;
-  border-radius: 12px;
+    margin-top: -8px; 
+    border-radius: 12px; 
 }
 
 .msg.other + .msg.other .sender-name {
-  display: inline;
+    display: none; 
 }
+
 
 /* Input Box */
 #messageForm {
-  min-width: 0 !important;
-  max-width: 100% !important;
-  padding: 0;
-  background-color: #2c2c2c;
-  border-top: 1px solid #444;
+    min-width: 0 !important; 
+    max-width: 100% !important; 
+    padding: 0;
+    background-color: #2c2c2c;
+    border-top: 1px solid #444;
 }
 
 .input-container {
-  display: flex;
-  padding: 10px;
-  max-width: 100% !important;
-  align-items: flex-start;
+    /* --- REVERT TO FLEXBOX, but keep constraints --- */
+    display: flex; 
+    padding: 10px;
+    max-width: 100% !important;
+    align-items: flex-start; 
 }
 
 .custom-input {
-  flex-grow: 1 !important;
-  flex-shrink: 1 !important;
-  min-width: 0 !important;
-  padding: 10px;
-  border-radius: 4px;
-  background-color: #383838;
-  color: #fff;
-  border: 1px solid #555;
-  margin-right: 8px;
-  min-height: 40px;
-  max-height: 80px;
-  overflow-y: auto;
-  -webkit-user-modify: read-write-plaintext-only; /* for Safari */
-  box-sizing: border-box !important;
-  word-break: break-all !important;
-  overflow-wrap: break-word !important;
-  overflow-x: hidden !important;
-  white-space: normal !important;
-  resize: none !important;
+    /* --- CRITICAL FLEXBOX CONSTRAINTS --- */
+    flex-grow: 1 !important; 
+    flex-shrink: 1 !important; 
+    min-width: 0 !important; 
+    
+    padding: 10px;
+    border-radius: 4px;
+    background-color: #383838;
+    color: #f0f0f0;
+    border: 1px solid #555;
+    margin-right: 8px;
+    min-height: 40px;
+    max-height: 80px;
+    overflow-y: auto;
+    -webkit-user-modify: read-write-plaintext-only;
+    
+    /* Ultimate Breaking/Constraint Properties */
+    box-sizing: border-box !important; 
+    -webkit-box-sizing: border-box !important; 
+    word-break: break-all !important; 
+    overflow-wrap: break-word !important; 
+    overflow-x: hidden !important; 
+    white-space: normal !important; 
+    resize: none !important; 
 }
 
 .custom-input:empty::before {
-  content: attr(data-placeholder);
-  color: #888;
+    content: attr(data-placeholder);
+    color: #888;
 }
 
 .input-container button {
-  padding: 10px 15px;
-  border-radius: 4px;
-  border: none;
-  background-color: #585858;
-  color: white;
-  cursor: pointer;
-  height: 40px;
-  align-self: flex-end;
-  flex-shrink: 0;
+    /* Set button size, relies on flex positioning */
+    padding: 10px 15px;
+    border-radius: 4px;
+    border: none;
+    background-color: #585858;
+    color: white;
+    cursor: pointer;
+    height: 40px; 
+    align-self: flex-end; 
+    flex-shrink: 0; 
 }
 
 .input-container button:hover {
-  background-color: #4a4a4a;
+    background-color: #4a4a4a;
 }
 
-/* Character count */
+/* --- WORD COUNT DISPLAY FIX (Positioning) --- */
 .char-count-display {
-  text-align: right;
-  font-size: 0.8em;
-  color: #aaa;
-  margin-top: 5px;
-  padding-right: 15px;
-  padding-bottom: 5px;
+    text-align: right;
+    font-size: 0.8em;
+    color: #aaa;
+    margin-top: 5px; 
+    padding-right: 15px; 
+    padding-bottom: 5px;
 }
 
-/* Modal and Bootstrap Overrides */
+/* Modals & Bootstrap Overrides */
+/* --- FIX FOR DARK MODALS --- */
 .modal-content {
-  background-color: #2c2c2c !important;
-  color: #fff !important;
-  border: 1px solid #444 !important;
+    background-color: #2c2c2c !important;
+    color: #f0f0f0 !important;
+    border: 1px solid #444 !important;
 }
 
 .modal-header {
-  border-bottom: 1px solid #444 !important;
+    border-bottom: 1px solid #444 !important;
 }
 
 .form-control {
-  background-color: #383838 !important;
-  color: #fff !important;
-  border: 1px solid #555 !important;
+    background-color: #383838 !important;
+    color: #f0f0f0 !important;
+    border: 1px solid #555 !important;
 }
 
 .form-control:focus {
-  background-color: #383838 !important;
-  color: #fff !important;
-  border-color: #777 !important;
-  box-shadow: 0 0 0 0.25rem rgba(119, 119, 119, 0.25) !important;
+    background-color: #383838 !important;
+    color: #f0f0f0 !important;
+    border-color: #777 !important;
+    box-shadow: 0 0 0 0.25rem rgba(119, 119, 119, 0.25) !important;
 }
 
 .btn-primary {
-  background-color: #585858 !important;
-  border-color: #585858 !important;
+    background-color: #585858 !important;
+    border-color: #585858 !important;
 }
 
 .btn-primary:hover {
-  background-color: #4a4a4a !important;
-  border-color: #4a4a4a !important;
+    background-color: #4a4a4a !important;
+    border-color: #4a4a4a !important;
 }
 
 .btn-close {
-  filter: invert(1);
+    filter: invert(1);
 }
 
 .user-select-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  max-height: 200px;
-  overflow-y: auto;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
 .user-select-list li {
-  padding: 8px;
-  border-bottom: 1px solid #444;
-  cursor: pointer;
+    padding: 8px;
+    border-bottom: 1px solid #444;
+    cursor: pointer;
 }
 
 .user-select-list li:hover {
-  background-color: #555;
+    background-color: #555;
 }
 
-/* Custom scrollbar styles */
+/* CUSTOM SCROLLBAR STYLING */
+/* WebKit-based scrollbar styling */
 #messages::-webkit-scrollbar,
 #user-info::-webkit-scrollbar,
 .custom-input::-webkit-scrollbar,
 .user-select-list::-webkit-scrollbar {
-  width: 8px;
-  background-color: transparent;
+    width: 8px;
+    background-color: transparent; 
 }
 
+/* The track */
 #messages::-webkit-scrollbar-track,
 #user-info::-webkit-scrollbar-track,
 .custom-input::-webkit-scrollbar-track,
 .user-select-list::-webkit-scrollbar-track {
-  background: #1e1e1e;
-  border-radius: 10px;
+    background: #1e1e1e;
+    border-radius: 10px;
 }
 
+/* The thumb */
 #messages::-webkit-scrollbar-thumb,
 #user-info::-webkit-scrollbar-thumb,
 .custom-input::-webkit-scrollbar-thumb,
 .user-select-list::-webkit-scrollbar-thumb {
-  background-color: #555;
-  border-radius: 10px;
+    background-color: #555;
+    border-radius: 10px;
 }
 
+/* Hover state for the thumb */
 #messages::-webkit-scrollbar-thumb:hover,
 #user-info::-webkit-scrollbar-thumb:hover,
 .custom-input::-webkit-scrollbar-thumb:hover,
 .user-select-list::-webkit-scrollbar-thumb:hover {
-  background-color: #777;
+    background-color: #777; 
 }
 
+/* Hides the buttons at the ends of the scrollbar */
 #messages::-webkit-scrollbar-button,
 #user-info::-webkit-scrollbar-button,
 .custom-input::-webkit-scrollbar-button,
 .user-select-list::-webkit-scrollbar-button {
-  display: none;
+    display: none;
 }
 
-/* Firefox scrollbar */
+/* Optional: Scrollbar for Firefox (less customizable) */
 #messages,
 #user-info,
 .custom-input,
 .user-select-list {
-  scrollbar-color: #555 #1e1e1e;
-  scrollbar-width: thin;
+    scrollbar-color: #555 #1e1e1e;
+    scrollbar-width: thin; 
 }
