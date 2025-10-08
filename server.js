@@ -87,10 +87,8 @@ function broadcastUserCount() {
   const userMap = {};
   users.forEach(user => {
     if (user.chatContext === 'public' || user.isAdmin) {
-        // FIX: Include isAdmin status for all clients to see who is a moderator
         userMap[user.displayName] = { 
             isAdmin: user.isAdmin
-            // IP address removed from public broadcast for security
         };
     }
   });
