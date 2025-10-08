@@ -195,16 +195,16 @@ body {
 }
 
 .input-container {
-    /* --- NEW FIX: Removed display: flex; --- */
+    /* Non-flex layout */
     padding: 10px;
     max-width: 100% !important;
-    white-space: nowrap; /* Ensures children stay on one line for block formatting */
+    white-space: nowrap; 
 }
 
 .custom-input {
-    /* --- NEW FIX: Use calc() and display: inline-block for block layout --- */
+    /* Final constraints to kill horizontal expansion */
     display: inline-block;
-    width: calc(100% - 78px) !important; /* Total width minus button width (62px) and margin (16px) */
+    width: calc(100% - 78px) !important; 
     
     padding: 10px;
     border-radius: 4px;
@@ -217,17 +217,17 @@ body {
     overflow-y: auto;
     -webkit-user-modify: read-write-plaintext-only;
     
-    /* Remaining necessary constraints */
+    /* Ultimate Breaking/Constraint Properties */
     box-sizing: border-box !important; 
     -webkit-box-sizing: border-box !important; 
     min-width: 0 !important;       
     word-break: break-all !important; 
     overflow-wrap: break-word !important; 
     overflow-x: hidden !important; 
-    white-space: pre-wrap !important; 
+    /* NEW: Force contenteditable to treat itself as normal text that wraps */
+    white-space: normal !important; 
     resize: none !important; 
     
-    /* NEW: Force content to stay within bounds */
     vertical-align: top;
 }
 
@@ -237,7 +237,6 @@ body {
 }
 
 .input-container button {
-    /* Now relies on inline-block to float next to input */
     padding: 10px 15px;
     border-radius: 4px;
     border: none;
@@ -246,7 +245,7 @@ body {
     cursor: pointer;
     height: 40px; 
     vertical-align: top;
-    width: 62px; /* Explicit width for calculation */
+    width: 62px; 
 }
 
 .input-container button:hover {
@@ -264,7 +263,7 @@ body {
 }
 
 /* Modals & Bootstrap Overrides */
-/* --- FIX FOR WHITE MODALS --- */
+/* --- FIX FOR DARK MODALS --- */
 .modal-content {
     background-color: #2c2c2c !important;
     color: #f0f0f0 !important;
