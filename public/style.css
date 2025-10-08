@@ -69,14 +69,14 @@ body {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    /* NEW: Hide horizontal scrollbar on the main chat area to prevent window overflow */
+    /* !IMPORTANT FIX: Hide horizontal scrollbar on the main chat area */
     overflow-x: hidden !important; 
 }
 
 /* --- CHAT TITLE FIX (Public Chat Title) --- */
 #chatTitle {
-    color: #f0f0f0; /* Set text to white */
-    padding: 15px; /* Added requested padding on all sides */
+    color: #f0f0f0; 
+    padding: 15px; 
     font-weight: bold;
     font-size: 1.2em;
     border-bottom: 1px solid #444;
@@ -188,18 +188,19 @@ body {
 
 /* Input Box */
 #messageForm {
-    min-width: 0;
+    /* !IMPORTANT FIXES */
+    min-width: 0 !important; 
+    max-width: 100% !important; 
     padding: 0;
     background-color: #2c2c2c;
     border-top: 1px solid #444;
-    max-width: 100%; 
 }
 
 .input-container {
     display: flex;
     padding: 10px;
     align-items: flex-start;
-    max-width: 100%;
+    max-width: 100% !important; /* !IMPORTANT FIX */
 }
 
 .custom-input {
@@ -215,14 +216,14 @@ body {
     overflow-y: auto;
     -webkit-user-modify: read-write-plaintext-only;
     
-    /* --- ULTIMATE CRITICAL OVERFLOW FIXES --- */
-    box-sizing: border-box; 
-    max-width: 100%;    
-    min-width: 0;       
-    word-break: break-all; /* Aggressively breaks long strings */
-    overflow-x: hidden; 
-    white-space: pre-wrap; /* Ensures wrapping behavior */
-    resize: none; /* Prevents user manual resizing */
+    /* --- ULTIMATE CRITICAL OVERFLOW FIXES with !important --- */
+    box-sizing: border-box !important; 
+    max-width: 100% !important;    
+    min-width: 0 !important;       
+    word-break: break-all !important; /* Aggressively breaks long strings */
+    overflow-x: hidden !important; 
+    white-space: pre-wrap !important; 
+    resize: none !important; /* Prevents user manual resizing */
 }
 
 .custom-input:empty::before {
