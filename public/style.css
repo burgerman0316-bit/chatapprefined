@@ -103,6 +103,10 @@ body {
     clear: both;
     position: relative;
     font-size: 0.95em;
+    /* FIX: Prevent horizontal overflow */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    min-width: 0; 
 }
 
 /* System Messages */
@@ -122,6 +126,9 @@ body {
     color: #f0f0f0;
     float: left;
     border-bottom-left-radius: 0;
+    /* FIX: Constrain width when floated */
+    width: fit-content; 
+    max-width: 80%; 
 }
 
 /* Admin Messages */
@@ -135,6 +142,9 @@ body {
     color: white;
     float: right;
     border-bottom-right-radius: 0;
+    /* FIX: Constrain width when floated */
+    width: fit-content; 
+    max-width: 80%; 
 }
 
 .sender-name {
@@ -230,7 +240,7 @@ body {
 
 /* FIX: Ensure muted text is visible in the dark modal */
 .modal-content .text-muted {
-    color: #999 !important; 
+    color: #f0f0f0 !important; /* Changed to white */
 }
 
 .modal-title {
