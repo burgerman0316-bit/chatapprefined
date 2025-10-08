@@ -69,6 +69,8 @@ body {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    /* NEW: Hide horizontal scrollbar on the main chat area to prevent window overflow */
+    overflow-x: hidden !important; 
 }
 
 /* --- CHAT TITLE FIX (Public Chat Title) --- */
@@ -214,12 +216,13 @@ body {
     -webkit-user-modify: read-write-plaintext-only;
     
     /* --- ULTIMATE CRITICAL OVERFLOW FIXES --- */
-    box-sizing: border-box; /* NEW: Forces width calculation to include padding and border */
+    box-sizing: border-box; 
     max-width: 100%;    
     min-width: 0;       
-    word-break: break-all; 
+    word-break: break-all; /* Aggressively breaks long strings */
     overflow-x: hidden; 
-    white-space: normal; 
+    white-space: pre-wrap; /* Ensures wrapping behavior */
+    resize: none; /* Prevents user manual resizing */
 }
 
 .custom-input:empty::before {
@@ -248,7 +251,7 @@ body {
     font-size: 0.8em;
     color: #aaa;
     margin-top: 5px; 
-    padding-right: 15px; /* Aligns with the new padding of the chat title */
+    padding-right: 15px; 
     padding-bottom: 5px;
 }
 
