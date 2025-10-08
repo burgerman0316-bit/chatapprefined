@@ -1,4 +1,4 @@
-// chat.js - FINAL SCRIPT WITH ALL FEATURES
+// chat.js - FINAL SCRIPT WITH IP DISPLAY FIX AND MESSAGE BUBBLE FIX
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
@@ -21,7 +21,7 @@ const charCountContainer = document.getElementById('charCountContainer');
 
 const userListEl = document.getElementById('user-list');
 const userCountEl = document.getElementById('user-count');
-const adminUserListEl = document.getElementById('admin-user-list'); // NEW REFERENCE
+const adminUserListEl = document.getElementById('admin-user-list'); 
 
 const adminPanelBtn = document.getElementById('adminPanelBtn');
 const adminModalEl = document.getElementById('adminPanelModal'); 
@@ -55,15 +55,13 @@ const banReasonInput = document.getElementById('banReason');
 let displayName = '';
 let isAdmin = false;
 let userToKick = null; 
-let userIpToBan = null; 
+let userIpToBan = null; // Stores the raw IP for the ban function
 let currentChatContext = 'public'; 
 const MAX_CHARS = 256;
 const ADMIN_CHAT_ID = 'admin_chat';
 
-// --- Initial Setup ---
-document.addEventListener('DOMContentLoaded', () => {
-    myModal.show();
-});
+
+// --- UTILITY FUNCTIONS ---
 
 // Utility: Appends a message to the chat
 function appendMessage(msg) {
@@ -78,8 +76,20 @@ function appendMessage(msg) {
         item.classList.add('system');
         item.textContent = msg.content;
     } else if (msg.username === displayName || (msg.username === 'You' && msg.isPrivate)) {
+        // FIX: Reinstated logic for identifying the sender's own messages
         item.classList.add('own');
-        item.innerHTML = `${msg.content} ${timeHtml}`;
+        // Prepend "You: " for regular messages and "You (Private to X):" for DMs sent by the user (which server sends back as You)
+        let contentPrefix = '';
+        if (msg.username === 'You' && msg.isPrivate && msg.recipient) {
+            // This is a private message sent by the user, echoed back from the server
+             contentPrefix = `<span class="sender-name private-name">You (Private to ${msg.recipient})</span>`;
+        } else if (msg.username === displayName) {
+             // This is a regular public/admin message sent by the user
+             contentPrefix = '<span class="sender-name">You</span>';
+        }
+        
+        // Use the combined content/prefix
+        item.innerHTML = `${contentPrefix}${msg.content} ${timeHtml}`;
     } else {
         item.classList.add('other');
         if (msg.isAdmin) { 
@@ -113,7 +123,7 @@ function updatePublicUserList(data) {
         
         li.textContent = userDisplayName;
         
-        // FIX: Display MOD tag in the public list
+        // Display MOD tag in the public list
         if (userEntry.isAdmin) { 
              li.textContent += ' (MOD)'; 
              li.classList.add('admin-name-list'); 
@@ -157,8 +167,9 @@ function updateAdminManagementList(adminUsersMap) {
              }
              
              userToKick = userDisplayName; 
-             userIpToBan = user.ip; 
+             userIpToBan = user.ip; // Store RAW IP for server ban
              
+             // Display RAW IP
              kickConfirmBody.innerHTML = `Manage user: <strong>${userDisplayName}</strong><br>IP: ${user.ip}<br>Admin Status: ${user.isAdmin ? 'Yes' : 'No'}`;
              
              const adminModal = bootstrap.Modal.getInstance(adminModalEl);
@@ -466,7 +477,7 @@ socket.on('system_error', msg => appendMessage({ username: 'System', content: `E
 socket.on('system_alert', msg => appendMessage({ username: 'System', content: msg, timestamp: new Date(), type: 'system' }));
 
 
-// IP Banned Modal (NEW)
+// IP Banned Modal
 socket.on('banned_modal', data => {
     const banReason = data.reason;
     const banDurationMs = data.banDurationMs;
