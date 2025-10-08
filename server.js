@@ -30,6 +30,7 @@ const adminChatHistory = [];
 
 const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, fingerprintId, chatContext }
 const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
+// CHANGED: Use a map for fingerprint bans
 const fpBanList = new Map(); // fingerprintId -> { banUntil: Date, reason: string } 
 
 // --- STATIC FILE SERVING ---
@@ -41,7 +42,7 @@ app.get('/', (req, res) => {
 // --- HELPER FUNCTIONS ---
 function cleanUpUser(socketId) {
     const user = users.get(socketId);
-    if (!user || user.displayName === 'Connecting...') return; // Skip temporary entries
+    if (!user || user.displayName === 'Connecting...') return; 
 
     const lower = user.displayName.toLowerCase();
     
@@ -61,7 +62,7 @@ function isNameReservedOrBanned(name) {
         return true;
     }
     
-    // 2. Check for staff display names (Prevents regular users from taking 'Liam Stern')
+    // 2. Check for staff display names
     if (STAFF_LIST.some(s => s.displayName.toLowerCase() === lower)) {
         return true;
     }
@@ -86,11 +87,10 @@ function pushHistory(msg, target = 'public') {
 function broadcastUserCount() {
   const userMap = {};
   users.forEach(user => {
-    // Only count/show users who have successfully logged in (not 'Connecting...')
+    // Only count/show users who have successfully logged in
     if (user.displayName !== 'Connecting...' && (user.chatContext === 'public' || user.isAdmin)) {
         userMap[user.displayName] = { 
             isAdmin: user.isAdmin
-            // Fingerprint ID removed from public broadcast for security
         };
     }
   });
@@ -103,18 +103,17 @@ function broadcastUserCount() {
 
 // --- SOCKET LOGIC ---
 io.on('connection', socket => {
-  // Store connection data temporarily, waiting for fingerprint ID from client
   const tempUserIp = socket.handshake.address; 
   console.log('Client connected (Waiting for Fingerprint ID):', socket.id, 'IP:', tempUserIp);
 
-  // Temporarily store the initial socket data. User won't be fully active until FP ID is set.
+  // Temporarily store the initial socket data.
   users.set(socket.id, { 
       displayName: 'Connecting...', 
       secureName: '', 
       isAdmin: false,
       fingerprintId: null, // Will be set by client
       chatContext: 'public',
-      socketId: socket.id // Store socket ID for easy lookup
+      socketId: socket.id 
   });
 
   // Client sends the Fingerprint ID
@@ -122,7 +121,7 @@ io.on('connection', socket => {
       // 0. Fingerprint Ban Check
       const fp = (fingerprintId || '').trim();
       
-      const banEntry = fpBanList.get(fp); // CHANGED CHECK: Use fpBanList
+      const banEntry = fpBanList.get(fp); 
       if (banEntry && banEntry.banUntil > new Date()) {
           const banDurationMs = banEntry.banUntil.getTime() - new Date().getTime();
           socket.emit('banned_modal', { 
@@ -150,7 +149,6 @@ io.on('connection', socket => {
   // 1. Name check & Login
   socket.on('check_staff_status', enteredName => {
     const user = users.get(socket.id);
-    // CRITICAL: Ensure fingerprint is set and user is still in the connecting state
     if (!user || !user.fingerprintId || user.displayName !== 'Connecting...') { 
         socket.emit('system_error', 'Connection error: Device fingerprint not established or already logged in.');
         return;
@@ -176,7 +174,7 @@ io.on('connection', socket => {
       return;
     }
     
-    // --- ADMIN LOGIN ATTEMPT (Requires secure key) ---
+    // --- ADMIN LOGIN ATTEMPT ---
     const staffLoginAttempt = STAFF_LIST.find(s => s.loginName === name);
     if (staffLoginAttempt) {
         const staffName = staffLoginAttempt.displayName;
@@ -192,7 +190,7 @@ io.on('connection', socket => {
             displayName: staffName, 
             secureName: staffLoginAttempt.loginName, 
             isAdmin: true,
-            fingerprintId: user.fingerprintId, // CHANGED: Use fingerprintId
+            fingerprintId: user.fingerprintId, 
             chatContext: 'public' 
         });
         usernamesMap.set(staffLower, socket.id);
@@ -230,7 +228,7 @@ io.on('connection', socket => {
         displayName: name, 
         secureName: name, 
         isAdmin: false,
-        fingerprintId: user.fingerprintId, // CHANGED: Use fingerprintId
+        fingerprintId: user.fingerprintId, 
         chatContext: 'public'
     });
     usernamesMap.set(lower, socket.id);
@@ -266,7 +264,7 @@ io.on('connection', socket => {
   // 3. Normal Chat Messages
   socket.on('chat message', msg => {
     const user = users.get(socket.id);
-    if (!user || user.displayName === 'Connecting...') { // Deny chat if not logged in
+    if (!user || user.displayName === 'Connecting...') { 
         socket.emit('system_error', 'You must set a name first.');
         return;
     }
@@ -460,7 +458,6 @@ io.on('connection', socket => {
         type: 'system'
       };
       
-      // Push history message to both chats
       pushHistory(msg, 'public');
       pushHistory(msg, 'admin');
 
@@ -504,7 +501,6 @@ io.on('connection', socket => {
     const targetSocket = io.sockets.sockets.get(targetSocketId);
     if (targetSocket) targetSocket.disconnect(true);
     
-    // Cleanup is handled by disconnect event
     broadcastUserCount();
   });
 
@@ -514,7 +510,6 @@ io.on('connection', socket => {
       const admin = users.get(socket.id);
       if (!admin || !admin.isAdmin) return;
 
-      // CHANGED: Check for Fingerprint ID instead of targetIp
       if (!targetFingerprintId || (days === 0 && hours === 0 && minutes === 0)) {
           socket.emit('system_error', 'Invalid ban duration or missing target Fingerprint ID.');
           return;
@@ -526,7 +521,7 @@ io.on('connection', socket => {
       const banDurationMs = (days * 24 * 60 * 60 * 1000) + (hours * 60 * 60 * 1000) + (minutes * 60 * 1000);
       const banUntil = new Date(new Date().getTime() + banDurationMs);
 
-      // CHANGED: Use fpBanList
+      // CRITICAL: Use fpBanList to store the fingerprint ban
       fpBanList.set(targetFingerprintId, { banUntil, reason });
 
       if (targetSocketId) {
@@ -537,7 +532,6 @@ io.on('connection', socket => {
       
       const banMsg = {
         username: 'System',
-        // CHANGED: Reference Fingerprint BAN
         content: `Moderator ${admin.displayName} has Fingerprint BANNED ${targetName || targetFingerprintId} for ${days}d ${hours}h ${minutes}m.`,
         timestamp: new Date(),
         isAdmin: true,
@@ -551,29 +545,29 @@ io.on('connection', socket => {
 
 
   // 10. Admin: Fingerprint Unban User
-  socket.on('admin:unban_fp', fpIdToUnban => { // CHANGED EVENT NAME
+  socket.on('admin:unban_fp', fpIdToUnban => { 
       const admin = users.get(socket.id);
       if (!admin || !admin.isAdmin) return;
 
       if (!fpIdToUnban) {
-          socket.emit('system_error', 'Missing Fingerprint ID to unban.'); // CHANGED ERROR MESSAGE
+          socket.emit('system_error', 'Missing Fingerprint ID to unban.'); 
           return;
       }
 
-      if (fpBanList.has(fpIdToUnban)) { // CHANGED LIST
+      if (fpBanList.has(fpIdToUnban)) { 
           fpBanList.delete(fpIdToUnban);
-          socket.emit('system_alert', `Successfully unbanned Fingerprint ID: ${fpIdToUnban}.`); // CHANGED ALERT MESSAGE
+          socket.emit('system_alert', `Successfully unbanned Fingerprint ID: ${fpIdToUnban}.`); 
           
           const unbanMsg = {
             username: 'System',
-            content: `Moderator ${admin.displayName} has UNBANNED Fingerprint ID ${fpIdToUnban}.`, // CHANGED MESSAGE
+            content: `Moderator ${admin.displayName} has UNBANNED Fingerprint ID ${fpIdToUnban}.`, 
             timestamp: new Date(),
             isAdmin: true,
             type: 'system'
           };
           io.to(STAFF_ROOM).emit('admin chat message', unbanMsg);
       } else {
-          socket.emit('system_error', `Fingerprint ID ${fpIdToUnban} not found in ban list.`); // CHANGED ERROR MESSAGE
+          socket.emit('system_error', `Fingerprint ID ${fpIdToUnban} not found in ban list.`); 
       }
   });
 
