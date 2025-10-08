@@ -195,23 +195,27 @@ body {
 }
 
 .input-container {
-    /* Non-flex layout */
+    /* --- ULTIMATE FIX: Table Layout --- */
+    display: table !important; /* Forces rigid width calculation */
+    width: 100% !important;
+    table-layout: fixed !important; /* Guarantees columns split space */
+    
     padding: 10px;
     max-width: 100% !important;
-    white-space: nowrap; 
 }
 
 .custom-input {
-    /* Final constraints to kill horizontal expansion */
-    display: inline-block;
-    width: calc(100% - 78px) !important; 
-    
+    /* --- Table Cell Behavior --- */
+    display: table-cell !important;
+    width: 100% !important; /* Takes all remaining space */
+    padding-right: 0 !important; /* Prevent double-padding/margin in table cell */
+
     padding: 10px;
     border-radius: 4px;
     background-color: #383838;
     color: #f0f0f0;
     border: 1px solid #555;
-    margin-right: 8px;
+    margin-right: 8px; /* Margin removed here, managed by cell padding/spacing */
     min-height: 40px;
     max-height: 80px;
     overflow-y: auto;
@@ -224,7 +228,6 @@ body {
     word-break: break-all !important; 
     overflow-wrap: break-word !important; 
     overflow-x: hidden !important; 
-    /* NEW: Force contenteditable to treat itself as normal text that wraps */
     white-space: normal !important; 
     resize: none !important; 
     
@@ -237,6 +240,10 @@ body {
 }
 
 .input-container button {
+    /* --- Table Cell Behavior --- */
+    display: table-cell !important;
+    width: 62px !important; /* Fixed width for the button */
+    
     padding: 10px 15px;
     border-radius: 4px;
     border: none;
@@ -245,7 +252,7 @@ body {
     cursor: pointer;
     height: 40px; 
     vertical-align: top;
-    width: 62px; 
+    margin-left: 8px; /* Re-added gap here */
 }
 
 .input-container button:hover {
