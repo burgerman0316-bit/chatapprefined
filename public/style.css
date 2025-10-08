@@ -32,28 +32,10 @@ body {
     flex-direction: column;
     overflow-y: auto;
     color: #f0f0f0; 
-    font-size: 0.9rem;
 }
 
 #user-info h2 { 
     color: #fff;
-    font-size: 1.5rem;
-}
-
-.info-divider {
-    border-color: #444;
-    margin: 10px 0;
-}
-
-.commands {
-    font-size: 0.8rem;
-    color: #aaa;
-    margin: 2px 0;
-}
-
-#user-list-container h4 {
-    font-size: 1.1rem;
-    margin-top: 10px;
 }
 
 #user-list {
@@ -63,14 +45,28 @@ body {
 }
 
 #user-list li {
-    padding: 2px 0;
+    padding: 4px 0;
     cursor: pointer;
-    transition: color 0.1s;
-    font-size: 0.9rem;
+    font-size: 0.9em;
 }
 
 #user-list li:hover {
-    color: #5bc0de;
+    color: #00c3ff; 
+}
+
+.admin-name-list {
+    font-weight: bold;
+    color: #ff9900;
+}
+
+.info-divider {
+    border-top: 1px solid #444;
+}
+
+.commands {
+    font-size: 0.8em;
+    color: #aaa;
+    margin: 2px 0;
 }
 
 /* Chat Area */
@@ -78,291 +74,223 @@ body {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-}
-
-#chat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 15px;
-    background: #222;
-    border-bottom: 1px solid #444;
+    position: relative;
 }
 
 #chatTitle {
+    background-color: #383838;
+    padding: 10px 15px;
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.2em;
+    border-bottom: 1px solid #444;
 }
 
-#chat-tabs {
-    display: flex;
-}
-
-.chat-tab {
-    background: none;
-    border: none;
-    color: #ccc;
-    padding: 5px 10px;
-    margin-left: 5px;
-    cursor: pointer;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    transition: background-color 0.2s, color 0.2s;
-}
-
-.chat-tab:hover {
-    background-color: #444;
-}
-
-.chat-tab.active {
-    background-color: #007bff;
-    color: white;
-}
-
-/* Message List */
 #messages {
     list-style-type: none;
     margin: 0;
     padding: 15px;
     flex-grow: 1;
     overflow-y: auto;
-    scroll-behavior: smooth;
-    background: #fff;
-}
-
-.msg {
-    padding: 8px 0;
-    border-radius: 5px;
-    margin-bottom: 5px;
     word-wrap: break-word;
-    white-space: pre-wrap;
-    line-height: 1.4;
+    word-break: break-word;
 }
 
-.msg strong {
-    font-weight: bold;
-    margin-right: 5px;
-    color: #5bc0de; /* Default blue for names */
+#messages li {
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    border-radius: 15px;
+    max-width: 80%;
+    clear: both;
+    position: relative;
+    font-size: 0.95em;
 }
 
-/* User Roles */
+/* System Messages */
 .msg.system {
     text-align: center;
-    color: #aaa;
+    background: none;
+    color: #999;
     font-style: italic;
-    font-size: 0.9rem;
-    padding: 5px 10px;
+    font-size: 0.8em;
+    margin: 10px auto;
+    max-width: 100%;
 }
 
-.msg.other .sender-name {
-    color: #5bc0de; 
-    font-weight: bold;
-    margin-right: 5px;
-    display: block;
-    font-size: 0.9rem;
+/* Other User Messages */
+.msg.other {
+    background: #383838;
+    color: #f0f0f0;
+    float: left;
+    border-bottom-left-radius: 0;
 }
 
-.msg.own {
-    text-align: right;
-    padding-right: 10px;
-}
-
-.msg.own .sender-name {
-    display: none; /* Hide the "You" name */
-}
-
-.msg .timestamp {
-    color: #777;
-    font-size: 0.7rem;
-    margin-left: 5px;
-}
-
-/* Admin Message Styling */
+/* Admin Messages */
 .msg.other.admin-msg {
-    border-left: 3px solid gold;
-    padding-left: 7px;
-}
-.msg.other.admin-msg .sender-name {
-    color: gold; 
+    background: #334e5a; /* Darker blue/grey for admin in public chat */
 }
 
+/* Own Messages */
+.msg.own {
+    background: #007bff; 
+    color: white;
+    float: right;
+    border-bottom-right-radius: 0;
+}
 
-/* Input Form */
+.sender-name {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 2px;
+    font-size: 0.85em;
+    color: #00c3ff; 
+}
+
+.private-name {
+    color: #ff9900;
+}
+
+/* Timestamp Styling */
+.timestamp {
+    display: block;
+    text-align: right;
+    font-size: 0.7em;
+    color: rgba(255, 255, 255, 0.5);
+    margin-top: 2px;
+}
+
+/* Form Styling */
 #messageForm {
-    padding: 10px 15px;
-    background: #2c2c2c;
     border-top: 1px solid #444;
+    padding: 10px;
+    background: #2c2c2c;
 }
 
 .input-container {
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start; 
 }
 
 .custom-input {
     flex-grow: 1;
-    min-height: 38px;
-    max-height: 100px; /* Limit input box height */
-    padding: 8px 12px;
+    min-height: 40px; 
+    max-height: 100px; 
+    padding: 10px;
     margin-right: 10px;
-    background: #3c3c3c;
     border: 1px solid #555;
-    border-radius: 4px;
-    color: white;
+    border-radius: 5px;
+    background: #1e1e1e;
+    color: #f0f0f0;
+    resize: none;
     overflow-y: auto;
-    white-space: pre-wrap; /* Allows line breaks */
-    word-break: break-word;
+    line-height: 1.5;
+    white-space: pre-wrap;
 }
 
+/* Placeholder using data-placeholder attribute for contenteditable */
+.custom-input:empty:before {
+    content: attr(data-placeholder);
+    color: #888;
+    pointer-events: none;
+}
 .custom-input:focus {
     outline: none;
     border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.custom-input[contenteditable]:empty:before {
-    content: attr(data-placeholder);
-    color: #777;
-    pointer-events: none;
 }
 
 #messageForm button {
-    background-color: #007bff;
-    color: white;
+    padding: 10px 20px;
     border: none;
-    padding: 8px 15px;
-    border-radius: 4px;
+    border-radius: 5px;
+    background: #007bff;
+    color: white;
     cursor: pointer;
     font-weight: bold;
-    transition: background-color 0.2s;
-    height: 38px; /* Match input height */
+    height: 40px; 
+    align-self: flex-end; 
 }
 
 #messageForm button:hover {
-    background-color: #0056b3;
+    background: #0056b3;
 }
 
-/* Character Counter Visibility */
-#charCountContainer {
-    font-size: 0.75rem;
-    margin-top: 4px;
-    color: #ccc !important; 
+/* Character Count Display (NEW) */
+.char-count-display {
+    text-align: right;
+    margin-top: 5px;
+    font-size: 0.7em;
+    color: #ccc;
+    padding-right: 5px;
 }
 
-/* --- BUTTON STYLING (Restored Flat Look) --- */
-.btn {
-    border-radius: 4px;
-    font-weight: 500;
-    transition: background-color 0.2s, box-shadow 0.2s, border-color 0.2s;
-    box-shadow: none !important; /* Remove shadows/gradients */
-}
-
-/* Primary Button (e.g., Join Chat, Ban Confirm) */
-.btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
-    color: white;
-}
-.btn-primary:hover {
-    background-color: #0056b3;
-    border-color: #0056b3;
-}
-
-/* Secondary Button (e.g., Cancel, Admin Panel, Change Name) */
-.btn-secondary {
-    background-color: #555;
-    border-color: #555;
-    color: white;
-}
-.btn-secondary:hover {
-    background-color: #6c757d;
-    border-color: #6c757d;
-}
-
-/* Danger Button (e.g., Clear History, Kick/Ban) */
-.btn-danger {
-    background-color: #dc3545;
-    border-color: #dc3545;
-    color: white;
-}
-.btn-danger:hover {
-    background-color: #c82333;
-    border-color: #c82333;
-}
-
-/* Warning Button (e.g., Go Anonymous) */
-.btn-warning {
-    background-color: #ffc107;
-    border-color: #ffc107;
-    color: #212529; /* Darker text for visibility */
-}
-.btn-warning:hover {
-    background-color: #e0a800;
-    border-color: #e0a800;
-}
-
-
-/* --- MODAL STYLES (REINFORCED DARK THEME) --- */
+/* Bootstrap Modal Adjustments for Dark Theme */
 .modal-content {
-    background-color: #2c2c2c !important; 
-    color: #f0f0f0 !important; 
+    background-color: #2c2c2c !important;
+    color: #f0f0f0 !important;
 }
-
+.modal-title {
+    color: #fff !important;
+}
 .modal-header {
     border-bottom: 1px solid #444 !important;
 }
-
-.modal-title {
-    color: white !important;
-}
-
-.modal-body {
-    background-color: #2c2c2c !important; 
-    color: #f0f0f0 !important;
-}
-
 .modal-footer {
     border-top: 1px solid #444 !important;
 }
 
-/* Close button filter fix */
-.btn-close {
-    filter: invert(1);
-    color: white; 
+/* Admin Panel Specific Styles */
+#adminPanelModal h5 {
+    color: #ff9900;
 }
 
-/* Admin List in Modal */
 .user-select-list {
     list-style: none;
     padding: 0;
-    max-height: 250px;
+    max-height: 300px;
     overflow-y: auto;
-    border: 1px solid #444;
-    border-radius: 4px;
-    background-color: #1e1e1e;
+    background: #1e1e1e;
+    border-radius: 5px;
 }
 
 .user-select-list li {
-    padding: 8px 12px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #383838;
     cursor: pointer;
-    border-bottom: 1px solid #333;
-    transition: background-color 0.15s;
-}
-
-.user-select-list li:last-child {
-    border-bottom: none;
 }
 
 .user-select-list li:hover {
+    background-color: #555;
+}
+
+/* Tab Styling (NEW) */
+.chat-tabs {
+    display: flex;
+    margin-bottom: 15px;
+    margin-top: 10px;
+    border-bottom: 1px solid #444;
+}
+
+.chat-tab {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #aaa;
+    border-radius: 5px 5px 0 0;
+}
+
+.chat-tab:hover {
+    color: #fff;
     background-color: #383838;
 }
 
-.admin-name-list {
-    color: gold;
-    font-weight: bold;
+.chat-tab.active {
+    color: #007bff;
+    background-color: #1e1e1e;
+    border: 1px solid #444;
+    border-bottom: none;
 }
 
-/* Custom Scrollbar */
+/* CUSTOM SCROLLBAR STYLING */
+/* WebKit-based scrollbar styling */
 #messages::-webkit-scrollbar,
 #user-info::-webkit-scrollbar,
 .custom-input::-webkit-scrollbar,
@@ -371,6 +299,7 @@ body {
     background-color: transparent; 
 }
 
+/* The track */
 #messages::-webkit-scrollbar-track,
 #user-info::-webkit-scrollbar-track,
 .custom-input::-webkit-scrollbar-track,
@@ -379,6 +308,7 @@ body {
     border-radius: 10px;
 }
 
+/* The thumb */
 #messages::-webkit-scrollbar-thumb,
 #user-info::-webkit-scrollbar-thumb,
 .custom-input::-webkit-scrollbar-thumb,
@@ -387,10 +317,10 @@ body {
     border-radius: 10px;
 }
 
+/* Hover state for the thumb */
 #messages::-webkit-scrollbar-thumb:hover,
 #user-info::-webkit-scrollbar-thumb:hover,
 .custom-input::-webkit-scrollbar-thumb:hover,
 .user-select-list::-webkit-scrollbar-thumb:hover {
     background-color: #777; 
 }
-
