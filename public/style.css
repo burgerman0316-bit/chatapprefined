@@ -190,7 +190,7 @@ body {
     padding: 0;
     background-color: #2c2c2c;
     border-top: 1px solid #444;
-    max-width: 100%; /* NEW: Ensures form respects container width */
+    max-width: 100%; 
 }
 
 .input-container {
@@ -212,12 +212,14 @@ body {
     max-height: 80px;
     overflow-y: auto;
     -webkit-user-modify: read-write-plaintext-only;
-    /* --- CRITICAL OVERFLOW FIXES --- */
-    max-width: 100%;    /* NEW: Hard cap on horizontal size */
-    min-width: 0;       /* Must have to fix flex-item overflow */
-    word-break: break-all; /* Forces break on single long words/URLs */
-    overflow-x: hidden; /* Clips any remaining overflow */
-    white-space: normal; /* Ensures text wraps */
+    
+    /* --- ULTIMATE CRITICAL OVERFLOW FIXES --- */
+    box-sizing: border-box; /* NEW: Forces width calculation to include padding and border */
+    max-width: 100%;    
+    min-width: 0;       
+    word-break: break-all; 
+    overflow-x: hidden; 
+    white-space: normal; 
 }
 
 .custom-input:empty::before {
