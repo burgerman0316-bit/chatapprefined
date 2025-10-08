@@ -1,4 +1,4 @@
-// chat.js - FINAL SCRIPT WITH IP DISPLAY FIX AND MESSAGE BUBBLE FIX
+// chat.js - FINAL SCRIPT WITH MESSAGE BUBBLE FIX
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
@@ -75,22 +75,25 @@ function appendMessage(msg) {
     if (msg.type === 'system') {
         item.classList.add('system');
         item.textContent = msg.content;
-    } else if (msg.username === displayName || (msg.username === 'You' && msg.isPrivate)) {
-        // FIX: Reinstated logic for identifying the sender's own messages
+    } 
+    // FIX: Corrected logic for identifying and formatting the user's own messages
+    else if (msg.username === displayName || (msg.username === 'You' && msg.isPrivate)) {
         item.classList.add('own');
-        // Prepend "You: " for regular messages and "You (Private to X):" for DMs sent by the user (which server sends back as You)
-        let contentPrefix = '';
-        if (msg.username === 'You' && msg.isPrivate && msg.recipient) {
-            // This is a private message sent by the user, echoed back from the server
-             contentPrefix = `<span class="sender-name private-name">You (Private to ${msg.recipient})</span>`;
-        } else if (msg.username === displayName) {
-             // This is a regular public/admin message sent by the user
-             contentPrefix = '<span class="sender-name">You</span>';
-        }
         
-        // Use the combined content/prefix
-        item.innerHTML = `${contentPrefix}${msg.content} ${timeHtml}`;
-    } else {
+        let nameDisplay = 'You';
+        let nameClass = 'sender-name';
+
+        if (msg.username === 'You' && msg.isPrivate && msg.recipient) {
+             // DM echo: e.g., "You (Private to UserB)"
+             nameDisplay = `You (Private to ${msg.recipient})`;
+             nameClass = 'sender-name private-name';
+        } 
+        
+        // Structure: [Name/You] [Content] [Timestamp]
+        item.innerHTML = `<span class="${nameClass}">${nameDisplay}</span>${msg.content} ${timeHtml}`;
+    } 
+    // This block handles messages from other users
+    else { 
         item.classList.add('other');
         if (msg.isAdmin) { 
             item.classList.add('admin-msg'); 
