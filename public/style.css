@@ -24,7 +24,6 @@ body {
 
 /* User Info Sidebar */
 #user-info {
-    /* NEW WIDTH: 200px */
     width: 200px; 
     padding: 15px;
     background: #2c2c2c;
@@ -129,16 +128,6 @@ body {
     color: #ccc;
 }
 
-.msg.own .timestamp {
-    color: #999;
-    margin-left: 8px;
-}
-
-.msg.other .timestamp {
-    color: #999;
-    margin-left: 8px;
-}
-
 .msg.system {
     color: #ffc107; /* Warning/System color */
     font-style: italic;
@@ -212,12 +201,11 @@ body {
     border-radius: 4px;
 }
 
-/* FIX: Ensure user names in the admin management list are white */
 .user-select-list li {
     padding: 8px 10px;
     border-bottom: 1px solid #333;
     cursor: pointer;
-    color: #f0f0f0 !important; /* Forces text to be light */
+    color: #f0f0f0 !important; /* Fix for black text */
 }
 
 .user-select-list li:last-child {
@@ -229,7 +217,6 @@ body {
 }
 
 /* CUSTOM SCROLLBAR STYLING */
-/* WebKit-based scrollbar styling */
 #messages::-webkit-scrollbar,
 #user-info::-webkit-scrollbar,
 .custom-input::-webkit-scrollbar,
@@ -238,7 +225,6 @@ body {
     background-color: transparent; 
 }
 
-/* The track */
 #messages::-webkit-scrollbar-track,
 #user-info::-webkit-scrollbar-track,
 .custom-input::-webkit-scrollbar-track,
@@ -247,7 +233,6 @@ body {
     border-radius: 10px;
 }
 
-/* The thumb */
 #messages::-webkit-scrollbar-thumb,
 #user-info::-webkit-scrollbar-thumb,
 .custom-input::-webkit-scrollbar-thumb,
@@ -256,7 +241,6 @@ body {
     border-radius: 10px;
 }
 
-/* Hover state for the thumb */
 #messages::-webkit-scrollbar-thumb:hover,
 #user-info::-webkit-scrollbar-thumb:hover,
 .custom-input::-webkit-scrollbar-thumb:hover,
@@ -265,45 +249,38 @@ body {
 }
 
 /* --- BOOTSTRAP MODAL OVERRIDES (DARK THEME FIX) --- */
-/* Increased specificity and !important for modal background */
 .modal-content {
-    background-color: #2c2c2c !important; /* Dark background for modal content */
-    color: #f0f0f0 !important; /* Light text color for modal body */
-    border: 1px solid #444 !important; /* Subtle dark border */
+    background-color: #2c2c2c !important; 
+    color: #f0f0f0 !important; 
+    border: 1px solid #444 !important; 
 }
 
-/* Override default white modal header */
 .modal-header {
     background-color: #2c2c2c !important;
     border-color: #444 !important; 
 }
 
-/* Override default white modal title */
 .modal-title {
     color: #f0f0f0 !important;
 }
 
-/* Override default white modal footer */
 .modal-footer {
     background-color: #2c2c2c !important;
     border-color: #444 !important; 
 }
 
-/* Fix Bootstrap close button to be visible on dark background */
 .modal-header .btn-close {
-    filter: invert(1) grayscale(100%) brightness(200%) !important; /* Makes the icon white/light */
+    filter: invert(1) grayscale(100%) brightness(200%) !important; 
 }
 
 .modal-body .form-label {
     color: #f0f0f0 !important;
 }
 
-/* Ensure strong/bold text is visible */
 .modal-body strong {
     color: #fff !important;
 }
 
-/* Fix for input fields inside modals (Bootstrap default is white) */
 .modal-body .form-control {
     background-color: #1e1e1e !important;
     color: #f0f0f0 !important;
