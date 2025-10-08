@@ -58,7 +58,7 @@ let isAdmin = false;
 let userToKick = null; 
 let userIpToBan = null; 
 let currentChatContext = 'public'; 
-const MAX_CHARS = 256;
+const MAX_CHARS = 500;
 const ADMIN_CHAT_ID = 'admin_chat';
 
 // --- Initial Setup ---
@@ -514,3 +514,4 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
