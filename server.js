@@ -4,16 +4,18 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+// CRITICAL FIX: Use environment variable PORT and HOST for deployment
+const PORT = process.env.PORT || 3000;
+const HOST = '0.0.0.0';
 
-const PORT = 3000;
+const io = new Server(server);
 
 // --- Global Data Stores ---
 let userList = {}; // Stores { socketId: { username: 'Name', isStaff: true } }
 let messageHistory = [];
 const STAFF_CODES = ['mod1', 'admin'];
 
-// NEW: Ban lists for short-term and device bans
+// Ban lists for short-term and device bans
 let bannedUsers = {}; // Stores { 'username': { expiry: timestamp, reason: 'Name Ban', admin: 'Name' } }
 let bannedFingerprints = {}; // Stores { 'fingerprint_hash': { expiry: timestamp, reason: 'Device Ban', admin: 'Name' } }
 
@@ -24,7 +26,7 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
-// --- Middleware to Check Bans (Crucial for short bans and device bans) ---
+// --- Middleware to Check Bans ---
 io.use((socket, next) => {
     const attemptingName = socket.handshake.query.name;
     const deviceFingerprint = socket.handshake.query.fingerprint;
@@ -60,7 +62,7 @@ io.use((socket, next) => {
         }
     }
 
-    // Attach the fingerprint and name to the socket for easy access later and initial name check
+    // Attach the fingerprint to the socket
     socket.deviceFingerprint = deviceFingerprint;
     
     next();
@@ -70,7 +72,6 @@ io.use((socket, next) => {
 
 function updateOnlineUsers() {
     const users = Object.values(userList).map(u => u.username).filter(name => name);
-    // Use Set to ensure unique usernames are counted
     const uniqueUsers = Array.from(new Set(users)); 
 
     io.emit('user count', {
@@ -80,13 +81,11 @@ function updateOnlineUsers() {
 }
 
 function staffLogin(socket, name) {
-    // Check if the name is already in use
     const existingUser = Object.values(userList).find(u => u.username === name);
     if (existingUser) {
         return socket.emit('name_in_use_modal', 'That name is already in use.');
     }
     
-    // Check for staff code
     const isStaff = STAFF_CODES.includes(name.toLowerCase());
 
     if (isStaff) {
@@ -98,7 +97,6 @@ function staffLogin(socket, name) {
         socket.broadcast.emit('system_alert', `${displayName} (STAFF) has joined the chat.`);
         console.log(`Staff ${displayName} connected.`);
     } else {
-        // This case should not be reached if client logic works, but kept for safety
         socket.emit('staff_name_reserved_modal', 'Staff code invalid.');
     }
     updateOnlineUsers();
@@ -109,16 +107,13 @@ function handleNameAcceptance(socket, name) {
         return socket.emit('name_in_use_modal', 'That name is already in use.');
     }
 
-    // Check if the name is a reserved staff code
     if (STAFF_CODES.includes(name.toLowerCase())) {
         return socket.emit('staff_name_reserved_modal', 'That name is reserved for staff login. Use the staff code to login.');
     }
 
-    // Add user to list
     socket.isStaff = false;
     userList[socket.id] = { username: name, isStaff: false };
     
-    // Send success
     socket.emit('name_accepted', name);
     socket.emit('chat history', messageHistory);
     socket.broadcast.emit('system_alert', `${name} has joined the chat.`);
@@ -129,6 +124,13 @@ function handleNameAcceptance(socket, name) {
 
 // --- Socket.IO Connection Handler ---
 io.on('connection', (socket) => {
+    
+    // Helper function to find the target socket by username
+    const findTargetSocket = (targetName) => {
+        const targetSocketId = Object.keys(userList).find(id => userList[id].username === targetName);
+        return targetSocketId ? io.sockets.sockets.get(targetSocketId) : null;
+    };
+    
     // 1. Initial name check (used by staff login flow)
     socket.on('check_staff_status', (name) => {
         const isStaffAttempt = STAFF_CODES.includes(name.toLowerCase());
@@ -143,18 +145,12 @@ io.on('connection', (socket) => {
     // 2. Chat Messages
     socket.on('chat message', (msg) => {
         const user = userList[socket.id];
-        if (!user) return; // User not registered, ignore message
+        if (!user) return; 
 
-        // --- COMMANDS ---
+        // --- COMMANDS (Staff Only) ---
         if (user.isStaff) {
             const content = msg.content;
-
-            // Helper function to find the target socket by username
-            const findTargetSocket = (targetName) => {
-                const targetSocketId = Object.keys(userList).find(id => userList[id].username === targetName);
-                return targetSocketId ? io.sockets.sockets.get(targetSocketId) : null;
-            };
-
+            
             // /kick [username] command
             if (content.startsWith('/kick ')) {
                 const targetName = content.split(' ')[1];
@@ -195,13 +191,10 @@ io.on('connection', (socket) => {
                         targetSocket.emit('system_error', `You have been banned for ${durationSeconds} seconds.`);
                         targetSocket.disconnect(true);
                         
-                        console.log(`User ${targetName} banned until ${new Date(banExpiry)}`);
-
                         setTimeout(() => {
                             if (bannedUsers[targetName]) {
                                 delete bannedUsers[targetName];
                                 io.emit('system_alert', `${targetName}'s username ban has expired. They may now reconnect.`);
-                                console.log(`User ${targetName} unbanned.`);
                             }
                         }, banDurationMs);
 
@@ -239,8 +232,6 @@ io.on('connection', (socket) => {
                         targetSocket.emit('system_error', `Your device has been banned for ${durationSeconds} seconds.`);
                         targetSocket.disconnect(true);
                         
-                        console.log(`Device ${fingerprint} banned until ${new Date(banExpiry)}`);
-
                         setTimeout(() => {
                             if (bannedFingerprints[fingerprint]) {
                                  delete bannedFingerprints[fingerprint];
@@ -249,15 +240,15 @@ io.on('connection', (socket) => {
                         }, banDurationMs);
 
                     } else {
-                        socket.emit('system_error', `User ${targetName} not found or their device ID is missing.`);
+                        socket.emit('system_error', `User ${targetName} not found or their device ID is missing (may not be using a modern browser).`);
                     }
                 } else {
                     socket.emit('system_error', 'Invalid /deviceban command. Usage: /deviceban [username] [seconds]');
                 }
                 return; 
             }
-
-            // Admin command was used, and none of the above matched, ignore the message.
+            
+            // Ignore any other admin commands that didn't match
             if (content.startsWith('/')) {
                 return;
             }
@@ -284,7 +275,6 @@ io.on('connection', (socket) => {
         const sender = userList[socket.id];
         if (!sender) return;
 
-        // Find the socket ID of the recipient
         const recipientSocketId = Object.keys(userList).find(id => userList[id].username === msg.recipient);
 
         const timestamp = new Date().getTime();
@@ -296,14 +286,12 @@ io.on('connection', (socket) => {
             timestamp: timestamp
         };
 
-        // Send to recipient
         if (recipientSocketId) {
             io.to(recipientSocketId).emit('private message', fullMsg);
         } else {
             socket.emit('system_error', `User ${msg.recipient} not found or not online.`);
         }
         
-        // Send a copy back to the sender
         socket.emit('private message', fullMsg);
     });
 
@@ -333,16 +321,16 @@ io.on('connection', (socket) => {
             
             if (user.isStaff) {
                 io.emit('system_alert', `${user.username} (STAFF) has left the chat.`);
-                console.log(`Staff ${user.username} disconnected.`);
             } else {
                 io.emit('system_alert', `${user.username} has left the chat.`);
-                console.log(`User ${user.username} disconnected.`);
             }
+            console.log(`User ${user?.username} disconnected.`);
             updateOnlineUsers();
         }
     });
 });
 
-server.listen(PORT, () => {
-    console.log(`Chat server running on http://localhost:${PORT}`);
+// CRITICAL FIX FOR DEPLOYMENT: Listen on the provided PORT and the required HOST (0.0.0.0)
+server.listen(PORT, HOST, () => {
+    console.log(`Chat server running on host ${HOST} on port ${PORT}`);
 });
