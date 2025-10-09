@@ -361,7 +361,7 @@ io.on('connection', (socket) => {
     broadcastUserCount();
   });
 
-  // 9. Admin: Fingerprint Ban User (Staff only) - RESTORED LOGIC
+  // 9. Admin: Fingerprint Ban User (Staff only)
   socket.on('admin:fp_ban_user', ({ targetName, targetFP, days, hours, minutes, reason }) => {
       const admin = users.get(socket.id);
       if (!admin || !admin.isAdmin) return;
@@ -384,6 +384,9 @@ io.on('connection', (socket) => {
           }
       }
       
+      // Confirmation alert to the executing admin, showing full FP ID
+      socket.emit('system_alert', `SUCCESS: You BANNED ${targetName || 'N/A'} (FP: ${targetFP}) for ${days}d ${hours}h ${minutes}m.`);
+      
       const banMsg = {
         username: 'System',
         content: `Moderator ${admin.displayName} has BANNED ${targetName} for ${days}d ${hours}h ${minutes}m.`,
@@ -399,7 +402,7 @@ io.on('connection', (socket) => {
       broadcastUserCount();
   });
   
-  // 10. Admin: Unban Fingerprint (Staff only) - RESTORED LOGIC
+  // 10. Admin: Unban Fingerprint (Staff only)
   socket.on('admin:unban_fp', (fpId) => {
       const admin = users.get(socket.id);
       if (!admin || !admin.isAdmin) return;
@@ -407,13 +410,14 @@ io.on('connection', (socket) => {
       if (fpBans.has(fpId)) {
           fpBans.delete(fpId);
           io.to(STAFF_ROOM).emit('system_alert', `Moderator ${admin.displayName} UNBANNED FP ID ${fpId.substring(0, 8)}...`);
-          socket.emit('system_alert', `Fingerprint ID ${fpId.substring(0, 8)}... has been unbanned.`);
+          // Confirmation alert to the executing admin, showing full FP ID
+          socket.emit('system_alert', `SUCCESS: You UNBANNED FP ID ${fpId}.`);
       } else {
           socket.emit('system_error', `Fingerprint ID ${fpId} is not currently banned.`);
       }
   });
   
-  // 11. Admin: Go Anonymous (Staff only) - RESTORED LOGIC
+  // 11. Admin: Go Anonymous (Staff only)
   socket.on('admin:go_anonymous', () => {
     const admin = users.get(socket.id);
     if (!admin || !admin.isAdmin) return;
@@ -455,7 +459,7 @@ io.on('connection', (socket) => {
     broadcastUserCount();
   });
 
-  // 12. Admin Request User Map (FIXED: Populates the Admin Panel)
+  // 12. Admin Request User Map (Fixed)
   socket.on('admin:request_user_map', () => {
       const admin = users.get(socket.id);
       if (!admin || !admin.isAdmin) return;
