@@ -26,7 +26,7 @@ const STAFF_LIST = [
 ];
 
 // Main data structures
-const users = new Map(); // socket.id -> { displayName, isAdmin, fpid, ip, chatContext, socket }
+const users = new Map(); // socket.id -> { displayName, isAdmin, fpid, ip, chatContext, socket, staffKey }
 const publicHistory = [];
 const adminHistory = [];
 const fpBanList = new Map(); // fpid -> { banUntil: Date, reason: string }
@@ -99,30 +99,27 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// --- SOCKET.IO CONNECTION ---
+// --- SOCKET.IO CONNECTION (Modified to eliminate Guest-#### users) ---
 io.on('connection', (socket) => {
     const userIp = socket.handshake.address; 
     let fpid = 'unknown'; 
+    let isAuthenticated = false; 
 
-    // 1. Initial user setup (temporary)
-    users.set(socket.id, { 
+    // Temporary object to hold connection data before the user is authenticated.
+    let tempUserData = { 
         displayName: `Guest-${socket.id.substring(0, 4)}`, 
         isAdmin: false, 
         fpid: fpid,
         ip: userIp,
         chatContext: 'public', 
         socket: socket 
-    });
-    
-    // 2. Client sends Fingerprint ID (CRITICAL FOR BAN PERSISTENCE)
+    };
+
+    // 1. Client sends Fingerprint ID (CRITICAL FOR BAN PERSISTENCE)
     socket.on('client:send_fingerprint_id', (clientFpid) => {
         if (!clientFpid || clientFpid === 'no_fingerprint_id') return;
         fpid = clientFpid;
-        const user = users.get(socket.id);
-        if (user) {
-            user.fpid = fpid;
-            users.set(socket.id, user); 
-        }
+        tempUserData.fpid = fpid;
 
         // Check ban list
         const banEntry = fpBanList.get(fpid);
@@ -134,22 +131,24 @@ io.on('connection', (socket) => {
                     reason: banEntry.reason || 'Banned by Moderator.',
                     banDurationMs: banDurationMs
                 };
-                // Send the ban modal event and immediately disconnect
                 socket.emit('banned_modal', banData); 
                 socket.disconnect(true);
                 return;
             } else {
                 // Ban expired
                 fpBanList.delete(fpid);
-                socket.emit('system_alert', 'Your previous ban has expired. Welcome back.');
+                socket.emit('system_alert', 'Your previous ban has expired. Please choose a name.');
             }
         }
+        // If not banned, wait for 'check_staff_status' to continue.
     });
 
-    // 3. User attempts to join/check staff status
+    // 2. User attempts to join/check staff status (THIS IS NOW THE AUTHENTICATION STEP)
     socket.on('check_staff_status', (loginAttempt) => {
-        let user = users.get(socket.id);
-        if (!user) return; 
+        if (isAuthenticated) return; 
+
+        // Use the temporary data built up from connection and FPID events
+        let user = tempUserData; 
 
         const staffEntry = STAFF_LIST.find(s => s.loginName === loginAttempt);
         const isAdminLogin = !!staffEntry;
@@ -159,14 +158,17 @@ io.on('connection', (socket) => {
             user.displayName = staffEntry.displayName;
             user.isAdmin = true;
             user.staffKey = staffEntry.loginName; 
-            users.set(socket.id, user); 
-
+            
             socket.join(STAFF_ROOM);
             socket.emit('staff_status_update', { 
                 displayName: user.displayName, 
                 isAdmin: true,
                 currentContext: user.chatContext 
             });
+
+            // CRITICAL: Add user to the global map and set isAuthenticated flag
+            users.set(socket.id, user); 
+            isAuthenticated = true;
 
             const joinMsg = {
                 username: 'System',
@@ -184,6 +186,7 @@ io.on('connection', (socket) => {
             // Regular User Login
             const name = loginAttempt.substring(0, 16);
             
+            // Check for name conflicts (check against currently authenticated users)
             const nameTaken = Array.from(users.values()).some(u => u.displayName === name);
             if (nameTaken) {
                  socket.emit('name_rejected', `The name "${name}" is already in use.`);
@@ -191,7 +194,10 @@ io.on('connection', (socket) => {
             }
 
             user.displayName = name;
+            
+            // CRITICAL: Add user to the global map and set isAuthenticated flag
             users.set(socket.id, user); 
+            isAuthenticated = true;
             
             socket.emit('name_accepted', name);
             
@@ -211,10 +217,10 @@ io.on('connection', (socket) => {
         broadcastUserCount();
     });
 
-    // 4. Name Change
+    // 3. Name Change
     socket.on('name_change', (newName) => {
         let user = users.get(socket.id);
-        if (!user || user.isAdmin) return; 
+        if (!user || user.isAdmin) return; // Authentication check
         
         const oldName = user.displayName;
         const finalNewName = newName.substring(0, 16); 
@@ -243,10 +249,10 @@ io.on('connection', (socket) => {
         broadcastUserCount();
     });
 
-    // 5. Chat Messages (Public or Admin)
+    // 4. Chat Messages (Public or Admin)
     socket.on('chat message', (data) => {
         const user = users.get(socket.id);
-        if (!user) return; 
+        if (!user) return; // Authentication check
 
         const safeContent = sanitiseContent(data.content);
         if (!safeContent) return; 
@@ -268,10 +274,10 @@ io.on('connection', (socket) => {
         }
     });
     
-    // 6. Private Messages
+    // 5. Private Messages
     socket.on('private message', (data) => {
         const sender = users.get(socket.id);
-        if (!sender) return; 
+        if (!sender) return; // Authentication check
 
         const recipientUser = Array.from(users.values()).find(u => u.displayName === data.recipient);
         
@@ -306,7 +312,7 @@ io.on('connection', (socket) => {
         socket.emit('chat message', confirmationMsg);
     });
 
-    // 7. Admin: Set Chat Context (Public/Admin)
+    // 6. Admin: Set Chat Context (Public/Admin)
     socket.on('admin:set_context', (contextId) => {
         const user = users.get(socket.id);
         if (!user) return;
@@ -329,7 +335,7 @@ io.on('connection', (socket) => {
         broadcastUserCount();
     });
     
-    // 8. Admin: Clear History
+    // 7. Admin: Clear History
     socket.on('admin:clear_history', (contextId) => {
         const admin = users.get(socket.id);
         if (!admin || !admin.isAdmin) return;
@@ -350,7 +356,7 @@ io.on('connection', (socket) => {
         io.emit('admin:history_cleared', { targetChatId: contextId, clearMsg: clearMsg });
     });
 
-    // 9. Admin: Go Anonymous
+    // 8. Admin: Go Anonymous
     socket.on('admin:go_anonymous', () => {
         let user = users.get(socket.id);
         if (!user || !user.isAdmin) return;
@@ -379,7 +385,7 @@ io.on('connection', (socket) => {
         broadcastUserCount();
     });
     
-    // 10. Admin: Kick User
+    // 9. Admin: Kick User
     socket.on('admin:kick_user', ({ targetName }) => {
         const admin = users.get(socket.id);
         if (!admin || !admin.isAdmin) return;
@@ -418,12 +424,11 @@ io.on('connection', (socket) => {
         broadcastUserCount();
     });
 
-    // 11. Admin: Ban User by FPID (HANDLES /BAN COMMAND AND MODAL BAN)
+    // 10. Admin: Ban User by FPID
     socket.on('admin:ip_ban_user', ({ targetName, days, hours, minutes, reason }) => {
         const admin = users.get(socket.id);
         if (!admin || !admin.isAdmin) return;
         
-        // 1. Find the target user's FPID using their display name
         let targetSocketId = null;
         let targetFpid = null;
 
@@ -440,14 +445,11 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // 2. Calculate ban duration
         const banDurationMs = (days * 24 * 60 * 60 * 1000) + (hours * 60 * 60 * 1000) + (minutes * 60 * 1000);
         const banUntil = new Date(Date.now() + banDurationMs);
 
-        // 3. Add ban to the persistent list
         fpBanList.set(targetFpid, { banUntil, reason });
 
-        // 4. If user is currently connected, send ban modal and disconnect
         if (targetSocketId) {
             const banData = {
                 reason: reason,
@@ -459,7 +461,6 @@ io.on('connection', (socket) => {
             if (targetSocket) targetSocket.disconnect(true);
         }
         
-        // 5. Broadcast system message
         const banMsg = {
             username: 'System',
             content: `Moderator ${admin.displayName} has FPID BANNED ${targetName} for ${days}d ${hours}h ${minutes}m. Reason: ${reason}.`,
@@ -480,11 +481,12 @@ io.on('connection', (socket) => {
         broadcastUserCount();
     });
 
-    // 12. Disconnect 
+    // 11. Disconnect 
     socket.on('disconnect', () => {
         const user = users.get(socket.id);
-        if (!user || user.displayName.startsWith('Guest-')) return;
-
+        // Only broadcast leave message if the user was authenticated
+        if (!user) return; 
+        
         const leaveMsg = {
             username: 'System',
             content: `${user.displayName} has left the chat.`,
@@ -499,8 +501,6 @@ io.on('connection', (socket) => {
         cleanUpUser(socket.id);
         broadcastUserCount();
     });
-
-    broadcastUserCount();
 });
 
 // --- SERVER START ---
