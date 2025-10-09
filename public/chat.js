@@ -1,9 +1,8 @@
 // chat.js - FINAL SCRIPT WITH ALL FEATURES
 
 // Import the Bootstrap namespace to use its functions
-// FIX: Changed 'const' to 'let' and removed the instantiation here to prevent ReferenceError.
-let myModal; 
-let renameModal; 
+const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
+const renameModal = new bootstrap.Modal(document.getElementById('renameModal')); 
 
 // Socket connection
 const socket = io();
@@ -15,7 +14,8 @@ const container = document.getElementById('container');
 
 const displayNameEl = document.getElementById('display-name');
 const messagesDiv = document.getElementById('messages'); 
-const messageInputDiv = document.getElementById('messageInput');
+// NOTE: Restored to simple input for message handling
+const messageInput = document.getElementById('message-input'); 
 const messageForm = document.getElementById('messageForm');
 const charCountSpan = document.getElementById('char-count'); 
 const charCountContainer = document.getElementById('charCountContainer'); 
@@ -63,10 +63,6 @@ const ADMIN_CHAT_ID = 'admin_chat';
 
 // --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
-    // FIX: Initialize the modal objects only after the DOM is ready and Bootstrap is loaded.
-    myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
-    renameModal = new bootstrap.Modal(document.getElementById('renameModal')); 
-
     myModal.show();
 });
 
@@ -126,8 +122,8 @@ function updatePublicUserList(data) {
         
         li.title = `Click to send private message to ${userDisplayName}`;
         li.addEventListener('click', () => {
-             messageInputDiv.innerText = `/msg ${userDisplayName} `;
-             messageInputDiv.focus();
+             messageInput.value = `/msg ${userDisplayName} `;
+             messageInput.focus();
         });
         userListEl.appendChild(li);
     });
@@ -199,41 +195,50 @@ function switchChatContext(contextId) {
 
 // --- Event Listeners ---
 
-// 1. Handle Login Form Submission
+// 1. Handle Login Form Submission (MODIFIED FOR FPID PERSISTENCE)
 nameForm.addEventListener('submit', e => {
     e.preventDefault();
     const name = nameInput.value.trim();
     if (!name) return;
     
-    // NEW: Get Fingerprint ID before sending login request
-    // This requires a new function (getFingerprintId) which I assume exists or needs to be added 
-    // to your HTML file to load the FingerprintJS library.
-    // Assuming the client's HTML loads the FingerprintJS library and runs this:
-    if (window.FingerprintJS) {
+    // --- FPID LOGIC FIX: Check Local Storage first, then generate new one ---
+    let fpId = localStorage.getItem('chat_user_fpid');
+
+    const sendLoginData = (fpid) => {
+        socket.emit('client:send_fingerprint_id', fpid);
+        socket.emit('check_staff_status', name);
+    };
+
+    if (fpId) {
+        // 1. If FPID is found, use it immediately
+        sendLoginData(fpId);
+    } else if (window.FingerprintJS) {
+        // 2. If no FPID is saved, generate a new one
         FingerprintJS.load().then(fp => {
             fp.get().then(result => {
-                const fpId = result.visitorId;
-                socket.emit('client:send_fingerprint_id', fpId);
-                socket.emit('check_staff_status', name);
+                fpId = result.visitorId;
+                // Save the newly generated FPID for future connections
+                localStorage.setItem('chat_user_fpid', fpId); 
+                sendLoginData(fpId);
             });
-        }).catch(() => {
+        }).catch(err => {
+            console.error("FingerprintJS failed to load or generate ID:", err);
             // Fallback if FPJS fails for some reason
-            socket.emit('client:send_fingerprint_id', 'no_fingerprint_id');
-            socket.emit('check_staff_status', name);
+            sendLoginData('no_fingerprint_id');
         });
     } else {
-         socket.emit('client:send_fingerprint_id', 'no_fingerprint_id');
-         socket.emit('check_staff_status', name);
+         // 3. If FPJS library is not loaded (should not happen with correct HTML)
+         sendLoginData('no_fingerprint_id');
     }
-    
+    // --- END FPID LOGIC FIX ---
 });
 
 // 2. Handle Message Form Submission 
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
-    const content = messageInputDiv.innerText.trim();
+    const content = messageInput.value.trim();
     
-    messageInputDiv.innerText = ''; 
+    messageInput.value = ''; 
     charCountSpan.textContent = `0/${MAX_CHARS}`; 
     charCountContainer.style.color = '#ccc'; // Reset color
 
@@ -287,11 +292,12 @@ messageForm.addEventListener('submit', e => {
 });
 
 // 3. Input Character Counter (Visibility improved via CSS)
-messageInputDiv.addEventListener('input', () => {
-    const currentLength = messageInputDiv.innerText.length;
+messageInput.addEventListener('input', () => {
+    const currentLength = messageInput.value.length;
     
     if (currentLength > MAX_CHARS) {
-        messageInputDiv.innerText = messageInputDiv.innerText.substring(0, MAX_CHARS);
+        // This is handled by maxlength in HTML, but kept for JS safety
+        messageInput.value = messageInput.value.substring(0, MAX_CHARS);
         charCountSpan.textContent = `${MAX_CHARS}/${MAX_CHARS}`;
     } else {
         charCountSpan.textContent = `${currentLength}/${MAX_CHARS}`;
@@ -305,13 +311,15 @@ messageInputDiv.addEventListener('input', () => {
     }
 });
 
-// Ensure Enter sends message
-messageInputDiv.addEventListener('keydown', e => {
+// Ensure Enter sends message (Not needed for simple input but harmless)
+/*
+messageInput.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         messageForm.dispatchEvent(new Event('submit'));
     }
 });
+*/
 
 // 4. Admin Panel Button Handlers
 document.getElementById('clearChatBtn').addEventListener('click', () => {
@@ -364,6 +372,9 @@ banConfirmBtn.addEventListener('click', () => {
         return;
     }
     
+    // NOTE: Sending targetIp is unnecessary if we use the FPID provided in the FPID logic fix.
+    // The server will use the FPID sent during login. 
+    
     const days = parseInt(banDurationDaysInput.value);
     const hours = parseInt(banDurationHoursInput.value);
     const minutes = parseInt(banDurationMinutesInput.value);
@@ -376,7 +387,7 @@ banConfirmBtn.addEventListener('click', () => {
     
     socket.emit('admin:ip_ban_user', { 
         targetName: userToKick,
-        targetIp: userIpToBan, 
+        // The server will handle getting the FPID from the user map for this targetName
         days: days, 
         hours: hours, 
         minutes: minutes,
