@@ -93,13 +93,20 @@ function cleanUpUser(socketId) {
     users.delete(socketId);
 }
 
-// --- EXPRESS SETUP ---
-app.use(express.static(path.join(__dirname, 'public')));
+// --- EXPRESS SETUP (FIXED TO PREVENT CACHING) ---
+app.use(express.static(path.join(__dirname, 'public'), {
+    // Explicitly set headers to prevent browser caching during development
+    setHeaders: (res, path, stat) => {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+    },
+}));
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// --- SOCKET.IO CONNECTION (Modified to eliminate Guest-#### users) ---
+// --- SOCKET.IO CONNECTION ---
 io.on('connection', (socket) => {
     const userIp = socket.handshake.address; 
     let fpid = 'unknown'; 
@@ -220,7 +227,7 @@ io.on('connection', (socket) => {
     // 3. Name Change
     socket.on('name_change', (newName) => {
         let user = users.get(socket.id);
-        if (!user || user.isAdmin) return; // Authentication check
+        if (!user || user.isAdmin) return; 
         
         const oldName = user.displayName;
         const finalNewName = newName.substring(0, 16); 
@@ -252,7 +259,7 @@ io.on('connection', (socket) => {
     // 4. Chat Messages (Public or Admin)
     socket.on('chat message', (data) => {
         const user = users.get(socket.id);
-        if (!user) return; // Authentication check
+        if (!user) return; 
 
         const safeContent = sanitiseContent(data.content);
         if (!safeContent) return; 
@@ -277,7 +284,7 @@ io.on('connection', (socket) => {
     // 5. Private Messages
     socket.on('private message', (data) => {
         const sender = users.get(socket.id);
-        if (!sender) return; // Authentication check
+        if (!sender) return; 
 
         const recipientUser = Array.from(users.values()).find(u => u.displayName === data.recipient);
         
@@ -480,6 +487,7 @@ io.on('connection', (socket) => {
 
         broadcastUserCount();
     });
+
 
     // 11. Disconnect 
     socket.on('disconnect', () => {
