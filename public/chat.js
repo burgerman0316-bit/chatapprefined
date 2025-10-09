@@ -186,10 +186,10 @@ document.getElementById('rename-form').addEventListener('submit', (e) => {
 });
 
 // Admin Panel Button click (Admin Panel Modal will not show, only admin:clear_history is available)
+// Admin Panel Button click (Simplified Action)
 adminPanelBtn.addEventListener('click', () => {
     if (isAdmin) {
-        // Since the Admin Panel Modal is missing, we can default to showing the Clear Confirm Modal.
-        // If you want a full admin panel, you must restore the HTML.
+        // This is the simplest action that doesn't require the large Admin Panel modal.
         clearConfirmTargetName.textContent = chatContext === 'admin' ? 'Admin Chat' : 'Public Chat';
         clearConfirmModal.show();
     }
@@ -337,3 +337,4 @@ socket.on('banned_modal', ({ reason: banReason, banDurationMs }) => {
     }, 1000);
     
 });
+
