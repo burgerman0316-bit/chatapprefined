@@ -108,6 +108,7 @@ function populateAdminUserList(usersMap) {
     if (userKeys.length === 0) {
         const li = document.createElement('li');
         li.textContent = "No non-admin users online.";
+        li.classList.add('list-group-item', 'list-group-item-action', 'list-group-item-dark');
         adminUserListEl.appendChild(li);
         return;
     }
@@ -121,6 +122,7 @@ function populateAdminUserList(usersMap) {
         li.textContent = `${user.displayName} (FP: ${user.fingerprintId.substring(0, 8)}...)`;
         li.dataset.name = user.displayName;
         li.dataset.fpid = user.fingerprintId;
+        li.classList.add('list-group-item', 'list-group-item-action', 'list-group-item-dark');
         li.addEventListener('click', () => selectUserForAdminAction(user));
         adminUserListEl.appendChild(li);
     });
@@ -365,7 +367,7 @@ socket.on('system_error', (message) => {
 socket.on('system_alert', (message) => {
     alert(`Alert: ${message}`);
     // If the alert confirms an admin action, reset the panel state
-    if (message.includes('kicked') || message.includes('BANNED') || message.includes('UNBANNED')) {
+    if (message.includes('kicked') || message.includes('BANNED') || message.includes('UNBANNED') || message.includes('anonymous')) {
         resetAdminActionUI();
     }
 });
