@@ -44,6 +44,7 @@ let currentAdminUserMap = {}; // Map of socketId -> { displayName, ip, isAdmin, 
 let fingerprintId = 'no_fingerprint_id';
 
 // Generate Fingerprint ID (Used for ban persistence)
+// Ensure the Fingerprint2 CDN is loaded in index.html for this to work
 if (window.Fingerprint2) {
     Fingerprint2.get((components) => {
         const values = components.map(component => component.value);
@@ -57,85 +58,103 @@ if (window.Fingerprint2) {
 // --- EVENT LISTENERS (CRITICAL FOR LOGIN) ---
 
 // 1. JOIN CHAT BUTTON CLICK HANDLER
-joinChatButton.addEventListener('click', () => {
-    const loginAttempt = nameInput.value.trim();
-    nameErrorMessage.textContent = '';
-    
-    if (loginAttempt.length === 0) {
-        nameErrorMessage.textContent = 'Please enter a name or staff key.';
-        return;
-    }
-    
-    // The server handles the 16-char limit for regular users and the full key match for staff.
-    socket.emit('check_staff_status', loginAttempt);
-});
-
-// 2. MESSAGE FORM SUBMISSION
-messageForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const content = messageInput.value.trim();
-
-    if (!content) return;
-
-    if (content.startsWith('/msg ')) {
-        // Handle Private Message
-        const parts = content.split(' ');
-        if (parts.length < 3) {
-            appendMessage({ username: 'System', content: 'Usage: /msg [user] [content]', type: 'system' });
-            messageInput.value = '';
+// The check for joinChatButton ensures the code doesn't crash if the element is missing.
+if (joinChatButton) {
+    joinChatButton.addEventListener('click', () => {
+        const loginAttempt = nameInput.value.trim();
+        nameErrorMessage.textContent = '';
+        
+        if (loginAttempt.length === 0) {
+            nameErrorMessage.textContent = 'Please enter a name or staff key.';
             return;
         }
-        const recipient = parts[1];
-        const privateContent = parts.slice(2).join(' ');
         
-        socket.emit('private message', { recipient: recipient, content: privateContent });
+        // The server handles the 16-char limit for regular users and the full key match for staff.
+        socket.emit('check_staff_status', loginAttempt);
+    });
+} else {
+    console.error("Critical Error: 'join-chat-button' not found in HTML.");
+}
 
-    } else if (content === '/anon') {
-        // Handle Anonymous Login (Staff only)
-        if (isAdmin) {
-             socket.emit('admin:go_anonymous');
+
+// 2. MESSAGE FORM SUBMISSION
+if (messageForm) {
+    messageForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const content = messageInput.value.trim();
+
+        if (!content) return;
+
+        if (content.startsWith('/msg ')) {
+            // Handle Private Message
+            const parts = content.split(' ');
+            if (parts.length < 3) {
+                appendMessage({ username: 'System', content: 'Usage: /msg [user] [content]', type: 'system' });
+                messageInput.value = '';
+                return;
+            }
+            const recipient = parts[1];
+            const privateContent = parts.slice(2).join(' ');
+            
+            socket.emit('private message', { recipient: recipient, content: privateContent });
+
+        } else if (content === '/anon') {
+            // Handle Anonymous Login (Staff only)
+            if (isAdmin) {
+                 socket.emit('admin:go_anonymous');
+            } else {
+                 appendMessage({ username: 'System', content: 'Command not recognized or access denied.', type: 'system' });
+            }
         } else {
-             appendMessage({ username: 'System', content: 'Command not recognized or access denied.', type: 'system' });
+            // Regular chat message
+            socket.emit('chat message', { content: content, context: currentChatContext });
         }
-    } else {
-        // Regular chat message
-        socket.emit('chat message', { content: content, context: currentChatContext });
-    }
 
-    messageInput.value = '';
-});
+        messageInput.value = '';
+    });
+}
+
 
 // 3. RENAME BUTTONS
-renameButtonGuest.addEventListener('click', () => {
-    const newName = prompt("Enter a new username (max 16 chars):");
-    if (newName && newName.trim().length > 0) {
-        socket.emit('name_change', newName.trim());
-    }
-});
+if (renameButtonGuest) {
+    renameButtonGuest.addEventListener('click', () => {
+        const newName = prompt("Enter a new username (max 16 chars):");
+        if (newName && newName.trim().length > 0) {
+            socket.emit('name_change', newName.trim());
+        }
+    });
+}
+
 
 // 4. ADMIN PANEL BUTTON
-adminPanelButton.addEventListener('click', () => {
-    if (isAdmin) {
-        openAdminPanel();
-    }
-});
+if (adminPanelButton) {
+    adminPanelButton.addEventListener('click', () => {
+        if (isAdmin) {
+            openAdminPanel();
+        }
+    });
+}
 
-closeButton.addEventListener('click', () => {
-    adminPanelModal.style.display = 'none';
-});
+if (closeButton) {
+    closeButton.addEventListener('click', () => {
+        adminPanelModal.style.display = 'none';
+    });
+}
 
 // 5. STAFF CONTEXT TABS
-publicTab.addEventListener('click', () => {
-    if (currentChatContext !== 'public') {
-        switchChatContext('public');
-    }
-});
+if (publicTab && adminTab) {
+    publicTab.addEventListener('click', () => {
+        if (currentChatContext !== 'public') {
+            switchChatContext('public');
+        }
+    });
 
-adminTab.addEventListener('click', () => {
-    if (currentChatContext !== 'admin_chat' && isAdmin) {
-        switchChatContext('admin_chat');
-    }
-});
+    adminTab.addEventListener('click', () => {
+        if (currentChatContext !== 'admin_chat' && isAdmin) {
+            switchChatContext('admin_chat');
+        }
+    });
+}
 
 // --- HELPER UI FUNCTIONS ---
 
@@ -311,8 +330,8 @@ socket.on('name_accepted', (name) => {
     displayUsername.textContent = name;
     nameModal.style.display = 'none';
     chatContainer.style.display = 'flex';
-    staffControls.style.display = 'none'; 
-    guestControls.style.display = 'block';
+    if (staffControls) staffControls.style.display = 'none'; 
+    if (guestControls) guestControls.style.display = 'block';
     updateCommands();
 });
 
@@ -327,9 +346,9 @@ socket.on('staff_status_update', (data) => {
     chatContainer.style.display = 'flex';
     
     // Show staff elements
-    staffControls.style.display = 'flex';
-    guestControls.style.display = 'none';
-    adminPanelButton.style.display = 'block';
+    if (staffControls) staffControls.style.display = 'flex';
+    if (guestControls) guestControls.style.display = 'none';
+    if (adminPanelButton) adminPanelButton.style.display = 'block';
     
     updateCommands();
 });
@@ -401,9 +420,9 @@ socket.on('admin:history_cleared', (data) => {
 
 // 11. Banned Modal Display
 socket.on('banned_modal', (data) => {
-    chatContainer.style.display = 'none';
-    nameModal.style.display = 'none';
-    bannedModal.style.display = 'flex';
+    if (chatContainer) chatContainer.style.display = 'none';
+    if (nameModal) nameModal.style.display = 'none';
+    if (bannedModal) bannedModal.style.display = 'flex';
     
     banReason.textContent = data.reason;
     
