@@ -224,7 +224,7 @@ io.on('connection', socket => {
             secureName: staffLoginAttempt.loginName, 
             isAdmin: true,
             ip: userIp,
-            fingerprintId: userFingerprintId, // NEW: Store FPID
+            fingerprintId: userFingerprintId, // Store FPID
             chatContext: 'public' 
         });
         usernamesMap.set(staffLower, socket.id);
@@ -263,7 +263,7 @@ io.on('connection', socket => {
         secureName: name, 
         isAdmin: false,
         ip: userIp,
-        fingerprintId: userFingerprintId, // NEW: Store FPID
+        fingerprintId: userFingerprintId, // Store FPID
         chatContext: 'public'
     });
     usernamesMap.set(lower, socket.id);
