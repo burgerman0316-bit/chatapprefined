@@ -24,7 +24,7 @@ body {
 
 /* User Info Sidebar */
 #user-info {
-    width: 200px; 
+    width: 200px; /* Adjusted width for better content flow */
     padding: 15px;
     background: #2c2c2c;
     border-right: 1px solid #444;
@@ -190,7 +190,7 @@ body {
     margin-bottom: 5px;
 }
 
-/* Admin List Styling */
+/* Admin List Styling (Kept for compatibility with future use) */
 .user-select-list {
     list-style: none;
     padding: 0;
@@ -205,7 +205,7 @@ body {
     padding: 8px 10px;
     border-bottom: 1px solid #333;
     cursor: pointer;
-    color: #f0f0f0 !important; /* Fix for black text */
+    color: #f0f0f0 !important; 
 }
 
 .user-select-list li:last-child {
