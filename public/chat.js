@@ -1,11 +1,9 @@
-// chat.js - VERSION COMPATIBLE WITH ORIGINAL HTML DESIGN
+// chat.js - FINAL SCRIPT WITH ALL FEATURES
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
 const renameModal = new bootstrap.Modal(document.getElementById('renameModal')); 
-
-// NOTE: References to the missing #adminPanelModal have been REMOVED or COMMENTED OUT.
-// const adminPanelModal = new bootstrap.Modal(document.getElementById('adminPanelModal')); // REMOVED
+const adminPanelModal = new bootstrap.Modal(document.getElementById('adminPanelModal')); // NOW WORKS
 const clearConfirmModal = new bootstrap.Modal(document.getElementById('clearConfirmModal')); 
 const bannedModal = new bootstrap.Modal(document.getElementById('bannedModal'));
 
@@ -22,11 +20,10 @@ const messagesDiv = document.getElementById('messages');
 const messageForm = document.getElementById('messageForm');
 const messageInput = document.getElementById('messageInput');
 const charCountSpan = document.getElementById('char-count'); 
-const charCountContainer = document.getElementById('charCountContainer'); 
 
 const userListEl = document.getElementById('user-list');
 const userCountEl = document.getElementById('user-count');
-// const adminUserListEl = document.getElementById('admin-user-list'); // REMOVED
+const adminUserListEl = document.getElementById('admin-user-list'); 
 
 const adminPanelBtn = document.getElementById('adminPanelBtn');
 const renameBtn = document.getElementById('renameBtn');
@@ -35,20 +32,23 @@ const renameBtn = document.getElementById('renameBtn');
 const publicChatTab = document.getElementById('publicChatTab');
 const adminChatTab = document.getElementById('adminChatTab');
 
-// Modal Elements for Clear History
-const clearConfirmBtn = document.getElementById('clearConfirmBtn');
-const clearConfirmTargetName = document.getElementById('clearConfirmTargetName'); 
-
-// Modal Elements for Ban/Kick (References to these are removed from listeners below)
-// const kickButton = document.getElementById('kickButton'); // REMOVED
-// const banButton = document.getElementById('fpBanSubmitBtn'); // REMOVED
+// Admin Action Buttons
+const kickButton = document.getElementById('kickButton');
+const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+const fpBanSubmitBtn = document.getElementById('fpBanSubmitBtn');
+const fpUnbanBtn = document.getElementById('fpUnbanBtn');
+const adminGoAnon = document.getElementById('adminGoAnon');
 
 // Admin Panel Status & Data
+const adminActionStatus = document.getElementById('adminActionStatus');
+const banTargetNameEl = document.getElementById('banTargetName');
+const banTargetFPIdHidden = document.getElementById('banTargetFPIdHidden');
+
 let currentUserName = '';
 let isAdmin = false;
 let chatContext = 'public';
-// let currentAdminUserMap = {}; // REMOVED
-// let selectedUserForAdminAction = { name: '', fpId: '' }; // REMOVED
+let currentAdminUserMap = {};
+let selectedUserForAdminAction = { name: '', fpId: '' };
 
 
 // --- HELPER FUNCTIONS ---
@@ -56,28 +56,23 @@ let chatContext = 'public';
 function updateCharCount() {
     const text = messageInput.textContent;
     charCountSpan.textContent = `${text.length}/500`;
-    charCountContainer.style.color = text.length > 500 ? 'red' : '#ccc';
+    charCountSpan.style.color = text.length > 500 ? 'red' : '#ccc';
 }
 
 function appendMessage(msg) {
     const li = document.createElement('li');
     li.classList.add('msg');
     
-    // Determine the class based on the sender
-    if (msg.username === currentUserName) {
-        li.classList.add('own');
-    } else if (msg.username === 'System' || msg.type === 'system') {
+    if (msg.username === 'System' || msg.type === 'system') {
         li.classList.add('system');
-    } else {
-        li.classList.add('other');
+    } else if (msg.username === displayNameEl.textContent) {
+        li.classList.add('own');
     }
 
-    // Determine name color
     const nameClass = msg.isAdmin ? 'admin-msg' : '';
 
     const timestamp = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
-    // Check for Private Message structure 
     if (msg.senderName && msg.senderName !== msg.username) {
         li.innerHTML = `<span class="sender-name private-name">${msg.senderName}:</span> ${msg.content} <span class="timestamp">${timestamp}</span>`;
     } else {
@@ -100,24 +95,80 @@ function updateContextUI(context) {
     }
 }
 
-// NOTE: populateAdminUserList and selectUserForAdminAction are REMOVED as they rely on missing HTML.
+function populateAdminUserList(usersMap) {
+    adminUserListEl.innerHTML = '';
+    currentAdminUserMap = {}; // Reset map
+
+    let nonAdminUsers = Object.values(usersMap).filter(u => !u.isAdmin && u.displayName !== currentUserName);
+
+    if (nonAdminUsers.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = "No non-admin users online.";
+        adminUserListEl.appendChild(li);
+        return;
+    }
+
+    nonAdminUsers.forEach(user => {
+        currentAdminUserMap[user.displayName] = user;
+        const li = document.createElement('li');
+        li.textContent = `${user.displayName} (FP: ${user.fingerprintId.substring(0, 8)}...)`;
+        li.dataset.name = user.displayName;
+        li.dataset.fpid = user.fingerprintId;
+        li.addEventListener('click', () => selectUserForAdminAction(user));
+        adminUserListEl.appendChild(li);
+    });
+}
+
+function selectUserForAdminAction(user) {
+    selectedUserForAdminAction = user;
+
+    // UI Updates
+    adminActionStatus.textContent = user.displayName;
+    banTargetNameEl.textContent = user.displayName;
+    banTargetFPIdHidden.value = user.fingerprintId;
+
+    // Enable buttons
+    kickButton.disabled = false;
+    fpBanSubmitBtn.disabled = false;
+    
+    // Highlight selection
+    Array.from(adminUserListEl.children).forEach(li => {
+        li.classList.toggle('active', li.dataset.name === user.displayName);
+    });
+}
+
+function resetAdminActionUI() {
+    selectedUserForAdminAction = { name: '', fpId: '' };
+    adminActionStatus.textContent = 'None';
+    banTargetNameEl.textContent = 'N/A';
+    banTargetFPIdHidden.value = '';
+    kickButton.disabled = true;
+    fpBanSubmitBtn.disabled = true;
+    
+    document.getElementById('banDays').value = 0;
+    document.getElementById('banHours').value = 0;
+    document.getElementById('banMinutes').value = 0;
+    document.getElementById('banReason').value = '';
+    
+    Array.from(adminUserListEl.children).forEach(li => {
+        li.classList.remove('active');
+    });
+}
 
 // --- INITIALIZATION ---
 
-// Prompt for name on connection
 window.onload = () => {
     myModal.show();
-    // Use an external library (like FingerprintJS) to get a unique device ID
     if (window.Fingerprint2) {
-        new Fingerprint2().get(function(result, components) {
+        new Fingerprint2().get(function(result) {
             socket.emit('client:send_fingerprint_id', result);
         });
     } else {
-        // Fallback for environments where Fingerprint2 isn't available or fails
         const fallbackId = `fallback_${Math.random().toString(36).substring(2, 9)}`;
         socket.emit('client:send_fingerprint_id', fallbackId);
     }
 };
+
 
 // --- EVENT LISTENERS ---
 
@@ -146,32 +197,29 @@ messageForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const content = messageInput.textContent.trim();
     if (content) {
-        // Handle PM logic
+        // PM logic
         if (content.toLowerCase().startsWith('/pm ')) {
              const parts = content.substring(4).trim().split(' ');
              const recipient = parts.shift();
              const pmContent = parts.join(' ');
 
              if (recipient && pmContent) {
-                 socket.emit('private message', {
-                     recipient: recipient,
-                     content: pmContent
-                 });
+                 socket.emit('private message', { recipient: recipient, content: pmContent });
              } else {
                  alert('PM usage: /pm [username] [message]');
              }
         } else {
-            // Handle regular chat
+            // Regular chat
             socket.emit('chat message', { content: content });
         }
-        messageInput.textContent = ''; // Clear input
+        messageInput.textContent = ''; 
         updateCharCount();
     }
 });
 
 // Rename button click
 renameBtn.addEventListener('click', () => {
-    document.getElementById('rename-input').value = currentUserName;
+    document.getElementById('rename-input').value = displayNameEl.textContent;
     renameModal.show();
 });
 
@@ -179,49 +227,113 @@ renameBtn.addEventListener('click', () => {
 document.getElementById('rename-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const newName = document.getElementById('rename-input').value.trim();
-    if (newName && newName !== currentUserName) {
+    if (newName && newName !== displayNameEl.textContent) {
         socket.emit('name_change', newName);
         renameModal.hide();
     }
 });
 
-// Admin Panel Button click (Admin Panel Modal will not show, only admin:clear_history is available)
-// Admin Panel Button click (Simplified Action)
+// Admin Panel Button click (Opens the full modal)
 adminPanelBtn.addEventListener('click', () => {
     if (isAdmin) {
-        // This is the simplest action that doesn't require the large Admin Panel modal.
-        clearConfirmTargetName.textContent = chatContext === 'admin' ? 'Admin Chat' : 'Public Chat';
-        clearConfirmModal.show();
+        resetAdminActionUI(); // Clear previous selection
+        adminPanelModal.show();
     }
 });
 
-// Clear History Confirmation
-clearConfirmBtn.addEventListener('click', () => {
+// Kick Button
+kickButton.addEventListener('click', () => {
+    if (selectedUserForAdminAction.name) {
+        if (confirm(`Are you sure you want to KICK ${selectedUserForAdminAction.name}?`)) {
+            socket.emit('admin:kick_user', selectedUserForAdminAction.name);
+            resetAdminActionUI();
+        }
+    }
+});
+
+// Ban Submission
+fpBanSubmitBtn.addEventListener('click', () => {
+    const targetName = banTargetNameEl.textContent;
+    const targetFP = banTargetFPIdHidden.value;
+    const days = parseInt(document.getElementById('banDays').value) || 0;
+    const hours = parseInt(document.getElementById('banHours').value) || 0;
+    const minutes = parseInt(document.getElementById('banMinutes').value) || 0;
+    const reason = document.getElementById('banReason').value.trim();
+
+    if (!targetFP || !reason) {
+        alert("Must select a user and provide a reason.");
+        return;
+    }
+    
+    if (days === 0 && hours === 0 && minutes === 0) {
+        if (!confirm(`Are you sure you want to PERMANENTLY BAN ${targetName} for "${reason}"?`)) {
+            return;
+        }
+    }
+
+    socket.emit('admin:fp_ban_user', { targetName, targetFP, days, hours, minutes, reason });
+    adminPanelModal.hide();
+    resetAdminActionUI();
+});
+
+// Unban Submission
+fpUnbanBtn.addEventListener('click', () => {
+    const fpId = document.getElementById('fpUnbanInput').value.trim();
+    if (fpId) {
+        socket.emit('admin:unban_fp', fpId);
+        document.getElementById('fpUnbanInput').value = '';
+    } else {
+        alert("Enter a Fingerprint ID to unban.");
+    }
+});
+
+// Clear History Button (inside Admin Panel)
+clearHistoryBtn.addEventListener('click', () => {
+    let clearTargetContext = chatContext === 'admin' ? 'admin' : 'public';
+    
+    // Set up the confirmation modal
+    document.getElementById('clearConfirmTargetName').textContent = clearTargetContext === 'admin' ? 'Admin Chat' : 'Public Chat';
+    
+    adminPanelModal.hide(); // Hide the Admin Panel first
+    clearConfirmModal.show(); // Show the confirmation
+});
+
+// Clear History Confirmation (Final execution)
+document.getElementById('clearConfirmBtn').addEventListener('click', () => {
+    // Re-determine the target context based on the text set in the modal body
+    let targetName = document.getElementById('clearConfirmTargetName').textContent;
+    let targetContext = targetName === 'Admin Chat' ? 'admin' : 'public';
+    
     if (isAdmin) {
-        socket.emit('admin:clear_history', clearTargetContext);
+        socket.emit('admin:clear_history', targetContext);
         clearConfirmModal.hide();
     }
 });
 
+// Admin Go Anonymous button
+adminGoAnon.addEventListener('click', () => {
+    socket.emit('admin:go_anonymous');
+    // The server will respond with staff_status_update
+});
+
+
 // Context Switching (Admin only)
 publicChatTab.addEventListener('click', () => {
-    if (chatContext !== 'public' && isAdmin) {
+    if (isAdmin && chatContext !== 'public') {
         socket.emit('admin:set_context', 'public');
     }
 });
 
 adminChatTab.addEventListener('click', () => {
-    if (chatContext !== 'admin' && isAdmin) {
+    if (isAdmin && chatContext !== 'admin') {
         socket.emit('admin:set_context', 'admin_chat');
     }
 });
 
-// NOTE: All admin action button listeners (kickButton, banButton, unbanButton) are REMOVED.
 
 // --- SOCKET LISTENERS ---
 
 socket.on('name_accepted', (name) => {
-    currentUserName = name;
     displayNameEl.textContent = name;
     myModal.hide();
     container.style.display = 'flex';
@@ -234,7 +346,6 @@ socket.on('name_rejected', (reason) => {
 });
 
 socket.on('name_updated_ui', (newName) => {
-    currentUserName = newName;
     displayNameEl.textContent = newName;
 });
 
@@ -244,6 +355,10 @@ socket.on('system_error', (message) => {
 
 socket.on('system_alert', (message) => {
     alert(`Alert: ${message}`);
+    // If the alert is an admin action confirmation, update the user list/UI
+    if (message.includes('kicked') || message.includes('BANNED')) {
+        resetAdminActionUI();
+    }
 });
 
 socket.on('chat history', (history) => {
@@ -261,13 +376,13 @@ socket.on('user count', ({ userList, usersMap }) => {
     userCountEl.textContent = userList.length;
     userListEl.innerHTML = '';
     
+    // Update main user list
     userList.forEach(name => {
         const li = document.createElement('li');
         li.textContent = name;
         if (usersMap[name] && usersMap[name].isAdmin) {
-             li.classList.add('admin-name-list'); // Style admin names
+             li.classList.add('admin-name-list'); 
         }
-        // Optional: Add a click listener for PM quick-send
         li.addEventListener('click', () => {
             messageInput.textContent = `/pm ${name} `;
             messageInput.focus();
@@ -275,21 +390,31 @@ socket.on('user count', ({ userList, usersMap }) => {
         });
         userListEl.appendChild(li);
     });
+
+    // Update admin panel user list only if admin panel is not currently visible
+    // This prevents the list from resetting while an admin is trying to select a user
+    if (isAdmin && !document.getElementById('adminPanelModal').classList.contains('show')) {
+        populateAdminUserList(usersMap);
+    }
 });
 
-// socket.on('admin_user_map', serverUsersMap => { ... }); // REMOVED
+socket.on('admin_user_map', usersMap => {
+    if (isAdmin) {
+        populateAdminUserList(usersMap);
+    }
+});
 
 socket.on('admin_context_switched', newContext => {
     chatContext = newContext;
     updateContextUI(newContext);
 });
 
-socket.on('staff_status_update', ({ isAdmin: status, displayName, secureName, currentContext }) => {
+socket.on('staff_status_update', ({ isAdmin: status, displayName, currentContext }) => {
     isAdmin = status;
     currentUserName = displayName;
     chatContext = currentContext;
     displayNameEl.textContent = displayName;
-
+    
     if (isAdmin) {
         adminChatTab.style.display = 'block';
         adminPanelBtn.style.display = 'inline-block';
@@ -310,7 +435,6 @@ socket.on('banned_modal', ({ reason: banReason, banDurationMs }) => {
     bannedModalBody.innerHTML = `You are BANNED from the chat.<br>Reason: <strong>${banReason}</strong><br>Time remaining: <span id="banTimer"></span>`;
     bannedModal.show();
     
-    // Countdown Timer Logic
     let endTime = new Date().getTime() + banDurationMs;
     
     const timerInterval = setInterval(() => {
@@ -335,6 +459,4 @@ socket.on('banned_modal', ({ reason: banReason, banDurationMs }) => {
         }
         
     }, 1000);
-    
 });
-
