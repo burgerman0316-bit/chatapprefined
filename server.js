@@ -361,7 +361,7 @@ io.on('connection', (socket) => {
     broadcastUserCount();
   });
 
-  // 9. Admin: Fingerprint Ban User (Staff only)
+  // 9. Admin: Fingerprint Ban User (Staff only) - RESTORED LOGIC
   socket.on('admin:fp_ban_user', ({ targetName, targetFP, days, hours, minutes, reason }) => {
       const admin = users.get(socket.id);
       if (!admin || !admin.isAdmin) return;
@@ -372,12 +372,16 @@ io.on('connection', (socket) => {
       const durationMs = (days * 86400000) + (hours * 3600000) + (minutes * 60000);
       const banUntil = new Date(new Date().getTime() + durationMs);
 
+      // Save the ban
       fpBans.set(targetFP, { banUntil, reason });
 
+      // Disconnect the target user if they are currently online
       if (targetSocketId) {
-          io.to(targetSocketId).emit('system_error', `You have been BANNED by Moderator ${admin.displayName} for ${days}d ${hours}h ${minutes}m (${reason}).`);
           const targetSocket = io.sockets.sockets.get(targetSocketId);
-          if (targetSocket) targetSocket.disconnect(true);
+          if (targetSocket) {
+             io.to(targetSocketId).emit('system_error', `You have been BANNED by Moderator ${admin.displayName} for ${days}d ${hours}h ${minutes}m (${reason}).`);
+             targetSocket.disconnect(true);
+          }
       }
       
       const banMsg = {
@@ -395,7 +399,7 @@ io.on('connection', (socket) => {
       broadcastUserCount();
   });
   
-  // 10. Admin: Unban Fingerprint (Staff only)
+  // 10. Admin: Unban Fingerprint (Staff only) - RESTORED LOGIC
   socket.on('admin:unban_fp', (fpId) => {
       const admin = users.get(socket.id);
       if (!admin || !admin.isAdmin) return;
@@ -403,12 +407,13 @@ io.on('connection', (socket) => {
       if (fpBans.has(fpId)) {
           fpBans.delete(fpId);
           io.to(STAFF_ROOM).emit('system_alert', `Moderator ${admin.displayName} UNBANNED FP ID ${fpId.substring(0, 8)}...`);
+          socket.emit('system_alert', `Fingerprint ID ${fpId.substring(0, 8)}... has been unbanned.`);
       } else {
           socket.emit('system_error', `Fingerprint ID ${fpId} is not currently banned.`);
       }
   });
   
-  // 11. Admin: Go Anonymous (Staff only)
+  // 11. Admin: Go Anonymous (Staff only) - RESTORED LOGIC
   socket.on('admin:go_anonymous', () => {
     const admin = users.get(socket.id);
     if (!admin || !admin.isAdmin) return;
@@ -450,7 +455,7 @@ io.on('connection', (socket) => {
     broadcastUserCount();
   });
 
-  // 12. Admin Request User Map (FIX: Added listener to populate Admin Panel)
+  // 12. Admin Request User Map (FIXED: Populates the Admin Panel)
   socket.on('admin:request_user_map', () => {
       const admin = users.get(socket.id);
       if (!admin || !admin.isAdmin) return;
@@ -458,14 +463,14 @@ io.on('connection', (socket) => {
       const userMapForAdmin = {};
       
       // Filter out staff members
-      for (const [id, user] of users.entries()) {
+      for (const user of users.values()) {
           // Only send non-staff users
           if (!user.isAdmin) { 
               userMapForAdmin[user.displayName] = {
                   displayName: user.displayName,
                   fingerprintId: user.fingerprintId,
                   isAdmin: user.isAdmin,
-                  socketId: id
+                  socketId: user.id
               };
           }
       }
