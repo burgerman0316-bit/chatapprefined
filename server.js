@@ -191,6 +191,7 @@ io.on('connection', (socket) => {
             socket.emit('chat history', publicHistory);
         } else {
             // Regular User Login
+            // Only apply character limit if it wasn't a staff key
             const name = loginAttempt.substring(0, 16);
             
             // Check for name conflicts (check against currently authenticated users)
