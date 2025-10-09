@@ -1,13 +1,13 @@
 /* General Styling */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #0d1117; /* GitHub Dark Theme Background */
-    color: #c9d1d9; /* Default Light Grey Text */
+    background-color: #0d1117; /* Dark background */
+    color: #c9d1d9; /* Light grey text */
     margin: 0;
     padding: 0;
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Align to top for better screen view */
+    align-items: flex-start; 
     min-height: 100vh;
 }
 
@@ -31,12 +31,12 @@ body {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    gap: 15px; /* Spacing between sections */
+    gap: 15px; 
 }
 
 h2 {
-    color: #58a6ff;
-    font-size: 1.2em;
+    color: #c9d1d9; /* Standard header color */
+    font-size: 1.1em;
     border-bottom: 1px solid #30363d;
     padding-bottom: 5px;
     margin-top: 0;
@@ -45,7 +45,7 @@ h2 {
 /* User Info Styling */
 .user-info {
     padding: 10px;
-    background-color: #0d1117; /* Darkest element */
+    background-color: #0d1117; 
     border-radius: 6px;
     border: 1px solid #30363d;
 }
@@ -63,12 +63,9 @@ h2 {
 }
 
 #chat-context-tabs button.active {
-    background-color: #58a6ff; /* Active Blue */
+    background-color: #58a6ff; 
     color: #0d1117;
     font-weight: bold;
-}
-#chat-context-tabs button:not(.active):hover {
-    background-color: #404b57;
 }
 
 /* Online Users Styling */
@@ -76,13 +73,14 @@ h2 {
     list-style: none;
     padding: 0;
     margin: 0;
-    max-height: 300px; /* Limit height */
+    max-height: 300px;
     overflow-y: auto;
 }
 
 #online-users-list li {
     padding: 4px 0;
     font-size: 0.95em;
+    cursor: pointer; /* To suggest PM feature */
 }
 
 .mod-tag {
@@ -93,8 +91,8 @@ h2 {
 
 /* Commands Styling */
 .commands-section ul {
-    list-style-type: none; /* Remove bullet points */
-    padding: 0;
+    list-style-type: disc; /* Use discs for commands list */
+    padding-left: 20px;
 }
 .commands-section li {
     font-family: monospace;
@@ -113,22 +111,19 @@ h2 {
     border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
-    margin-top: auto; /* Pushes the button to the bottom */
+    margin-top: auto; 
     width: 100%;
-}
-#admin-panel-button:hover {
-    background-color: #79c0ff;
 }
 
 /* Rename Button (In User Info) */
-#rename-button {
+#rename-button, #rename-button-guest {
     background-color: #30363d;
     color: #c9d1d9;
     border: 1px solid #404b57;
     padding: 5px 10px;
     border-radius: 4px;
     cursor: pointer;
-    margin-left: 10px;
+    margin-top: 5px;
 }
 
 /* --- Right Panel (Main Chat) --- */
@@ -163,7 +158,7 @@ h2 {
 
 /* Message Types */
 .system-message {
-    color: #58a6ff;
+    color: #58a6ff; /* Blue for System */
     font-style: italic;
     font-size: 0.9em;
 }
@@ -206,15 +201,10 @@ h2 {
     border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
-    transition: background-color 0.2s;
 }
 
-#message-form button:hover {
-    background-color: #79c0ff;
-}
-
-/* Utility/Modal Styling (Ban & Name) */
-#name-modal, #banned-modal {
+/* Utility/Modal Styling (Name & Ban) */
+#name-modal, #banned-modal, #admin-panel-modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -229,12 +219,14 @@ h2 {
     text-align: center;
 }
 
-#name-modal-content, #banned-modal-content {
+.modal-content {
     background-color: #161b22;
     padding: 30px;
     border-radius: 8px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
     border: 1px solid #30363d;
+    max-width: 400px;
+    position: relative;
 }
 
 #name-modal input[type="text"] {
@@ -248,7 +240,7 @@ h2 {
     font-size: 1em;
 }
 
-#name-modal button {
+#name-modal button, #join-chat-button {
     background-color: #238636;
     color: white;
     border: none;
@@ -258,6 +250,10 @@ h2 {
     font-weight: bold;
 }
 
+/* Ban Modal Specifics */
+#banned-modal {
+    background-color: rgba(150, 0, 0, 0.95);
+}
 #banned-modal h1 {
     color: #ff9d9d;
     margin-bottom: 20px;
