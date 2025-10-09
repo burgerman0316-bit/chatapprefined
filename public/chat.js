@@ -27,7 +27,7 @@ const renameButtonGuest = document.getElementById('rename-button-guest');
 // Admin Panel Modal Elements
 const adminPanelModal = document.getElementById('admin-panel-modal');
 const adminContentArea = document.getElementById('admin-content-area');
-const closeButton = adminPanelModal.querySelector('.close-button');
+const closeButton = adminPanelModal ? adminPanelModal.querySelector('.close-button') : null; // Safe selector
 
 // Banned Modal Elements
 const bannedModal = document.getElementById('banned-modal');
@@ -44,7 +44,6 @@ let currentAdminUserMap = {}; // Map of socketId -> { displayName, ip, isAdmin, 
 let fingerprintId = 'no_fingerprint_id';
 
 // Generate Fingerprint ID (Used for ban persistence)
-// Ensure the Fingerprint2 CDN is loaded in index.html for this to work
 if (window.Fingerprint2) {
     Fingerprint2.get((components) => {
         const values = components.map(component => component.value);
@@ -58,7 +57,6 @@ if (window.Fingerprint2) {
 // --- EVENT LISTENERS (CRITICAL FOR LOGIN) ---
 
 // 1. JOIN CHAT BUTTON CLICK HANDLER
-// The check for joinChatButton ensures the code doesn't crash if the element is missing.
 if (joinChatButton) {
     joinChatButton.addEventListener('click', () => {
         const loginAttempt = nameInput.value.trim();
@@ -69,11 +67,8 @@ if (joinChatButton) {
             return;
         }
         
-        // The server handles the 16-char limit for regular users and the full key match for staff.
         socket.emit('check_staff_status', loginAttempt);
     });
-} else {
-    console.error("Critical Error: 'join-chat-button' not found in HTML.");
 }
 
 
@@ -126,7 +121,7 @@ if (renameButtonGuest) {
 }
 
 
-// 4. ADMIN PANEL BUTTON
+// 4. ADMIN PANEL BUTTON AND CLOSE BUTTON
 if (adminPanelButton) {
     adminPanelButton.addEventListener('click', () => {
         if (isAdmin) {
@@ -160,16 +155,16 @@ if (publicTab && adminTab) {
 
 function switchChatContext(context) {
     currentChatContext = context;
-    publicTab.classList.remove('active');
-    adminTab.classList.remove('active');
+    if (publicTab) publicTab.classList.remove('active');
+    if (adminTab) adminTab.classList.remove('active');
     messagesList.innerHTML = ''; 
 
     if (context === 'public') {
-        publicTab.classList.add('active');
+        if (publicTab) publicTab.classList.add('active');
         chatHeader.textContent = 'Public Chat';
         socket.emit('admin:set_context', 'public');
     } else if (context === 'admin_chat' && isAdmin) {
-        adminTab.classList.add('active');
+        if (adminTab) adminTab.classList.add('active');
         chatHeader.textContent = 'Admin Chat (Moderators Only)';
         socket.emit('admin:set_context', 'admin_chat');
     }
@@ -209,6 +204,7 @@ function appendMessage(msg, isHistory = false) {
 }
 
 function updateCommands() {
+    if (!commandsList) return;
     commandsList.innerHTML = '';
     let commands = [
         { name: '/msg [user] [content]', desc: 'Send a private message.' }
@@ -228,6 +224,8 @@ function updateCommands() {
 }
 
 function openAdminPanel() {
+    if (!adminPanelModal || !adminContentArea || !currentAdminUserMap) return;
+
     adminPanelModal.style.display = 'flex';
     adminContentArea.innerHTML = '';
     
@@ -258,8 +256,8 @@ function openAdminPanel() {
             <td>${user.displayName} ${user.isAdmin ? '(MOD)' : ''}</td>
             <td>${user.ip}</td>
             <td>
-                <button class="action-kick" data-user="${user.displayName}" style="background-color:#d44; color:white; border:none; padding:5px;">Kick</button>
-                <button class="action-ban" data-user="${user.displayName}" style="background-color:#f7931e; color:white; border:none; padding:5px;">Ban (FPID)</button>
+                <button class="action-kick" data-user="${user.displayName}" style="background-color:#d44; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer;">Kick</button>
+                <button class="action-ban" data-user="${user.displayName}" style="background-color:#f7931e; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer; margin-left:5px;">Ban (FPID)</button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -271,14 +269,18 @@ function openAdminPanel() {
     clearSection.style.marginTop = '20px';
     clearSection.innerHTML = `
         <h3>Clear Chat History:</h3>
-        <button id="clear-public-btn" style="background-color:#58a6ff; color:white; border:none; padding:8px 15px; margin-right:10px;">Clear Public Chat</button>
-        <button id="clear-admin-btn" style="background-color:#f7931e; color:white; border:none; padding:8px 15px;">Clear Admin Chat</button>
+        <button id="clear-public-btn" style="background-color:#58a6ff; color:white; border:none; padding:8px 15px; margin-right:10px; border-radius:6px; cursor:pointer;">Clear Public Chat</button>
+        <button id="clear-admin-btn" style="background-color:#f7931e; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">Clear Admin Chat</button>
     `;
 
     adminContentArea.appendChild(userList);
     adminContentArea.appendChild(clearSection);
     
-    // Add event listeners for new buttons
+    // ----------------------------------------------------------------
+    // CRITICAL: ATTACH LISTENERS TO DYNAMICALLY CREATED BUTTONS
+    // ----------------------------------------------------------------
+    
+    // Add event listeners for History Clearing buttons
     document.getElementById('clear-public-btn').addEventListener('click', () => {
         if (confirm('Are you sure you want to clear the PUBLIC chat history?')) {
             socket.emit('admin:clear_history', 'public');
@@ -293,6 +295,7 @@ function openAdminPanel() {
         }
     });
 
+    // Add event listeners for Kick buttons
     adminContentArea.querySelectorAll('.action-kick').forEach(button => {
         button.addEventListener('click', (e) => {
             const targetName = e.target.dataset.user;
@@ -303,6 +306,7 @@ function openAdminPanel() {
         });
     });
     
+    // Add event listeners for Ban buttons
     adminContentArea.querySelectorAll('.action-ban').forEach(button => {
         button.addEventListener('click', (e) => {
             const targetName = e.target.dataset.user;
