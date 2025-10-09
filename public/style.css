@@ -1,7 +1,7 @@
 /* General Styling */
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #0d1117; /* Dark background */
+    background-color: #0d1117 !important; /* FORCED DARK BACKGROUND */
     color: #c9d1d9; /* Light grey text */
     margin: 0;
     padding: 0;
@@ -35,7 +35,7 @@ body {
 }
 
 h2 {
-    color: #c9d1d9; /* Standard header color */
+    color: #c9d1d9; 
     font-size: 1.1em;
     border-bottom: 1px solid #30363d;
     padding-bottom: 5px;
@@ -80,7 +80,7 @@ h2 {
 #online-users-list li {
     padding: 4px 0;
     font-size: 0.95em;
-    cursor: pointer; /* To suggest PM feature */
+    cursor: pointer; 
 }
 
 .mod-tag {
@@ -91,7 +91,7 @@ h2 {
 
 /* Commands Styling */
 .commands-section ul {
-    list-style-type: disc; /* Use discs for commands list */
+    list-style-type: disc; 
     padding-left: 20px;
 }
 .commands-section li {
@@ -158,18 +158,18 @@ h2 {
 
 /* Message Types */
 .system-message {
-    color: #58a6ff; /* Blue for System */
+    color: #58a6ff; 
     font-style: italic;
     font-size: 0.9em;
 }
 
 .admin-message {
-    color: #238636; /* Green for Admins */
+    color: #238636; 
     font-weight: bold;
 }
 
 .private-message {
-    color: #f7931e; /* Orange for Private Messages */
+    color: #f7931e; 
     font-weight: 500;
 }
 
