@@ -30,9 +30,15 @@
             </div>
             
             <hr class="info-divider"> 
-            <p class="commands">Commands: <code>/msg [user] [content]</code></p>
-
-            <button id="adminPanelBtn" class="btn btn-outline-warning w-100 mt-2" style="display: none;" data-bs-toggle="modal" data-bs-target="#adminPanelModal">Moderator Panel</button>
+            <div id="commands-block">
+                <p>Commands:</p>
+                <ul class="command-list">
+                    <li><code>/msg [user] [content]</code></li>
+                    <li><code>/kick [user]</code></li>
+                    <li><code>/clear</code> (current chat)</li>
+                </ul>
+            </div>
+            <button id="adminPanelBtn" class="btn btn-secondary w-100 mt-2" style="display: none;" data-bs-toggle="modal" data-bs-target="#adminPanelModal">Admin Panel</button>
         </div>
 
         <div id="chat-window">
@@ -40,14 +46,14 @@
             <div id="messages">
                 </div>
             
-            <form id="messageForm">
-                <div id="messageInput" class="custom-input" contenteditable="true" placeholder="Type your message or a command (/msg, /kick, /clear)..."></div>
-                <button type="submit">Send</button>
+            <form id="messageForm" class="d-flex">
+                <input type="text" id="message-input" class="form-control" placeholder="Type your message or a command..." autocomplete="off" maxlength="500">
+                <button type="submit" class="btn btn-primary ms-2">Send</button>
             </form>
             <div id="charCountContainer" class="char-count-container">
                 <span id="char-count">0/500</span>
             </div>
-            </div>
+        </div>
     </div>
 
 
@@ -95,7 +101,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="adminPanelModalLabel">Moderator Panel</h5>
+                    <h5 class="modal-title" id="adminPanelModalLabel">Admin Panel</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -189,11 +195,8 @@
 
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script src="/socket.io/socket.io.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 
     <script src="chat.js"></script> 
