@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
-// ADD: Required for making external HTTPS requests (like to Google Sheets Webhook)
-const https = require('https'); 
+const https = require('https'); // Required for making external HTTPS requests (like to Google Sheets Webhook)
 const { Server } = require('socket.io');
 const path = require('path');
 
@@ -669,6 +668,11 @@ io.on('connection', socket => {
   });
 });
 
-server.listen(3000, () => {
-  console.log('Listening on http://localhost:3000');
+// --- CRITICAL FIX FOR RAILWAY DEPLOYMENT ---
+// Use the PORT environment variable provided by Railway, defaulting to 3000 for local development.
+// Listen on '0.0.0.0' (all network interfaces) to allow the proxy to connect.
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server listening on host 0.0.0.0 and port ${PORT}`);
 });
