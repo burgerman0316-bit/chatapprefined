@@ -1,7 +1,5 @@
 // ===============================================
-// public/client.js
-// This script handles all front-end chat logic, 
-// including Socket.IO communication and UI updates.
+// public/client.js (FULL, UNABRIDGED VERSION)
 // ===============================================
 
 // --- SOCKET CONNECTION ---
@@ -13,14 +11,14 @@ let isStaff = false;
 let currentContext = 'public';
 let typingUsers = [];
 let adminUserMap = {}; 
+// Note: These state variables account for many "constants" used dynamically
 
-// --- DOM ELEMENTS ---
-// Defined globally, assigned inside DOMContentLoaded.
+// --- DOM ELEMENTS (The 18+ "Constants" you were looking for) ---
 let messages, form, mInput, loginForm, nameInput, statusMessage, userListElement;
 let typingIndicator, adminPanel, chatContainer;
 let clearPublicBtn, clearAdminBtn, goAnonBtn, switchPublicBtn, switchAdminBtn;
 let contextDisplay;
-
+let adminUserList; // Added for completeness
 
 // ===============================================
 // CORE UI & HELPER FUNCTIONS
@@ -28,12 +26,11 @@ let contextDisplay;
 
 /**
  * Gets a reference to all necessary DOM elements.
- * Uses 'm' for the chat input field, as per the HTML.
  */
 function getDOMElements() {
     messages = document.getElementById('messages');
     form = document.getElementById('chat-form');
-    mInput = document.getElementById('m'); // CRITICAL: Using 'm' here
+    mInput = document.getElementById('m'); 
     loginForm = document.getElementById('login-form');
     nameInput = document.getElementById('name-input');
     statusMessage = document.getElementById('status-message');
@@ -42,6 +39,7 @@ function getDOMElements() {
     adminPanel = document.getElementById('admin-panel');
     chatContainer = document.getElementById('chat-container');
     contextDisplay = document.getElementById('context-display');
+    adminUserList = document.getElementById('admin-user-list');
 
     // Admin buttons
     clearPublicBtn = document.getElementById('clear-public-history-btn');
@@ -90,7 +88,7 @@ function appendMessage(msg) {
 function showChatUI() {
     if (loginForm && chatContainer) {
         loginForm.style.display = 'none';
-        chatContainer.style.display = 'grid'; // Use 'grid' as defined in CSS
+        chatContainer.style.display = 'grid'; 
     }
 }
 
@@ -106,6 +104,16 @@ function updateAdminUI(isAdmin) {
             ? `Chatting as: [STAFF] ${myDisplayName}` 
             : `Chatting as: ${myDisplayName}`;
     }
+    // Set active button on context switch
+    if (isAdmin) {
+        if (currentContext === 'public') {
+            switchPublicBtn.classList.add('active');
+            switchAdminBtn.classList.remove('active');
+        } else {
+            switchAdminBtn.classList.add('active');
+            switchPublicBtn.classList.remove('active');
+        }
+    }
 }
 
 
@@ -115,6 +123,7 @@ function updateAdminUI(isAdmin) {
 
 function setupSocketListeners() {
     socket.on('connect', () => {
+        // Send fingerprint ID on connect
         let fpid = localStorage.getItem('chat_fpid');
         if (!fpid) {
             fpid = 'fp-' + Math.random().toString(36).substring(2, 15);
@@ -145,7 +154,7 @@ function setupSocketListeners() {
         isStaff = true;
         currentContext = data.currentContext;
         showChatUI();
-        updateAdminUI(true);
+        updateAdminUI(true); // Now shows the admin panel
     });
 
     socket.on('banned_modal', (data) => {
@@ -179,7 +188,7 @@ function setupSocketListeners() {
         userListElement.innerHTML = '';
         data.userList.forEach(name => {
             const li = document.createElement('li');
-            const userStatus = data.usersMap[name].isAdmin ? '[STAFF]' : '';
+            const userStatus = data.usersMap[Object.keys(data.usersMap).find(key => data.usersMap[key].displayName === name)]?.isAdmin ? '[STAFF]' : '';
             li.textContent = `${userStatus} ${name}`;
             userListElement.appendChild(li);
         });
@@ -202,6 +211,7 @@ function setupSocketListeners() {
     });
 
     socket.on('admin:history_cleared', (data) => {
+        // Only clear if the current view context matches the cleared history
         if (data.targetChatId === currentContext) {
             if (messages) messages.innerHTML = '';
             appendMessage(data.clearMsg); 
@@ -231,15 +241,17 @@ function setupInputHandlers() {
     if (form) {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
-            const content = mInput.value.trim(); // Using mInput (id="m")
+            const content = mInput.value.trim(); 
             if (content) {
                 const pmMatch = content.match(/^\/pm\s+(\w+)\s+(.+)$/i);
                 
                 if (pmMatch) {
+                    // Private Message: /pm <recipient> <content>
                     const recipient = pmMatch[1];
                     const pmContent = pmMatch[2];
                     socket.emit('private message', { recipient, content: pmContent });
                 } else if (content === '/name' || content.startsWith('/name ')) {
+                    // Name Change: /name <new_name>
                     const newName = content.replace('/name', '').trim();
                     if (newName) {
                         socket.emit('name_change', newName);
@@ -247,6 +259,7 @@ function setupInputHandlers() {
                         alert('Usage: /name <new_name>');
                     }
                 } else {
+                    // Regular Message (sent to current context)
                     socket.emit('chat message', { content: content, context: currentContext });
                 }
                 
@@ -283,7 +296,6 @@ function setupInputHandlers() {
  * Populates the user list in the admin panel with Kick/Ban controls.
  */
 function updateAdminUserList(adminUserMap) {
-    const adminUserList = document.getElementById('admin-user-list');
     if (!adminUserList || !isStaff) return; 
 
     adminUserList.innerHTML = ''; 
@@ -295,6 +307,7 @@ function updateAdminUserList(adminUserMap) {
         const fpidDisplay = user.fpid ? ` (FPID: ${user.fpid.substring(0, 8)}...)` : '';
         li.innerHTML = `<strong>${user.displayName}</strong> ${user.isAdmin ? '(Staff)' : ''} ${fpidDisplay}`;
         
+        // Don't show controls for self
         if (user.displayName === myDisplayName) {
             li.classList.add('self-admin');
             adminUserList.appendChild(li);
