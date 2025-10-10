@@ -24,7 +24,6 @@ body {
 
 /* User Info Sidebar */
 #user-info {
-    /* NEW WIDTH: 200px */
     width: 200px; 
     padding: 15px;
     background: #2c2c2c;
@@ -52,6 +51,15 @@ body {
     color: #f0f0f0; 
 }
 
+#user-list li:hover {
+    background-color: #383838;
+}
+
+.admin-name-list {
+    font-weight: bold;
+    color: #ffd700; /* Gold color for MOD tag */
+}
+
 .commands {
     font-size: 0.85em;
     color: #f0f0f0; 
@@ -74,14 +82,39 @@ body {
     overflow-x: hidden !important; 
 }
 
-/* --- CHAT TITLE FIX (Public Chat Title) --- */
+/* Chat Header/Title */
+#chat-header {
+    display: flex;
+    flex-direction: column;
+}
+
 #chatTitle {
     color: #f0f0f0; 
-    padding: 15px; 
+    padding: 10px 15px; 
     font-weight: bold;
     font-size: 1.2em;
     border-bottom: 1px solid #444;
     background-color: #383838;
+}
+
+/* Tab Navigation */
+.nav-tabs {
+    border-bottom: none !important; 
+    background-color: #2c2c2c;
+}
+
+.nav-link {
+    color: #aaa !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 8px 15px;
+}
+
+.nav-link.active {
+    color: #fff !important;
+    background-color: #1e1e1e !important;
+    border-bottom: 2px solid #585858 !important;
+    font-weight: bold;
 }
 
 /* Message Bubbles - CONTAINER AND BASE STYLES */
@@ -101,6 +134,13 @@ body {
     margin: 0 12px 6px; /* space below name */
     font-size: 0.85em;
     font-weight: bold;
+    color: #ccc;
+    /* Default alignment for .other messages */
+    text-align: left; 
+}
+
+.private-name {
+    color: #79a6d0; /* Light blue for private messages */
 }
 
 /* Base .msg styles; names are now in flow above each message bubble */
@@ -120,6 +160,13 @@ body {
     align-self: flex-end; 
     background-color: #4a4a4a; 
     color: #fff;
+}
+
+/* Fix for own message name alignment */
+.msg.own .sender-name {
+    text-align: right;
+    margin-right: 0; /* Align name to right edge of container */
+    margin-left: auto;
 }
 
 /* --- OTHER MESSAGES (Left Side) --- */
@@ -143,7 +190,14 @@ body {
     border-radius: 0; 
 }
 
-/* --- START OF FIXED STACKING RULES --- */
+/* Admin message styling (applies to both .own and .other bubbles) */
+.msg.admin-msg {
+    border: 1px solid #ffd700;
+    box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+
+/* --- FIXED STACKING RULES --- */
 
 /* Stacking rules: tuck bubbles together */
 .msg + .msg {
@@ -151,14 +205,27 @@ body {
 }
 
 /* Hide the sender name for subsequent messages in the same stack when same sender */
-/* NOTE: We ONLY apply this rule to messages from OTHERS (.msg.other) to allow the 
-         user's own name to display above the first bubble of a group of .own messages. */
+/* We ONLY apply this rule to messages from OTHERS (.msg.other) to maintain grouping. */
 .msg.other + .msg.other .sender-name,
 .msg.other + .msg.other ~ .msg.other .sender-name {
     display: none;
 }
 
 /* --- END OF FIXED STACKING RULES --- */
+
+
+/* Time Stamp */
+.timestamp {
+    display: block;
+    font-size: 0.7em;
+    color: #aaa;
+    margin-top: 5px;
+    text-align: right;
+}
+
+.msg.own .timestamp {
+    color: #ccc;
+}
 
 
 /* Input Box */
@@ -171,7 +238,6 @@ body {
 }
 
 .input-container {
-    /* --- REVERT TO FLEXBOX, but keep constraints --- */
     display: flex; 
     padding: 10px;
     max-width: 100% !important;
@@ -179,7 +245,6 @@ body {
 }
 
 .custom-input {
-    /* --- CRITICAL FLEXBOX CONSTRAINTS --- */
     flex-grow: 1 !important; 
     flex-shrink: 1 !important; 
     min-width: 0 !important; 
@@ -193,9 +258,8 @@ body {
     min-height: 40px;
     max-height: 80px;
     overflow-y: auto;
+    /* Key properties for contenteditable element */
     -webkit-user-modify: read-write-plaintext-only;
-    
-    /* Ultimate Breaking/Constraint Properties */
     box-sizing: border-box !important; 
     -webkit-box-sizing: border-box !important; 
     word-break: break-all !important; 
@@ -211,7 +275,6 @@ body {
 }
 
 .input-container button {
-    /* Set button size, relies on flex positioning */
     padding: 10px 15px;
     border-radius: 4px;
     border: none;
@@ -227,7 +290,7 @@ body {
     background-color: #4a4a4a;
 }
 
-/* --- WORD COUNT DISPLAY FIX (Positioning) --- */
+/* Word Count Display */
 .char-count-display {
     text-align: right;
     font-size: 0.8em;
@@ -238,7 +301,6 @@ body {
 }
 
 /* Modals & Bootstrap Overrides */
-/* --- FIX FOR DARK MODALS --- */
 .modal-content {
     background-color: #2c2c2c !important;
     color: #f0f0f0 !important;
