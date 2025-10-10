@@ -1,5 +1,4 @@
-
-// chat.js - FINAL SCRIPT WITH ALL FEATURES
+// chat.js - FINAL SCRIPT WITH ALL FEATURES (FIXED)
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
@@ -79,8 +78,19 @@ function appendMessage(msg) {
         item.classList.add('system');
         item.textContent = msg.content;
     } else if (msg.username === displayName || (msg.username === 'You' && msg.isPrivate)) {
+        // --- FIXED LOGIC: Include the sender's name for their own messages ---
         item.classList.add('own');
-        item.innerHTML = `${msg.content} ${timeHtml}`;
+        
+        const nameDisplay = (msg.username === 'You' && msg.isPrivate) 
+            ? 'You' 
+            : msg.username;
+            
+        const nameClass = (msg.isPrivate) 
+            ? 'sender-name private-name' 
+            : 'sender-name';
+            
+        item.innerHTML = `<span class="${nameClass}">${nameDisplay}</span>${msg.content} ${timeHtml}`;
+        // --------------------------------------------------------------------
     } else {
         item.classList.add('other');
         if (msg.isAdmin) { 
