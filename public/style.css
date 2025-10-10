@@ -20,19 +20,97 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     border-radius: 12px;
     overflow: hidden;
-    grid-template-columns: 3fr 1fr;
+    /* NEW GRID DEFINITION: 1fr for sidebar (left), 3fr for messages (right) */
+    grid-template-columns: 1fr 3fr; 
     grid-template-rows: auto 1fr auto;
     display: grid; 
 }
 
-/* --- LEFT PANEL (MESSAGES) --- */
+/* --- LEFT PANEL (SIDEBAR) --- */
+#sidebar {
+    grid-column: 1; /* Sidebar is now column 1 (Left) */
+    grid-row: 1 / span 3;
+    display: flex;
+    flex-direction: column;
+    background-color: #333; /* Darker sidebar */
+    border-right: 1px solid #444; /* Add right border */
+}
+
+#user-section {
+    padding: 15px;
+    border-bottom: 1px solid #444;
+    flex-shrink: 0;
+}
+
+#user-section h2 {
+    margin-top: 0;
+    font-size: 1.1em;
+    color: #f0f0f0;
+}
+
+#display-username {
+    font-weight: bold;
+    color: #0b93f6;
+    margin-bottom: 10px;
+    display: block;
+}
+
+#online-users-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0 0;
+    overflow-y: auto;
+    flex-grow: 1;
+    border-bottom: 1px solid #444;
+}
+
+#online-users-list li {
+    padding: 8px 15px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: background-color 0.1s;
+    color: #ccc;
+}
+
+#online-users-list li:hover {
+    background-color: #444;
+}
+
+.mod-tag {
+    color: #ff9900;
+    font-weight: normal;
+    font-size: 0.8em;
+}
+
+#commands-section {
+    padding: 15px;
+    flex-shrink: 0;
+}
+
+#commands-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+    font-size: 0.85em;
+    color: #aaa;
+}
+
+#commands-list li {
+    margin-bottom: 5px;
+}
+#commands-list strong {
+    color: #f0f0f0;
+}
+
+
+/* --- RIGHT PANEL (MESSAGES) --- */
 #messages-panel {
-    grid-column: 1;
+    grid-column: 2; /* Messages Panel is now column 2 (Right) */
     grid-row: 1 / span 3;
     display: flex;
     flex-direction: column;
     height: 100%;
-    border-right: 1px solid #444;
+    border-right: none;
 }
 
 #chat-header {
@@ -217,81 +295,6 @@ body {
     background-color: #007bb5;
 }
 
-/* --- RIGHT PANEL (USERS & COMMANDS) --- */
-#sidebar {
-    grid-column: 2;
-    grid-row: 1 / span 3;
-    display: flex;
-    flex-direction: column;
-    background-color: #333; /* Darker sidebar */
-}
-
-#user-section {
-    padding: 15px;
-    border-bottom: 1px solid #444;
-    flex-shrink: 0;
-}
-
-#user-section h2 {
-    margin-top: 0;
-    font-size: 1.1em;
-    color: #f0f0f0;
-}
-
-#display-username {
-    font-weight: bold;
-    color: #0b93f6;
-    margin-bottom: 10px;
-    display: block;
-}
-
-#online-users-list {
-    list-style: none;
-    padding: 0;
-    margin: 10px 0 0 0;
-    overflow-y: auto;
-    flex-grow: 1;
-    border-bottom: 1px solid #444;
-}
-
-#online-users-list li {
-    padding: 8px 15px;
-    cursor: pointer;
-    font-size: 0.95em;
-    transition: background-color 0.1s;
-    color: #ccc;
-}
-
-#online-users-list li:hover {
-    background-color: #444;
-}
-
-.mod-tag {
-    color: #ff9900;
-    font-weight: normal;
-    font-size: 0.8em;
-}
-
-#commands-section {
-    padding: 15px;
-    flex-shrink: 0;
-}
-
-#commands-list {
-    list-style: none;
-    padding: 0;
-    margin: 10px 0;
-    font-size: 0.85em;
-    color: #aaa;
-}
-
-#commands-list li {
-    margin-bottom: 5px;
-}
-#commands-list strong {
-    color: #f0f0f0;
-}
-
 /* --- BUTTON CONSISTENCY --- */
 #guest-controls button,
 #staff-controls button {
@@ -440,7 +443,7 @@ body {
     padding: 20px;
 }
 
-/* Admin Panel Grid Layout Fix (Management LEFT, History RIGHT) */
+/* Admin Panel Grid Layout Fix (Management LEFT, Controls RIGHT) */
 #admin-content-area .admin-panel-grid {
     display: grid;
     grid-template-columns: 1fr 5px 1fr;
