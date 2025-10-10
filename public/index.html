@@ -1,100 +1,199 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Web Chat</title>
-    <link rel="stylesheet" href="style.css"> 
+    <title>Socket.IO Chat Application</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4; }
+        
+        /* Login Screen */
+        #login-form {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 20px;
+            background: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        /* Main Chat Layout */
+        #chat-container {
+            display: none; /* Hidden until login */
+            height: 100vh;
+            width: 100vw;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            grid-template-columns: 2fr 1fr; /* Chat area and side panel */
+            grid-template-rows: 1fr auto;
+            display: grid;
+        }
+
+        /* Message Area */
+        #chat-area {
+            grid-column: 1 / 2;
+            display: grid;
+            grid-template-rows: 1fr auto;
+            border-right: 1px solid #eee;
+        }
+        #messages { 
+            list-style-type: none; 
+            margin: 0; 
+            padding: 10px; 
+            overflow-y: auto; 
+            grid-row: 1 / 2;
+        }
+        #messages li { padding: 5px 10px; }
+        
+        /* Chat Input Form */
+        #chat-form { 
+            background: #eee; 
+            padding: 5px; 
+            display: flex; 
+            grid-row: 2 / 3;
+            border-top: 1px solid #ccc;
+        }
+        #chat-form input { 
+            flex-grow: 1; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            margin-right: 5px; 
+            border-radius: 4px; 
+        }
+        #chat-form button { 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            cursor: pointer;
+        }
+        
+        /* Side Panel */
+        #side-panel {
+            grid-column: 2 / 3;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        #user-list {
+            list-style-type: none;
+            padding: 0;
+            margin-top: 10px;
+        }
+        #user-list li {
+            padding: 3px 0;
+            color: #555;
+        }
+
+        /* Admin Panel Styles */
+        #admin-panel {
+            border-top: 2px solid #007bff;
+            padding-top: 10px;
+            margin-top: 15px;
+        }
+        #admin-panel h3 { margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .admin-action-btn {
+            padding: 2px 6px;
+            font-size: 0.8em;
+            margin-left: 5px;
+            cursor: pointer;
+            border: 1px solid;
+            border-radius: 3px;
+        }
+        .kick-btn { background: #ffc107; border-color: #ffc107; }
+        .ban-btn { background: #dc3545; color: white; border-color: #dc3545; }
+        
+        #admin-user-list li { 
+            display: flex; 
+            align-items: center; 
+            padding: 3px 0;
+            justify-content: space-between;
+        }
+        #admin-user-list li > strong { flex-grow: 1; }
+        
+        #admin-context-switch button {
+            background: #f8f9fa;
+            border: 1px solid #ced4da;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin-right: 5px;
+            margin-bottom: 10px;
+        }
+        #admin-context-switch button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        /* Message Coloring */
+        .self-message { background-color: #e6f7ff; }
+        .admin-message { background-color: #ffe0e0; }
+        .system-message { color: #888; font-style: italic; text-align: center; }
+        .private-received { background-color: #fff3cd; border-left: 3px solid #ffc107; }
+        .private-sent { background-color: #d1ecf1; border-left: 3px solid #007bff; }
+        .timestamp { font-size: 0.8em; color: #aaa; margin-right: 5px; }
+
+    </style>
 </head>
 <body>
 
-    <div id="chat-container">
+<div id="login-form">
+    <h2>Welcome to the Chat</h2>
+    <p>Enter your username or your staff key:</p>
+    <input id="name-input" autocomplete="off" placeholder="Username or Staff Key" required /><br><br>
+    <button type="submit">Join Chat</button>
+    <p id="status-message" style="color: green; margin-top: 10px;"></p>
+</div>
+
+<div id="chat-container">
+    
+    <div id="chat-area">
+        <ul id="messages"></ul>
         
-        <div id="sidebar">
-            
-            <div id="user-section">
-                <h2>User Info</h2>
-                <span id="display-username">Guest</span>
-                
-                <div id="guest-controls">
-                    <button id="rename-button-guest">Rename</button>
-                </div>
+        <div id="typing-indicator" style="padding: 5px; font-size: 0.9em; color: #555;"></div>
 
-                <div id="staff-controls" style="display: none;">
-                    <button id="admin-panel-button">Admin Panel</button>
-                </div>
-            </div>
-            
-            <div id="user-section">
-                <h2 id="users-online-count">Users Online: 0</h2>
-                <ul id="online-users-list">
-                    </ul>
-            </div>
+        <form id="chat-form" action="">
+            <input id="m" autocomplete="off" placeholder="Type your message, or use /pm <user> <msg>" autofocus />
+            <button>Send</button>
+        </form>
+    </div>
 
-            <div id="commands-section">
-                <h2>Commands</h2>
-                <ul id="commands-list">
-                    </ul>
+    <div id="side-panel">
+        <h3 id="context-display">Chatting As: Guest</h3>
+        
+        <h4>Current Users</h4>
+        <ul id="user-list">
+            </ul>
+
+        <div id="admin-panel" style="display: none;">
+            <h2>Staff Controls</h2>
+
+            <div id="admin-context-switch">
+                <button id="switch-to-public-btn" class="active">View Public Chat</button>
+                <button id="switch-to-admin-btn">View Admin Chat</button>
             </div>
-        </div>
-        <div id="messages-panel">
             
-            <div id="chat-header">
-                <span id="header-title">Public Chat</span>
-                <div id="chat-tabs">
-                    <button id="public-tab" class="active" style="display: none;">Public</button>
-                    <button id="admin-tab">Admin</button>
-                </div>
+            <div id="admin-controls-area">
+                <p>History Tools:</p>
+                <button id="clear-public-history-btn">Clear Public History</button>
+                <button id="clear-admin-history-btn">Clear Admin History</button>
+                <p style="margin-top: 10px;">Session Tools:</p>
+                <button id="admin-go-anon-btn">Go Anonymous</button>
             </div>
 
-            <ul id="messages">
+            <h3>User Actions</h3>
+            <ul id="admin-user-list">
                 </ul>
-
-            <div id="typing-indicator"></div>
-
-            <form id="message-form" action="">
-                <input id="message-input" autocomplete="off" placeholder="Type your message..." />
-                <button type="submit">Send</button>
-            </form>
         </div>
     </div>
 
+</div>
 
-    <div id="name-modal" class="modal">
-        <div class="modal-content">
-            <h2>Welcome to the Chat</h2>
-            <p>Enter your display name or staff key to join.</p>
-            <input id="name-input" type="text" placeholder="Your Name or Staff Key" />
-            <p id="name-error-message" style="height: 1.2em;"></p>
-            <button id="join-chat-button">Join Chat</button>
-        </div>
-    </div>
-
-    <div id="admin-panel-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div id="admin-modal-header">
-                <h2>Moderator Panel</h2>
-                <button class="close-button" aria-label="Close Modal">&times;</button>
-            </div>
-            <div id="admin-content-area">
-                </div>
-        </div>
-    </div>
-
-    <div id="banned-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h2>🚨 BANNED 🚨</h2>
-            <p>You have been banned from this chat.</p>
-            <p>Reason: <strong id="ban-reason"></strong></p>
-            <p>Remaining Time: <span id="ban-timer"></span></p>
-        </div>
-    </div>
-    
-    <script src="/socket.io/socket.io.js"></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/fingerprintjs2@2.1.0/dist/fingerprint2.min.js"></script>
-    
-    <script src="chat.js"></script> 
+<script src="/socket.io/socket.io.js"></script>
+<script src="chat.js"></script>
 
 </body>
 </html>
