@@ -58,7 +58,7 @@ if (window.Fingerprint2) {
 
 // --- EVENT LISTENERS ---
 
-// 1. JOIN CHAT BUTTON CLICK HANDLER (Login Logic Check)
+// 1. JOIN CHAT BUTTON CLICK HANDLER (Fixed for long staff keys)
 if (joinChatButton) {
     joinChatButton.addEventListener('click', () => {
         const loginAttempt = nameInput.value.trim();
@@ -69,35 +69,34 @@ if (joinChatButton) {
             return;
         }
         
+        // Send raw attempt to server for validation (allowing long keys)
         socket.emit('check_staff_status', loginAttempt);
     });
 }
 
 
-// 2. MESSAGE FORM SUBMISSION
+// 2. MESSAGE FORM SUBMISSION (Updated for /kick, /ban, /clear)
 if (messageForm) {
     messageForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const content = messageInput.value.trim();
+        const fullContent = messageInput.value.trim();
+        const parts = fullContent.split(/\s+/);
+        const command = parts[0].toLowerCase();
 
-        if (!content) return;
+        if (!fullContent) return;
 
         socket.emit('typing', false); 
         
-        if (content.startsWith('/msg ')) {
-            const fullContent = messageInput.value.trim().substring(5); // Remove '/msg '
-
-            // Regex to find content in quotes OR content up to first space
-            const match = fullContent.match(/^"([^"]+)"\s+(.*)$|^([^\s]+)\s+(.*)$/);
+        if (command === '/msg') {
+            const content = fullContent.substring(5); 
+            const match = content.match(/^"([^"]+)"\s+(.*)$|^([^\s]+)\s+(.*)$/);
             
             let recipient, privateContent;
 
             if (match) {
-                // If quoted match (Group 1: Quoted Name, Group 2: Content)
                 if (match[1] !== undefined) {
                     recipient = match[1];
                     privateContent = match[2];
-                // If unquoted match (Group 3: Unquoted Name, Group 4: Content)
                 } else if (match[3] !== undefined) {
                     recipient = match[3];
                     privateContent = match[4];
@@ -110,14 +109,53 @@ if (messageForm) {
                  appendMessage({ username: 'System', content: 'Usage: /msg "User Name" Content OR /msg SingleName Content', type: 'system' });
             }
 
-        } else if (content === '/anon') {
+        } else if (command === '/clear') {
+            if (isAdmin) {
+                if (confirm('Are you sure you want to clear the PUBLIC chat history using the command?')) {
+                     socket.emit('admin:clear_history', 'public');
+                }
+            } else {
+                 appendMessage({ username: 'System', content: 'Command not recognized or access denied.', type: 'system' });
+            }
+
+        } else if (command === '/kick') {
+            if (isAdmin) {
+                const targetName = parts[1];
+                if (!targetName) {
+                    appendMessage({ username: 'System', content: 'Usage: /kick [username]', type: 'system' });
+                } else if (confirm(`Are you sure you want to KICK ${targetName}?`)) {
+                    socket.emit('admin:kick_user', { targetName });
+                }
+            } else {
+                 appendMessage({ username: 'System', content: 'Command not recognized or access denied.', type: 'system' });
+            }
+        
+        } else if (command === '/ban') {
+            if (isAdmin) {
+                const targetName = parts[1];
+                // Time must be a number greater than zero
+                const minutes = parseInt(parts[2]) || 0; 
+                const reason = parts.slice(3).join(' ') || "Banned via chat command.";
+
+                if (!targetName || minutes <= 0) {
+                    appendMessage({ username: 'System', content: 'Usage: /ban [username] [minutes > 0] [reason]', type: 'system' });
+                } else if (confirm(`Are you sure you want to BAN ${targetName} for ${minutes} minutes?`)) {
+                    // Send to server: days=0, hours=0, minutes=input
+                    socket.emit('admin:ip_ban_user', { targetName, days: 0, hours: 0, minutes, reason });
+                }
+            } else {
+                appendMessage({ username: 'System', content: 'Command not recognized or access denied.', type: 'system' });
+            }
+
+        } else if (command === '/anon') {
             if (isAdmin) {
                  socket.emit('admin:go_anonymous');
             } else {
                  appendMessage({ username: 'System', content: 'Command not recognized or access denied.', type: 'system' });
             }
         } else {
-            socket.emit('chat message', { content: content, context: currentChatContext });
+            // Regular message
+            socket.emit('chat message', { content: fullContent, context: currentChatContext });
         }
 
         messageInput.value = '';
@@ -187,9 +225,7 @@ if (onlineUsersList) {
     onlineUsersList.addEventListener('click', (e) => {
         const targetLi = e.target.closest('li');
         if (targetLi) {
-            // Extract only the name, stripping any (MOD) tag
             const rawName = targetLi.textContent.split('(')[0].trim(); 
-            // Put name in quotes to support spaces
             messageInput.value = `/msg "${rawName}" `;
             messageInput.focus();
         }
@@ -255,6 +291,7 @@ function appendMessage(msg, isHistory = false) {
     }
 }
 
+// UPDATED COMMAND LIST
 function updateCommands() {
     if (!commandsList) return;
     commandsList.innerHTML = '';
@@ -264,6 +301,9 @@ function updateCommands() {
     
     if (isAdmin) {
         commands.push(
+            { name: '/clear', desc: 'Clear the public chat history.' },
+            { name: '/kick [user]', desc: 'Kick a user from the chat.' },
+            { name: '/ban [user] [min] [reason]', desc: 'FPID ban a user for N minutes.' },
             { name: '/anon', desc: 'Log out of Admin Mode (become a Guest).' }
         );
     }
@@ -281,7 +321,7 @@ function openAdminPanel() {
     adminPanelModal.style.display = 'flex';
     adminContentArea.innerHTML = '';
     
-    // Admin Panel Layout: Two columns with a vertical divider (Management LEFT, History RIGHT)
+    // Admin Panel Layout: Two columns with a vertical divider (Management LEFT, Controls RIGHT)
     const adminPanelGrid = document.createElement('div');
     adminPanelGrid.classList.add('admin-panel-grid');
     adminContentArea.appendChild(adminPanelGrid);
@@ -296,7 +336,7 @@ function openAdminPanel() {
         <thead>
             <tr>
                 <th>Name</th>
-                <th>IP/FPID</th>
+                <th>FPID</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -310,7 +350,8 @@ function openAdminPanel() {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${user.displayName} ${user.isAdmin ? '(MOD)' : ''}</td>
-            <td>${user.fpid.substring(0, 8)}...</td> <td>
+            <td>${user.fpid.substring(0, 8)}...</td> 
+            <td>
                 <button class="action-kick" data-user="${user.displayName}">Kick</button>
                 <button class="action-ban" data-user="${user.displayName}">Ban (FPID)</button>
             </td>
@@ -325,14 +366,18 @@ function openAdminPanel() {
     divider.classList.add('vertical-divider');
     adminPanelGrid.appendChild(divider);
 
-    // --- RIGHT COLUMN: HISTORY CLEARING ---
-    const clearSection = document.createElement('div');
-    clearSection.innerHTML = `
-        <h3>Clear Chat History:</h3>
+    // --- RIGHT COLUMN: ADMIN CONTROLS (Updated Title) ---
+    const controlsSection = document.createElement('div');
+    controlsSection.innerHTML = `
+        <h3>Admin Controls:</h3>
+        <h4>Chat History Clearing</h4>
         <button id="clear-public-btn" style="background-color:#58a6ff; color:white; border:none; padding:8px 15px; margin-right:10px; border-radius:6px; cursor:pointer;">Clear Public Chat</button>
         <button id="clear-admin-btn" style="background-color:#f7931e; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">Clear Admin Chat</button>
+        
+        <h4 style="margin-top: 20px;">Other Controls...</h4>
+        <p style="font-size: 0.9em; color: #999;">Future options will be placed here.</p>
     `;
-    adminPanelGrid.appendChild(clearSection); 
+    adminPanelGrid.appendChild(controlsSection); 
     
     // ----------------------------------------------------------------
     // CRITICAL: ATTACH LISTENERS TO DYNAMICALLY CREATED BUTTONS
@@ -365,16 +410,19 @@ function openAdminPanel() {
     userManagementArea.querySelectorAll('.action-ban').forEach(button => {
         button.addEventListener('click', (e) => {
             const targetName = e.target.dataset.user;
+            
+            // Collect ban duration inputs
             const days = parseInt(prompt(`Ban ${targetName} for how many days? (0 for temporary)`)) || 0;
             const hours = parseInt(prompt(`Ban ${targetName} for how many hours?`)) || 0;
             const minutes = parseInt(prompt(`Ban ${targetName} for how many minutes?`)) || 0;
-            const reason = prompt(`Reason for banning ${targetName}?`) || "No reason specified";
+            const reason = prompt(`Reason for banning ${targetName}?`) || "Banned via Admin Panel.";
 
+            // Validate the duration
             if (days >= 0 && hours >= 0 && minutes >= 0 && (days + hours + minutes > 0)) {
                 socket.emit('admin:ip_ban_user', { targetName, days, hours, minutes, reason });
                 adminPanelModal.style.display = 'none';
             } else {
-                alert('Ban cancelled or invalid duration specified.');
+                alert('Ban cancelled or invalid duration specified (must be > 0).');
             }
         });
     });
@@ -464,7 +512,7 @@ socket.on('chat history', (history) => {
     messagesList.scrollTop = messagesList.scrollHeight;
 });
 
-// --- Other handlers remain the same for functionality ---
+// 7. Other handlers
 socket.on('name_rejected', (message) => {
     nameErrorMessage.textContent = message;
     nameInput.value = '';
@@ -504,6 +552,7 @@ socket.on('admin:history_cleared', (data) => {
     }
 });
 
+// 8. Banned Modal Logic
 socket.on('banned_modal', (data) => {
     if (chatContainer) chatContainer.style.display = 'none';
     if (nameModal) nameModal.style.display = 'none';
