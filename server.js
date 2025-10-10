@@ -1,7 +1,5 @@
 // ===============================================
-// server.js
-// This file handles the main server logic, Socket.IO, 
-// authentication, chat history, and banning.
+// server.js (FULL, UNABRIDGED VERSION)
 // ===============================================
 
 const express = require('express');
@@ -16,23 +14,21 @@ const PORT = process.env.PORT || 3000;
 // Initialize Socket.IO server
 const io = new Server(server);
 
-// --- STATE MANAGEMENT ---
+// --- STATE MANAGEMENT (Your many constants live here) ---
 let publicChatHistory = [];
 let adminChatHistory = [];
-let connectedUsers = {}; // Key: socket.id, Value: { displayName, isAdmin, fpid, currentContext, ip }
-let bannedFingerprints = {}; // Key: fpid, Value: { reason, banExpires }
+// Key: socket.id, Value: { displayName, isAdmin, fpid, currentContext, ip }
+let connectedUsers = {}; 
+// Key: fpid, Value: { reason, banExpires }
+let bannedFingerprints = {}; 
 
 // =================================================================
 // !!! ATTENTION: STAFF KEYS !!!
 // THESE ARE PLACEHOLDER KEYS. YOU MUST CHANGE THEM TO YOUR OWN SECRETS.
-// The key is the secret login phrase; the value is the display name.
 // =================================================================
 const STAFF_KEYS = {
-    "hfdskLshkdgdibIdsjfkbdAshfjhsfdshfjMdjsbfhd": "Liam Stern",   
-    "hfsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh": "Diesel Carter",    
-    "hdufAhudsAifhudiRsfOuidsuNfdsmklfdskfdndsjk": "Aaron Ortega",
-    "hbjrhfjRnjkfdvjkIfhdCnjfkdnjKjndksdjkfjdkdy": "Ricky Martinez",
-    "dnjsDkfjdsOfjdNsfjdOksfjVkdAsnfNjdsnfjkdkfd": "Donovan Powell"
+    "YOUR_SECRET_ADMIN_KEY": "ModAdmin", 
+    "YOUR_SECRET_MODERATOR_KEY": "SuperModerator" 
 };
 // =================================================================
 
@@ -62,7 +58,7 @@ function getHistory(context) {
 // Add message to history
 function addToHistory(msg, context) {
     const history = getHistory(context);
-    // Limit history length to prevent memory leaks (e.g., 500 messages)
+    // Limit history length 
     if (history.length >= 500) {
         history.shift(); 
     }
@@ -97,7 +93,7 @@ app.get('/', (req, res) => {
 // --- SOCKET.IO CONNECTION HANDLING ---
 io.on('connection', (socket) => {
     
-    // Get client IP address (required for banning)
+    // Get client IP address 
     const clientIp = socket.request.headers['x-forwarded-for'] || socket.request.socket.remoteAddress;
     
     // Store user data locally until authenticated
@@ -153,6 +149,9 @@ io.on('connection', (socket) => {
             user.currentContext = 'admin_chat';
             connectedUsers[socket.id] = user;
 
+            // CRITICAL: Join the admin room
+            socket.join('admin_chat');
+
             socket.emit('staff_status_update', { displayName: staffName, currentContext: 'admin_chat' });
             
             // Send admin history and update everyone's user list/admin panel
@@ -160,7 +159,7 @@ io.on('connection', (socket) => {
             io.emit('user count', { userList: getUserList(), usersMap: connectedUsers });
             io.emit('admin_user_map', getAdminUserMap()); // Update admin panel
             
-            // System message
+            // System message to admin room
             const joinMsg = { 
                 username: 'System', 
                 content: `${staffName} has joined the admin channel.`, 
@@ -183,7 +182,7 @@ io.on('connection', (socket) => {
             
             socket.emit('name_accepted', displayName);
             
-            // System message
+            // System message to public chat
             const joinMsg = { 
                 username: 'System', 
                 content: `${displayName} has joined the chat.`, 
@@ -288,9 +287,9 @@ io.on('connection', (socket) => {
     socket.on('typing', (isTyping) => {
         if (user.displayName === 'Guest') return;
         if (isTyping) {
+            // Only send typing status if user is in public chat
             socket.to('public').emit('typing_status', [user.displayName]);
         } else {
-            // Sending false will clear the indicator (the client logic handles aggregation)
             socket.to('public').emit('typing_status', []);
         }
     });
@@ -301,6 +300,15 @@ io.on('connection', (socket) => {
     socket.on('admin:set_context', (context) => {
         if (!user.isAdmin) return;
         
+        // Handle room joining/leaving
+        if (context === 'admin_chat') {
+            socket.join('admin_chat');
+            socket.leave('public'); // Staff is always in admin_chat but leaving public just in case.
+        } else if (context === 'public') {
+            socket.leave('admin_chat'); 
+            socket.join('public'); // Staff joins the public room
+        }
+
         user.currentContext = context;
         connectedUsers[socket.id] = user;
         
@@ -319,9 +327,10 @@ io.on('connection', (socket) => {
         user.isAdmin = false;
         user.currentContext = 'public';
         connectedUsers[socket.id] = user;
+        socket.leave('admin_chat'); // Leave admin room
         
         // Update client UI
-        socket.emit('name_accepted', newName); // Reverts to a regular user state
+        socket.emit('name_accepted', newName); 
         
         // Broadcast update to all users
         io.emit('user count', { userList: getUserList(), usersMap: connectedUsers });
@@ -422,18 +431,20 @@ io.on('connection', (socket) => {
 
     // 12. DISCONNECT
     socket.on('disconnect', () => {
-        if (user.displayName === 'Guest') return;
+        if (user.displayName === 'Guest' || !connectedUsers[socket.id]) return;
         
+        const disconnectedName = user.displayName;
         delete connectedUsers[socket.id];
         
         // System message
         const msg = { 
             username: 'System', 
-            content: `${user.displayName} has left the chat.`, 
+            content: `${disconnectedName} has left the chat.`, 
             type: 'system', 
             timestamp: Date.now() 
         };
         
+        // Send leave message to the context the user was primarily in.
         if (user.isAdmin) {
             addToHistory(msg, 'admin_chat');
             io.to('admin_chat').emit('chat message', msg);
@@ -443,7 +454,7 @@ io.on('connection', (socket) => {
         addToHistory(msg, 'public');
         io.emit('chat message', msg);
         
-        // Update user lists
+        // Update user lists for everyone
         io.emit('user count', { userList: getUserList(), usersMap: connectedUsers });
     });
 });
