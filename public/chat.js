@@ -7,16 +7,16 @@
 // --- SOCKET CONNECTION ---
 const socket = io();
 
-// --- STATE VARIABLES (CRITICALLY IMPORTANT FOR WIRING) ---
+// --- STATE VARIABLES ---
 let myDisplayName = '';
 let isStaff = false;
 let currentContext = 'public';
 let typingUsers = [];
-let adminUserMap = {}; // Global variable to store the latest admin user map
+let adminUserMap = {}; 
 
 // --- DOM ELEMENTS ---
-// Variables are defined globally but assigned inside DOMContentLoaded to ensure they exist
-let messages, form, input, loginForm, nameInput, statusMessage, userListElement;
+// Defined globally, assigned inside DOMContentLoaded.
+let messages, form, mInput, loginForm, nameInput, statusMessage, userListElement;
 let typingIndicator, adminPanel, chatContainer;
 let clearPublicBtn, clearAdminBtn, goAnonBtn, switchPublicBtn, switchAdminBtn;
 let contextDisplay;
@@ -28,11 +28,12 @@ let contextDisplay;
 
 /**
  * Gets a reference to all necessary DOM elements.
+ * Uses 'm' for the chat input field, as per the HTML.
  */
 function getDOMElements() {
     messages = document.getElementById('messages');
     form = document.getElementById('chat-form');
-    input = document.getElementById('m');
+    mInput = document.getElementById('m'); // CRITICAL: Using 'm' here
     loginForm = document.getElementById('login-form');
     nameInput = document.getElementById('name-input');
     statusMessage = document.getElementById('status-message');
@@ -57,7 +58,6 @@ function appendMessage(msg) {
     if (!messages) return;
     const item = document.createElement('li');
     let messageClass = '';
-    let contentHtml = msg.content;
     let usernameDisplay = msg.username;
 
     if (msg.type === 'system') {
@@ -77,7 +77,7 @@ function appendMessage(msg) {
     item.innerHTML = `
         <span class="timestamp">[${new Date(msg.timestamp).toLocaleTimeString()}]</span>
         <span class="username">${usernameHtml}:</span> 
-        <span class="content">${contentHtml}</span>
+        <span class="content">${msg.content}</span>
     `;
 
     messages.appendChild(item);
@@ -115,14 +115,11 @@ function updateAdminUI(isAdmin) {
 
 function setupSocketListeners() {
     socket.on('connect', () => {
-        // 1. Get or Generate Fingerprint ID
         let fpid = localStorage.getItem('chat_fpid');
         if (!fpid) {
             fpid = 'fp-' + Math.random().toString(36).substring(2, 15);
             localStorage.setItem('chat_fpid', fpid);
         }
-        
-        // 2. Send FPID to server for ban check
         socket.emit('client:send_fingerprint_id', fpid);
     });
 
@@ -158,7 +155,7 @@ function setupSocketListeners() {
 
     socket.on('name_updated_ui', (newName) => {
         myDisplayName = newName;
-        updateAdminUI(isStaff); // Re-run to update the context display text
+        updateAdminUI(isStaff); 
     });
 
     // --- Chat/System Events ---
@@ -217,9 +214,6 @@ function setupSocketListeners() {
 // UI ACTION HANDLERS
 // ===============================================
 
-/**
- * Sets up listeners for login, chat, and typing input.
- */
 function setupInputHandlers() {
     // 1. Login Form Handler
     if (loginForm) {
@@ -237,9 +231,8 @@ function setupInputHandlers() {
     if (form) {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
-            const content = input.value.trim();
+            const content = mInput.value.trim(); // CRITICAL FIX: Using mInput
             if (content) {
-                // Check for private message format
                 const pmMatch = content.match(/^\/pm\s+(\w+)\s+(.+)$/i);
                 
                 if (pmMatch) {
@@ -247,7 +240,6 @@ function setupInputHandlers() {
                     const pmContent = pmMatch[2];
                     socket.emit('private message', { recipient, content: pmContent });
                 } else if (content === '/name' || content.startsWith('/name ')) {
-                    // Name Change command
                     const newName = content.replace('/name', '').trim();
                     if (newName) {
                         socket.emit('name_change', newName);
@@ -255,12 +247,10 @@ function setupInputHandlers() {
                         alert('Usage: /name <new_name>');
                     }
                 } else {
-                    // Regular Chat Message
                     socket.emit('chat message', { content: content, context: currentContext });
                 }
                 
-                // Clear input and stop typing indicator
-                input.value = '';
+                mInput.value = '';
                 socket.emit('typing', false);
             }
         });
@@ -268,9 +258,9 @@ function setupInputHandlers() {
 
     // 3. Typing Indicator Handler
     let typingTimeout = null;
-    if (input) {
-        input.addEventListener('input', () => {
-            if (input.value.length > 0) {
+    if (mInput) {
+        mInput.addEventListener('input', () => {
+            if (mInput.value.length > 0) {
                 socket.emit('typing', true);
                 clearTimeout(typingTimeout);
                 typingTimeout = setTimeout(() => {
@@ -305,7 +295,6 @@ function updateAdminUserList(adminUserMap) {
         const fpidDisplay = user.fpid ? ` (FPID: ${user.fpid.substring(0, 8)}...)` : '';
         li.innerHTML = `<strong>${user.displayName}</strong> ${user.isAdmin ? '(Staff)' : ''} ${fpidDisplay}`;
         
-        // Don't show controls for the admin user themselves
         if (user.displayName === myDisplayName) {
             li.classList.add('self-admin');
             adminUserList.appendChild(li);
@@ -328,7 +317,6 @@ function updateAdminUserList(adminUserMap) {
         banBtn.textContent = 'Ban';
         banBtn.classList.add('admin-action-btn', 'ban-btn');
         banBtn.onclick = () => {
-            // Simple prompt for ban details
             const banDurationDays = parseInt(prompt(`Ban ${user.displayName} for how many DAYS?`, 0) || 0);
             const banDurationHours = parseInt(prompt(`Ban ${user.displayName} for how many HOURS?`, 1) || 1);
             const banDurationMinutes = parseInt(prompt(`Ban ${user.displayName} for how many MINUTES?`, 0) || 0);
@@ -351,7 +339,7 @@ function updateAdminUserList(adminUserMap) {
 }
 
 /**
- * Sets up click handlers for all static admin buttons (Clear History, Context Switch, Go Anon).
+ * Sets up click handlers for all static admin buttons.
  */
 function setupAdminButtonHandlers() {
     // Clear History
@@ -399,12 +387,9 @@ function setupAdminButtonHandlers() {
 // INITIALIZATION
 // ===============================================
 
-/**
- * Runs when the entire page is loaded.
- */
 document.addEventListener('DOMContentLoaded', () => {
-    getDOMElements(); // 1. Get references to all HTML elements
-    setupSocketListeners(); // 2. Setup all incoming socket events
-    setupInputHandlers(); // 3. Setup listeners for forms and input fields
-    setupAdminButtonHandlers(); // 4. Setup listeners for admin controls
+    getDOMElements(); 
+    setupSocketListeners(); 
+    setupInputHandlers(); 
+    setupAdminButtonHandlers();
 });
