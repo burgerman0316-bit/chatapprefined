@@ -14,6 +14,7 @@ const displayUsername = document.getElementById('display-username');
 const onlineUsersList = document.getElementById('online-users-list');
 const usersOnlineCount = document.getElementById('users-online-count');
 const chatHeader = document.getElementById('chat-header');
+const typingIndicator = document.getElementById('typing-indicator'); // New indicator element
 
 // Staff Elements
 const staffControls = document.getElementById('staff-controls');
@@ -27,7 +28,8 @@ const renameButtonGuest = document.getElementById('rename-button-guest');
 // Admin Panel Modal Elements
 const adminPanelModal = document.getElementById('admin-panel-modal');
 const adminContentArea = document.getElementById('admin-content-area');
-const closeButton = adminPanelModal ? adminPanelModal.querySelector('.close-button') : null; // Safe selector
+const adminModalHeader = document.getElementById('admin-modal-header'); // New header for X button
+const closeButton = adminModalHeader ? adminModalHeader.querySelector('.close-button') : null; // Close button inside the new header
 
 // Banned Modal Elements
 const bannedModal = document.getElementById('banned-modal');
@@ -39,11 +41,11 @@ let currentUsername = 'Guest';
 let isAdmin = false;
 let currentChatContext = 'public'; // 'public' or 'admin_chat'
 let currentAdminUserMap = {}; // Map of socketId -> { displayName, ip, isAdmin, ... }
+let typingTimeout = null;
 
 // --- FPID AND CONNECTION SETUP ---
 let fingerprintId = 'no_fingerprint_id';
 
-// Generate Fingerprint ID (Used for ban persistence)
 if (window.Fingerprint2) {
     Fingerprint2.get((components) => {
         const values = components.map(component => component.value);
@@ -54,7 +56,7 @@ if (window.Fingerprint2) {
     socket.emit('client:send_fingerprint_id', fingerprintId);
 }
 
-// --- EVENT LISTENERS (CRITICAL FOR LOGIN) ---
+// --- EVENT LISTENERS ---
 
 // 1. JOIN CHAT BUTTON CLICK HANDLER
 if (joinChatButton) {
@@ -80,28 +82,29 @@ if (messageForm) {
 
         if (!content) return;
 
+        // Clear typing indicator on send
+        socket.emit('typing', false); 
+        
         if (content.startsWith('/msg ')) {
-            // Handle Private Message
-            const parts = content.split(' ');
-            if (parts.length < 3) {
-                appendMessage({ username: 'System', content: 'Usage: /msg [user] [content]', type: 'system' });
-                messageInput.value = '';
-                return;
+            // Updated PM parsing to support names with spaces in quotes
+            const parts = content.match(/^\/msg\s+("([^"]+)"|([^\s]+))\s+(.*)$/);
+
+            if (parts && parts.length >= 5) {
+                const recipient = parts[2] || parts[3]; // The name (quoted or unquoted)
+                const privateContent = parts[4]; 
+                
+                socket.emit('private message', { recipient: recipient, content: privateContent });
+            } else {
+                 appendMessage({ username: 'System', content: 'Usage: /msg "User Name" Content OR /msg SingleName Content', type: 'system' });
             }
-            const recipient = parts[1];
-            const privateContent = parts.slice(2).join(' ');
-            
-            socket.emit('private message', { recipient: recipient, content: privateContent });
 
         } else if (content === '/anon') {
-            // Handle Anonymous Login (Staff only)
             if (isAdmin) {
                  socket.emit('admin:go_anonymous');
             } else {
                  appendMessage({ username: 'System', content: 'Command not recognized or access denied.', type: 'system' });
             }
         } else {
-            // Regular chat message
             socket.emit('chat message', { content: content, context: currentChatContext });
         }
 
@@ -109,8 +112,26 @@ if (messageForm) {
     });
 }
 
+// 3. TYPING INDICATOR SEND
+if (messageInput) {
+    messageInput.addEventListener('input', () => {
+        const content = messageInput.value.trim();
+        
+        // If not typing, send typing=true
+        if (content.length > 0 && typingTimeout === null) {
+            socket.emit('typing', true);
+        }
+        
+        // Reset timeout to send typing=false after delay
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            socket.emit('typing', false);
+            typingTimeout = null;
+        }, 2000);
+    });
+}
 
-// 3. RENAME BUTTONS
+// 4. RENAME BUTTONS
 if (renameButtonGuest) {
     renameButtonGuest.addEventListener('click', () => {
         const newName = prompt("Enter a new username (max 16 chars):");
@@ -121,7 +142,7 @@ if (renameButtonGuest) {
 }
 
 
-// 4. ADMIN PANEL BUTTON AND CLOSE BUTTON
+// 5. ADMIN PANEL BUTTON AND CLOSE BUTTON
 if (adminPanelButton) {
     adminPanelButton.addEventListener('click', () => {
         if (isAdmin) {
@@ -130,13 +151,14 @@ if (adminPanelButton) {
     });
 }
 
+// Fix: Close button listener attached directly to the actual button element
 if (closeButton) {
     closeButton.addEventListener('click', () => {
         adminPanelModal.style.display = 'none';
     });
 }
 
-// 5. STAFF CONTEXT TABS
+// 6. STAFF CONTEXT TABS
 if (publicTab && adminTab) {
     publicTab.addEventListener('click', () => {
         if (currentChatContext !== 'public') {
@@ -151,14 +173,14 @@ if (publicTab && adminTab) {
     });
 }
 
-// 6. Sidebar Name Click (New feature)
+// 7. Sidebar Name Click (Updated to use quotes)
 if (onlineUsersList) {
     onlineUsersList.addEventListener('click', (e) => {
         const targetLi = e.target.closest('li');
         if (targetLi) {
-            // Extract only the name, stripping any (MOD) tag
             const rawName = targetLi.textContent.split('(')[0].trim(); 
-            messageInput.value = `/msg ${rawName} `;
+            // Put name in quotes to support spaces
+            messageInput.value = `/msg "${rawName}" `;
             messageInput.focus();
         }
     });
@@ -189,29 +211,36 @@ function appendMessage(msg, isHistory = false) {
     let messageText = '';
     const date = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
+    // Set class for alignment and bubble color
+    if (msg.type === 'user' || msg.type === 'private') {
+        if (msg.isSelf) {
+            li.classList.add('message-self');
+        } else {
+            li.classList.add('message-other');
+        }
+    }
+    
     // Style based on message type
     if (msg.type === 'system') {
         li.classList.add('system-message');
-        messageText = `[${date}] ${msg.content}`;
+        messageText = `${msg.content}`;
     } else {
-        // Regular, Admin, or Private message
-        const isSelf = msg.username === currentUsername;
+        const isSelf = msg.isSelf;
         let nameClass = msg.isAdmin ? 'admin-message' : '';
         
         if (msg.type === 'private') {
             li.classList.add('private-message');
-            // Check if it's a message sent by "You" or received by the user
+            const senderName = isSelf ? 'You' : msg.username;
             const recipientText = msg.recipient ? ` to ${msg.recipient}` : '';
-            messageText = `[${date}] (PM${recipientText}) <span class="${nameClass}">${msg.username}</span>: ${msg.content}`;
+            messageText = `(${date}) (PM${recipientText}) <span class="${nameClass}">${senderName}</span>: ${msg.content}`;
         } else {
-            messageText = `[${date}] <span class="${nameClass}">${msg.username}</span>: ${msg.content}`;
+            messageText = `(${date}) <span class="${nameClass}">${msg.username}</span>: ${msg.content}`;
         }
     }
     
     li.innerHTML = messageText;
     messagesList.appendChild(li);
 
-    // Scroll to bottom only if it's not loading history
     if (!isHistory) {
         messagesList.scrollTop = messagesList.scrollHeight;
     }
@@ -221,7 +250,7 @@ function updateCommands() {
     if (!commandsList) return;
     commandsList.innerHTML = '';
     let commands = [
-        { name: '/msg [user] [content]', desc: 'Send a private message.' }
+        { name: '/msg "User Name" [content]', desc: 'Send a private message. (Quotes required for spaces)' }
     ];
     
     if (isAdmin) {
@@ -243,14 +272,26 @@ function openAdminPanel() {
     adminPanelModal.style.display = 'flex';
     adminContentArea.innerHTML = '';
     
-    // Admin Panel Layout: Two columns with a vertical divider
+    // Admin Panel Layout: Two columns with a vertical divider (Swapped for Right-Side Management)
     const adminPanelGrid = document.createElement('div');
-    adminPanelGrid.style.display = 'grid';
-    adminPanelGrid.style.gridTemplateColumns = '1fr 5px 1fr'; // 1/5px/1fr
-    adminPanelGrid.style.gap = '20px';
+    adminPanelGrid.classList.add('admin-panel-grid'); // Use class for CSS styling
     adminContentArea.appendChild(adminPanelGrid);
 
-    // --- LEFT COLUMN: USER MANAGEMENT (KICK/BAN) ---
+    // --- LEFT COLUMN: HISTORY CLEARING ---
+    const clearSection = document.createElement('div');
+    clearSection.innerHTML = `
+        <h3>Clear Chat History:</h3>
+        <button id="clear-public-btn" style="background-color:#58a6ff; color:white; border:none; padding:8px 15px; margin-right:10px; border-radius:6px; cursor:pointer;">Clear Public Chat</button>
+        <button id="clear-admin-btn" style="background-color:#f7931e; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">Clear Admin Chat</button>
+    `;
+    adminPanelGrid.appendChild(clearSection); 
+
+    // --- CENTER COLUMN: VERTICAL DIVIDER ---
+    const divider = document.createElement('div');
+    divider.classList.add('vertical-divider');
+    adminPanelGrid.appendChild(divider);
+
+    // --- RIGHT COLUMN: USER MANAGEMENT (KICK/BAN) ---
     const userManagementArea = document.createElement('div');
     userManagementArea.innerHTML = '<h3>Manage Connected Users:</h3>';
     
@@ -277,30 +318,14 @@ function openAdminPanel() {
             <td>${user.displayName} ${user.isAdmin ? '(MOD)' : ''}</td>
             <td>${user.ip}</td>
             <td>
-                <button class="action-kick" data-user="${user.displayName}" style="background-color:#f7931e; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer;">Kick</button>
-                <button class="action-ban" data-user="${user.displayName}" style="background-color:#d44; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer; margin-left:5px;">Ban (FPID)</button>
+                <button class="action-kick" data-user="${user.displayName}">Kick</button>
+                <button class="action-ban" data-user="${user.displayName}">Ban (FPID)</button>
             </td>
         `;
         tbody.appendChild(tr);
     });
     userManagementArea.appendChild(table);
-    adminPanelGrid.appendChild(userManagementArea); // Add to grid
-
-    // --- CENTER COLUMN: VERTICAL DIVIDER ---
-    const divider = document.createElement('div');
-    divider.style.width = '1px';
-    divider.style.height = '100%';
-    divider.style.backgroundColor = '#444'; 
-    adminPanelGrid.appendChild(divider);
-
-    // --- RIGHT COLUMN: HISTORY CLEARING ---
-    const clearSection = document.createElement('div');
-    clearSection.innerHTML = `
-        <h3>Clear Chat History:</h3>
-        <button id="clear-public-btn" style="background-color:#58a6ff; color:white; border:none; padding:8px 15px; margin-right:10px; border-radius:6px; cursor:pointer;">Clear Public Chat</button>
-        <button id="clear-admin-btn" style="background-color:#f7931e; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">Clear Admin Chat</button>
-    `;
-    adminPanelGrid.appendChild(clearSection); // Add to grid
+    adminPanelGrid.appendChild(userManagementArea); 
     
     // ----------------------------------------------------------------
     // CRITICAL: ATTACH LISTENERS TO DYNAMICALLY CREATED BUTTONS
@@ -321,7 +346,7 @@ function openAdminPanel() {
         }
     });
 
-    // Kick button listeners (now functional)
+    // Kick button listeners
     userManagementArea.querySelectorAll('.action-kick').forEach(button => {
         button.addEventListener('click', (e) => {
             const targetName = e.target.dataset.user;
@@ -332,7 +357,7 @@ function openAdminPanel() {
         });
     });
     
-    // Ban button listeners (now functional)
+    // Ban button listeners
     userManagementArea.querySelectorAll('.action-ban').forEach(button => {
         button.addEventListener('click', (e) => {
             const targetName = e.target.dataset.user;
@@ -354,19 +379,43 @@ function openAdminPanel() {
 
 // --- SOCKET.IO HANDLERS ---
 
-// 1. Successful Regular Login
+// 1. Typing Status Update
+socket.on('typing_status', (typingNames) => {
+    if (!typingIndicator) return;
+    
+    const isTyping = typingNames.some(name => name !== currentUsername);
+    
+    if (isTyping) {
+        const othersTyping = typingNames.filter(name => name !== currentUsername);
+        
+        if (othersTyping.length === 1) {
+            typingIndicator.textContent = `${othersTyping[0]} is typing...`;
+        } else if (othersTyping.length === 2) {
+            typingIndicator.textContent = `${othersTyping[0]} and ${othersTyping[1]} are typing...`;
+        } else if (othersTyping.length >= 3) {
+            typingIndicator.textContent = 'Several people typing...';
+        } else {
+            typingIndicator.textContent = '';
+        }
+    } else {
+        typingIndicator.textContent = '';
+    }
+});
+
+
+// 2. Successful Regular Login
 socket.on('name_accepted', (name) => {
     currentUsername = name;
     displayUsername.textContent = name;
     nameModal.style.display = 'none';
-    chatContainer.style.display = 'flex';
+    chatContainer.style.display = 'grid';
     if (staffControls) staffControls.style.display = 'none'; 
     if (guestControls) guestControls.style.display = 'block';
-    if (publicTab) publicTab.style.display = 'none'; // Hide Public button for Guests
+    if (publicTab) publicTab.style.display = 'none'; 
     updateCommands();
 });
 
-// 2. Successful Staff Login/Status Update
+// 3. Successful Staff Login/Status Update
 socket.on('staff_status_update', (data) => {
     currentUsername = data.displayName;
     isAdmin = data.isAdmin;
@@ -374,24 +423,49 @@ socket.on('staff_status_update', (data) => {
 
     displayUsername.textContent = `${currentUsername} (MOD)`;
     nameModal.style.display = 'none';
-    chatContainer.style.display = 'flex';
+    chatContainer.style.display = 'grid';
     
     // Show staff elements
     if (staffControls) staffControls.style.display = 'flex';
     if (guestControls) guestControls.style.display = 'none';
     if (adminPanelButton) adminPanelButton.style.display = 'block';
-    if (publicTab) publicTab.style.display = 'block'; // Show Public button for Staff
+    if (publicTab) publicTab.style.display = 'block'; 
     
     updateCommands();
 });
 
-// 3. Name Rejected by Server (Name Conflict)
+// 4. Message Received (Updated to include isSelf flag for bubble styling)
+socket.on('chat message', (msg) => {
+    msg.isSelf = msg.username === currentUsername || msg.username === 'You';
+    if (currentChatContext === 'public' || msg.type === 'private') {
+        appendMessage(msg);
+    }
+});
+
+// 5. Admin chat message
+socket.on('admin chat message', (msg) => {
+    msg.isSelf = msg.username === currentUsername || msg.username === 'You';
+    if (currentChatContext === 'admin_chat') {
+        appendMessage(msg);
+    }
+});
+
+// 6. Chat History Load (Updated to include isSelf flag)
+socket.on('chat history', (history) => {
+    messagesList.innerHTML = '';
+    history.forEach(msg => {
+        msg.isSelf = msg.username === currentUsername || msg.username === 'You';
+        appendMessage(msg, true);
+    });
+    messagesList.scrollTop = messagesList.scrollHeight;
+});
+
+// --- Other handlers remain the same for functionality ---
 socket.on('name_rejected', (message) => {
     nameErrorMessage.textContent = message;
     nameInput.value = '';
 });
 
-// 4. Name Change Success
 socket.on('name_updated_ui', (newName) => {
     currentUsername = newName;
     displayUsername.textContent = newName;
@@ -400,28 +474,6 @@ socket.on('name_updated_ui', (newName) => {
     }
 });
 
-// 5. Incoming Chat Message
-socket.on('chat message', (msg) => {
-    if (currentChatContext === 'public') {
-        appendMessage(msg);
-    }
-});
-
-// 6. Incoming Admin Chat Message
-socket.on('admin chat message', (msg) => {
-    if (currentChatContext === 'admin_chat') {
-        appendMessage(msg);
-    }
-});
-
-// 7. Initial Chat History Load
-socket.on('chat history', (history) => {
-    messagesList.innerHTML = '';
-    history.forEach(msg => appendMessage(msg, true));
-    messagesList.scrollTop = messagesList.scrollHeight;
-});
-
-// 8. User Count/List Update
 socket.on('user count', (data) => {
     usersOnlineCount.textContent = `Users Online: ${data.userList.length}`;
     onlineUsersList.innerHTML = '';
@@ -437,12 +489,10 @@ socket.on('user count', (data) => {
     });
 });
 
-// 9. Admin User Map Update (for Admin Panel)
 socket.on('admin_user_map', (adminUsersMap) => {
     currentAdminUserMap = adminUsersMap;
 });
 
-// 10. Admin History Cleared
 socket.on('admin:history_cleared', (data) => {
     if (data.targetChatId === currentChatContext) {
         messagesList.innerHTML = '';
@@ -450,7 +500,6 @@ socket.on('admin:history_cleared', (data) => {
     }
 });
 
-// 11. Banned Modal Display
 socket.on('banned_modal', (data) => {
     if (chatContainer) chatContainer.style.display = 'none';
     if (nameModal) nameModal.style.display = 'none';
@@ -465,7 +514,6 @@ socket.on('banned_modal', (data) => {
         if (timeRemaining <= 0) {
             clearInterval(interval);
             banTimer.textContent = '00:00:00';
-            // You might want to automatically refresh the page here
         }
         
         const seconds = Math.floor((timeRemaining / 1000) % 60);
@@ -479,7 +527,6 @@ socket.on('banned_modal', (data) => {
     }, 1000);
 });
 
-// 12. General System Alerts/Errors
 socket.on('system_alert', (message) => {
     appendMessage({ username: 'System', content: message, type: 'system' });
 });
