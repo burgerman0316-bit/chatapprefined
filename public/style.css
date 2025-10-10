@@ -1,7 +1,7 @@
 /* --- BASE STYLES --- */
 body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background-color: #f0f0f0;
+    background-color: #1c1c1c; /* Dark background */
     margin: 0;
     padding: 0;
     height: 100vh;
@@ -15,33 +15,33 @@ body {
     width: 90%;
     max-width: 1200px;
     height: 90vh;
-    background-color: #ffffff;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    background-color: #2c2c2c; /* Dark chat container */
+    color: #f0f0f0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     border-radius: 12px;
     overflow: hidden;
     grid-template-columns: 3fr 1fr;
     grid-template-rows: auto 1fr auto;
-    /* Use grid for main chat layout */
     display: grid; 
 }
 
 /* --- LEFT PANEL (MESSAGES) --- */
 #messages-panel {
     grid-column: 1;
-    grid-row: 1 / span 3; /* Takes up all rows in the first column */
+    grid-row: 1 / span 3;
     display: flex;
     flex-direction: column;
     height: 100%;
-    border-right: 1px solid #ddd;
+    border-right: 1px solid #444;
 }
 
 #chat-header {
     padding: 15px;
-    background-color: #e5e5e5;
-    border-bottom: 1px solid #ccc;
+    background-color: #383838;
+    border-bottom: 1px solid #444;
     font-size: 1.1em;
     font-weight: bold;
-    color: #333;
+    color: #f0f0f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -58,13 +58,14 @@ body {
     background-color: transparent;
     cursor: pointer;
     font-weight: 500;
+    color: #bbb;
     border-radius: 5px;
     transition: background-color 0.2s;
 }
 
 #chat-tabs button.active {
-    background-color: #c0c0c0;
-    color: #000;
+    background-color: #444;
+    color: #f0f0f0;
 }
 
 #messages {
@@ -73,7 +74,7 @@ body {
     margin: 0;
     overflow-y: auto;
     flex-grow: 1;
-    background-color: #f7f7f7; /* iMessage-style light background */
+    background-color: #2c2c2c; /* Chat background */
 }
 
 /* --- MESSAGE BUBBLE STYLING --- */
@@ -90,12 +91,13 @@ body {
 
 /* Base bubble style */
 #messages li:not(.system-message) {
-    background: #e5e5ea; /* Light gray for others */
+    background: #444; /* Dark gray for others */
     padding: 10px 15px;
     border-radius: 18px;
     line-height: 1.4;
     position: relative;
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+    color: #f0f0f0;
 }
 
 /* Self-sent messages */
@@ -108,8 +110,8 @@ body {
 /* Other users' messages */
 #messages li.message-other {
     float: left;
-    background-color: #e5e5ea; /* Gray for others */
-    color: #000;
+    background-color: #444; /* Dark gray for others */
+    color: #f0f0f0;
 }
 
 /* --- Bubble Arrow (using pseudo-elements) --- */
@@ -137,8 +139,8 @@ body {
 /* Arrow for other users' messages (left corner) */
 #messages li.message-other::before {
     left: -7px;
-    border-top-color: #e5e5ea;
-    border-left-color: #e5e5ea;
+    border-top-color: #444;
+    border-left-color: #444;
     border-right-width: 0;
     border-bottom-width: 0;
     border-radius: 18px 0 0 0;
@@ -177,7 +179,7 @@ body {
 /* --- INPUT FOOTER --- */
 #typing-indicator {
     padding: 5px 15px;
-    color: #777;
+    color: #999;
     font-size: 0.85em;
     height: 20px;
 }
@@ -185,17 +187,19 @@ body {
 #message-form {
     padding: 10px 15px;
     display: flex;
-    border-top: 1px solid #ddd;
-    background-color: #f0f0f0;
+    border-top: 1px solid #444;
+    background-color: #383838;
 }
 
 #message-input {
     flex-grow: 1;
     padding: 10px;
-    border: 1px solid #ccc;
+    border: 1px solid #555;
     border-radius: 8px;
     margin-right: 10px;
     font-size: 1em;
+    background-color: #2c2c2c;
+    color: #f0f0f0;
 }
 
 #message-form button {
@@ -219,19 +223,19 @@ body {
     grid-row: 1 / span 3;
     display: flex;
     flex-direction: column;
-    background-color: #ffffff;
+    background-color: #333; /* Darker sidebar */
 }
 
 #user-section {
     padding: 15px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #444;
     flex-shrink: 0;
 }
 
 #user-section h2 {
     margin-top: 0;
     font-size: 1.1em;
-    color: #333;
+    color: #f0f0f0;
 }
 
 #display-username {
@@ -247,7 +251,7 @@ body {
     margin: 10px 0 0 0;
     overflow-y: auto;
     flex-grow: 1;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #444;
 }
 
 #online-users-list li {
@@ -255,10 +259,11 @@ body {
     cursor: pointer;
     font-size: 0.95em;
     transition: background-color 0.1s;
+    color: #ccc;
 }
 
 #online-users-list li:hover {
-    background-color: #f0f0f0;
+    background-color: #444;
 }
 
 .mod-tag {
@@ -277,14 +282,14 @@ body {
     padding: 0;
     margin: 10px 0;
     font-size: 0.85em;
-    color: #555;
+    color: #aaa;
 }
 
 #commands-list li {
     margin-bottom: 5px;
 }
 #commands-list strong {
-    color: #333;
+    color: #f0f0f0;
 }
 
 /* --- BUTTON CONSISTENCY --- */
@@ -310,8 +315,8 @@ body {
 }
 
 #rename-button-guest, #admin-panel-button {
-    background-color: #e0e0e0;
-    color: #333;
+    background-color: #555;
+    color: #f0f0f0;
 }
 
 
@@ -322,7 +327,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: rgba(0, 0, 0, 0.8);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -330,10 +335,11 @@ body {
 }
 
 .modal-content {
-    background-color: #ffffff;
+    background-color: #333; /* Dark modal content */
+    color: #f0f0f0;
     padding: 30px;
     border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.7);
     text-align: center;
     width: 90%;
     max-width: 400px;
@@ -341,23 +347,25 @@ body {
 
 /* Login Modal Specific Window Style */
 #name-modal .modal-content {
-    border: 1px solid #ccc;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    border: 1px solid #555;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 
 #name-modal h2 {
     margin-top: 0;
-    color: #333;
+    color: #f0f0f0;
 }
 
 #name-input {
     width: 100%;
     padding: 12px;
     margin: 10px 0 20px 0;
-    border: 1px solid #ccc;
+    border: 1px solid #555;
     border-radius: 8px;
     box-sizing: border-box;
     font-size: 1em;
+    background-color: #222;
+    color: #f0f0f0;
 }
 
 #join-chat-button {
@@ -373,14 +381,13 @@ body {
 }
 
 #name-error-message {
-    color: #d44;
+    color: #ff5555;
     margin-top: 10px;
     font-weight: bold;
 }
 
 /* --- ADMIN PANEL MODAL (RESIZABLE) --- */
 #admin-panel-modal .modal-content {
-    /* Make the modal resizable */
     resize: both;
     overflow: auto;
     min-width: 600px;
@@ -390,22 +397,16 @@ body {
     max-width: 90%;
     max-height: 90%;
     text-align: left;
-    padding: 0; /* Remove padding to make space for custom header */
-}
-
-#admin-panel-modal h3 {
-    margin-top: 0;
-    font-size: 1em;
-    color: #333;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
+    padding: 0;
+    background-color: #333;
+    border: 1px solid #555;
 }
 
 /* Custom Header for Admin Modal */
 #admin-modal-header {
-    background-color: #f7f7f7;
+    background-color: #383838;
     padding: 15px 20px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid #444;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -416,7 +417,7 @@ body {
 #admin-modal-header h2 {
     margin: 0;
     font-size: 1.2em;
-    color: #333;
+    color: #f0f0f0;
 }
 
 /* Fixed Close Button (X) */
@@ -424,7 +425,7 @@ body {
     background: none;
     border: none;
     font-size: 24px;
-    color: #666;
+    color: #ccc;
     cursor: pointer;
     padding: 0;
     line-height: 1;
@@ -432,14 +433,14 @@ body {
 }
 
 .close-button:hover {
-    color: #d44;
+    color: #ff5555;
 }
 
 #admin-content-area {
     padding: 20px;
 }
 
-/* Admin Panel Grid Layout Fix */
+/* Admin Panel Grid Layout Fix (Management LEFT, History RIGHT) */
 #admin-content-area .admin-panel-grid {
     display: grid;
     grid-template-columns: 1fr 5px 1fr;
@@ -450,7 +451,7 @@ body {
 #admin-content-area .vertical-divider {
     width: 1px;
     height: 100%;
-    background-color: #ccc;
+    background-color: #555;
     grid-column: 2;
     margin: 0 auto;
 }
@@ -464,12 +465,13 @@ body {
 #admin-content-area th, #admin-content-area td {
     padding: 8px;
     text-align: left;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #444;
     font-size: 0.9em;
+    color: #f0f0f0;
 }
 
 #admin-content-area th {
-    background-color: #f0f0f0;
+    background-color: #444;
     font-weight: bold;
 }
 
@@ -499,15 +501,15 @@ body {
 
 /* --- BAN MODAL --- */
 #banned-modal .modal-content {
-    background-color: #fff;
+    background-color: #333;
     border: 3px solid #d44;
 }
 #ban-reason {
-    color: #d44;
+    color: #ff5555;
     font-weight: bold;
     margin: 10px 0;
 }
 #ban-timer {
     font-size: 1.5em;
-    color: #333;
+    color: #f0f0f0;
 }
