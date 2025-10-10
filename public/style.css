@@ -148,6 +148,7 @@ body {
     content: none; 
 }
 
+
 /* Styles for sender name indicator */
 .sender-name {
     position: absolute;
@@ -370,36 +371,4 @@ body {
 .user-select-list {
     scrollbar-color: #555 #1e1e1e;
     scrollbar-width: thin; 
-}
-
-/* --- FIXES: place sender name above message content to prevent overlap --- */
-/* Use flow layout (not absolute) so name doesn't overlap text */
-.msg .sender-name {
-  position: relative;
-  display: block;
-  margin: 0 0 6px 0;
-  font-size: 0.75em;
-  line-height: 1;
-  font-weight: 700;
-  pointer-events: none;
-}
-
-/* Message content block so name is separate */
-.msg .msg-content {
-  display: block;
-  padding: 6px 10px;
-  box-sizing: border-box;
-  word-break: break-word;
-  white-space: pre-wrap;
-}
-
-/* Reduce top padding since sender-name occupies space */
-.msg {
-  padding-top: 6px;
-}
-
-/* Hide sender-name when messages from same sender stack */
-.msg.own + .msg.own .sender-name,
-.msg.other + .msg.other .sender-name {
-  display: none;
 }
