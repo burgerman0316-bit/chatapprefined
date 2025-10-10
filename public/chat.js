@@ -90,7 +90,7 @@ function appendMessage(msg) {
 function showChatUI() {
     if (loginForm && chatContainer) {
         loginForm.style.display = 'none';
-        chatContainer.style.display = 'flex';
+        chatContainer.style.display = 'grid'; // Use 'grid' as defined in CSS
     }
 }
 
@@ -231,7 +231,7 @@ function setupInputHandlers() {
     if (form) {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
-            const content = mInput.value.trim(); // CRITICAL FIX: Using mInput
+            const content = mInput.value.trim(); // Using mInput (id="m")
             if (content) {
                 const pmMatch = content.match(/^\/pm\s+(\w+)\s+(.+)$/i);
                 
