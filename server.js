@@ -15,6 +15,7 @@ const ADMIN_CHAT_ID = 'admin_chat';
 const MAX_HISTORY = 100;
 const CONTENT_MAX_CHARS = 500; 
 const BANNED_WORDS = ['hitler', 'swear', 'badword', 'bannedword', 'spam', 'adminchat']; // Simple filter
+const TYPING_TIMEOUT_MS = 3000;
 
 // Staff accounts - NOTE: LoginName is the SECURE password/key
 const STAFF_LIST = [
@@ -30,6 +31,7 @@ const users = new Map(); // socket.id -> { displayName, isAdmin, fpid, ip, chatC
 const publicHistory = [];
 const adminHistory = [];
 const fpBanList = new Map(); // fpid -> { banUntil: Date, reason: string }
+const typingUsers = new Map(); // socket.id -> Date (last activity)
 
 // --- HELPER FUNCTIONS ---
 
@@ -60,6 +62,7 @@ function broadcastUserCount() {
         acc[u.socket.id] = { 
             displayName: u.displayName, 
             isAdmin: u.isAdmin, 
+            fpid: u.fpid, // Include FPID for admin actions
             ip: u.ip, 
             chatContext: u.chatContext 
         };
@@ -70,6 +73,22 @@ function broadcastUserCount() {
     io.emit('user count', { userList: publicUserList, usersMap: publicUsersMap });
     io.to(STAFF_ROOM).emit('admin_user_map', adminUsersMap);
 }
+
+function broadcastTypingStatus() {
+    const activeTypers = Array.from(typingUsers.keys()).filter(socketId => {
+        return typingUsers.get(socketId) > Date.now() - TYPING_TIMEOUT_MS;
+    });
+
+    const typingNames = activeTypers
+        .map(socketId => users.get(socketId)?.displayName)
+        .filter(name => name);
+    
+    io.emit('typing_status', typingNames);
+}
+
+// Set up interval for checking typing status
+setInterval(broadcastTypingStatus, 1000);
+
 
 function sanitiseContent(content) {
     if (!content || typeof content !== 'string') return '';
@@ -91,6 +110,7 @@ function cleanUpUser(socketId) {
     }
     
     users.delete(socketId);
+    typingUsers.delete(socketId); // Also clear typing status
 }
 
 // --- EXPRESS SETUP (FIXED TO PREVENT CACHING) ---
@@ -147,7 +167,6 @@ io.on('connection', (socket) => {
                 socket.emit('system_alert', 'Your previous ban has expired. Please choose a name.');
             }
         }
-        // If not banned, wait for 'check_staff_status' to continue.
     });
 
     // 2. User attempts to join/check staff status (THIS IS NOW THE AUTHENTICATION STEP)
@@ -270,7 +289,8 @@ io.on('connection', (socket) => {
             content: safeContent,
             timestamp: new Date(),
             isAdmin: user.isAdmin,
-            type: 'user'
+            type: 'user',
+            isSelf: user.socket.id === socket.id // Flag for client-side alignment
         };
         
         if (user.chatContext === ADMIN_CHAT_ID) {
@@ -282,20 +302,40 @@ io.on('connection', (socket) => {
         }
     });
     
-    // 5. Private Messages
+    // 5. Private Messages (Updated to handle names in quotes)
     socket.on('private message', (data) => {
         const sender = users.get(socket.id);
         if (!sender) return; 
 
-        const recipientUser = Array.from(users.values()).find(u => u.displayName === data.recipient);
-        
-        if (!recipientUser || recipientUser.displayName === sender.displayName) {
-            socket.emit('system_error', `User '${data.recipient}' not found or cannot message self.`);
-            return;
-        }
-        
+        let recipientName = data.recipient;
         const safeContent = sanitiseContent(data.content);
         if (!safeContent) return; 
+        
+        // Logic to extract name from quotes: "/msg "Name with Space" content"
+        const fullMessage = `/msg ${recipientName} ${data.content}`;
+        const match = fullMessage.match(/^\/msg\s+"([^"]+)"\s+(.*)$/); // Match name in quotes
+        
+        if (match) {
+            recipientName = match[1];
+            data.content = match[2];
+        } else {
+            // Fallback for names without spaces or if user just typed: /msg Name Content
+            const parts = fullMessage.split(/\s+/);
+            if (parts.length >= 3) {
+                 recipientName = parts[1];
+                 data.content = parts.slice(2).join(' ');
+            } else {
+                socket.emit('system_error', 'Invalid /msg format. Use: /msg "User Name" Content');
+                return;
+            }
+        }
+        
+        const recipientUser = Array.from(users.values()).find(u => u.displayName === recipientName);
+        
+        if (!recipientUser || recipientUser.displayName === sender.displayName) {
+            socket.emit('system_error', `User '${recipientName}' not found or cannot message self.`);
+            return;
+        }
 
         const msg = {
             username: sender.displayName,
@@ -303,7 +343,8 @@ io.on('connection', (socket) => {
             timestamp: new Date(),
             isAdmin: sender.isAdmin,
             type: 'private',
-            isPrivate: true
+            isPrivate: true,
+            isSelf: false
         };
         
         io.to(recipientUser.socket.id).emit('chat message', msg);
@@ -315,12 +356,25 @@ io.on('connection', (socket) => {
              isAdmin: false,
              type: 'private',
              isPrivate: true,
-             recipient: recipientUser.displayName
+             recipient: recipientUser.displayName,
+             isSelf: true
         };
         socket.emit('chat message', confirmationMsg);
     });
+    
+    // 6. Typing Status Update
+    socket.on('typing', (isTyping) => {
+        if (!isAuthenticated) return;
+        
+        if (isTyping) {
+            typingUsers.set(socket.id, Date.now());
+        } else {
+            typingUsers.delete(socket.id);
+        }
+        // Broadcast happens on interval, no need to call here
+    });
 
-    // 6. Admin: Set Chat Context (Public/Admin)
+    // 7. Admin: Set Chat Context (Public/Admin)
     socket.on('admin:set_context', (contextId) => {
         const user = users.get(socket.id);
         if (!user) return;
@@ -343,7 +397,7 @@ io.on('connection', (socket) => {
         broadcastUserCount();
     });
     
-    // 7. Admin: Clear History
+    // 8. Admin: Clear History
     socket.on('admin:clear_history', (contextId) => {
         const admin = users.get(socket.id);
         if (!admin || !admin.isAdmin) return;
@@ -364,7 +418,7 @@ io.on('connection', (socket) => {
         io.emit('admin:history_cleared', { targetChatId: contextId, clearMsg: clearMsg });
     });
 
-    // 8. Admin: Go Anonymous
+    // 9. Admin: Go Anonymous
     socket.on('admin:go_anonymous', () => {
         let user = users.get(socket.id);
         if (!user || !user.isAdmin) return;
@@ -393,7 +447,7 @@ io.on('connection', (socket) => {
         broadcastUserCount();
     });
     
-    // 9. Admin: Kick User
+    // 10. Admin: Kick User
     socket.on('admin:kick_user', ({ targetName }) => {
         const admin = users.get(socket.id);
         if (!admin || !admin.isAdmin) return;
@@ -432,7 +486,7 @@ io.on('connection', (socket) => {
         broadcastUserCount();
     });
 
-    // 10. Admin: Ban User by FPID
+    // 11. Admin: Ban User by FPID
     socket.on('admin:ip_ban_user', ({ targetName, days, hours, minutes, reason }) => {
         const admin = users.get(socket.id);
         if (!admin || !admin.isAdmin) return;
@@ -490,7 +544,7 @@ io.on('connection', (socket) => {
     });
 
 
-    // 11. Disconnect 
+    // 12. Disconnect 
     socket.on('disconnect', () => {
         const user = users.get(socket.id);
         // Only broadcast leave message if the user was authenticated
