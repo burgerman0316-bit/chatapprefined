@@ -6,7 +6,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const MAX_USERNAME_LENGTH = 16;
 const STAFF_KEYS = {
     "admin_key_12345": "ModAdmin",
@@ -468,3 +468,4 @@ io.on('connection', (socket) => {
 server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
+
