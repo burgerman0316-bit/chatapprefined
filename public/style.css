@@ -94,15 +94,25 @@ body {
     flex-grow: 1;
 }
 
+/* Make sender name part of normal flow above the bubble */
+.sender-name {
+    position: static;
+    display: block;
+    margin: 0 12px 6px; /* space below name */
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+/* Base .msg styles; names are now in flow above each message bubble */
 .msg {
     max-width: 70%; 
-    margin-bottom: 10px;
-    padding: 8px 10px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
     position: relative; 
     word-wrap: break-word;
     clear: both; 
     list-style: none;
-    padding-top: 10px;
+    border-radius: 12px;
 }
 
 /* --- OWN MESSAGES (Right Side) --- */
@@ -110,11 +120,6 @@ body {
     align-self: flex-end; 
     background-color: #4a4a4a; 
     color: #fff;
-    border-radius: 12px;
-}
-
-.msg.own::before, .msg.own::after {
-    content: none;
 }
 
 /* --- OTHER MESSAGES (Left Side) --- */
@@ -122,11 +127,6 @@ body {
     align-self: flex-start; 
     background-color: #2c2c2c; 
     color: #f0f0f0;
-    border-radius: 12px;
-}
-
-.msg.other::before, .msg.other::after {
-    content: none;
 }
 
 /* System messages (No Tail) */
@@ -143,49 +143,16 @@ body {
     border-radius: 0; 
 }
 
-.msg.system::before,
-.msg.system::after {
-    content: none; 
+/* Stacking rules: tuck bubbles together and hide repeated names */
+.msg + .msg {
+    margin-top: -6px; /* visually tuck bubbles together */
 }
 
-
-/* Styles for sender name indicator */
-.sender-name {
-    position: absolute;
-    top: 4px;
-    font-size: 0.8em;
-    font-weight: bold;
+/* Hide the sender name for subsequent messages in the same stack when same sender */
+.msg + .msg .sender-name,
+.msg + .msg ~ .msg .sender-name {
+    display: none;
 }
-
-.msg.own .sender-name {
-    right: 12px;
-    color: #99cfff; 
-}
-
-.msg.other .sender-name {
-    left: 12px;
-    color: #c0c0c0; 
-}
-
-/* Styles for stacking messages from the same user */
-.msg.own + .msg.own {
-    margin-top: -8px; 
-    border-radius: 12px; 
-}
-
-.msg.own + .msg.own .sender-name {
-    display: none; 
-}
-
-.msg.other + .msg.other {
-    margin-top: -8px; 
-    border-radius: 12px; 
-}
-
-.msg.other + .msg.other .sender-name {
-    display: none; 
-}
-
 
 /* Input Box */
 #messageForm {
