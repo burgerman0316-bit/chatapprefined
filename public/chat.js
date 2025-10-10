@@ -151,6 +151,20 @@ if (publicTab && adminTab) {
     });
 }
 
+// 6. Sidebar Name Click (New feature)
+if (onlineUsersList) {
+    onlineUsersList.addEventListener('click', (e) => {
+        const targetLi = e.target.closest('li');
+        if (targetLi) {
+            // Extract only the name, stripping any (MOD) tag
+            const rawName = targetLi.textContent.split('(')[0].trim(); 
+            messageInput.value = `/msg ${rawName} `;
+            messageInput.focus();
+        }
+    });
+}
+
+
 // --- HELPER UI FUNCTIONS ---
 
 function switchChatContext(context) {
@@ -212,13 +226,13 @@ function updateCommands() {
     
     if (isAdmin) {
         commands.push(
-            { name: '/anon', desc: 'Log out of Admin Mode.' }
+            { name: '/anon', desc: 'Log out of Admin Mode (become a Guest).' }
         );
     }
     
     commands.forEach(cmd => {
         const li = document.createElement('li');
-        li.innerHTML = `<strong>${cmd.name}</strong>`;
+        li.innerHTML = `<strong>${cmd.name}</strong> - ${cmd.desc}`;
         commandsList.appendChild(li);
     });
 }
@@ -229,9 +243,16 @@ function openAdminPanel() {
     adminPanelModal.style.display = 'flex';
     adminContentArea.innerHTML = '';
     
-    // Build User Management Section
-    const userList = document.createElement('div');
-    userList.innerHTML = '<h3>Manage Connected Users:</h3>';
+    // Admin Panel Layout: Two columns with a vertical divider
+    const adminPanelGrid = document.createElement('div');
+    adminPanelGrid.style.display = 'grid';
+    adminPanelGrid.style.gridTemplateColumns = '1fr 5px 1fr'; // 1/5px/1fr
+    adminPanelGrid.style.gap = '20px';
+    adminContentArea.appendChild(adminPanelGrid);
+
+    // --- LEFT COLUMN: USER MANAGEMENT (KICK/BAN) ---
+    const userManagementArea = document.createElement('div');
+    userManagementArea.innerHTML = '<h3>Manage Connected Users:</h3>';
     
     const table = document.createElement('table');
     table.style.width = '100%';
@@ -256,31 +277,36 @@ function openAdminPanel() {
             <td>${user.displayName} ${user.isAdmin ? '(MOD)' : ''}</td>
             <td>${user.ip}</td>
             <td>
-                <button class="action-kick" data-user="${user.displayName}" style="background-color:#d44; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer;">Kick</button>
-                <button class="action-ban" data-user="${user.displayName}" style="background-color:#f7931e; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer; margin-left:5px;">Ban (FPID)</button>
+                <button class="action-kick" data-user="${user.displayName}" style="background-color:#f7931e; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer;">Kick</button>
+                <button class="action-ban" data-user="${user.displayName}" style="background-color:#d44; color:white; border:none; padding:5px; border-radius:4px; cursor:pointer; margin-left:5px;">Ban (FPID)</button>
             </td>
         `;
         tbody.appendChild(tr);
     });
-    userList.appendChild(table);
+    userManagementArea.appendChild(table);
+    adminPanelGrid.appendChild(userManagementArea); // Add to grid
 
-    // Add History Clearing Section
+    // --- CENTER COLUMN: VERTICAL DIVIDER ---
+    const divider = document.createElement('div');
+    divider.style.width = '1px';
+    divider.style.height = '100%';
+    divider.style.backgroundColor = '#444'; 
+    adminPanelGrid.appendChild(divider);
+
+    // --- RIGHT COLUMN: HISTORY CLEARING ---
     const clearSection = document.createElement('div');
-    clearSection.style.marginTop = '20px';
     clearSection.innerHTML = `
         <h3>Clear Chat History:</h3>
         <button id="clear-public-btn" style="background-color:#58a6ff; color:white; border:none; padding:8px 15px; margin-right:10px; border-radius:6px; cursor:pointer;">Clear Public Chat</button>
         <button id="clear-admin-btn" style="background-color:#f7931e; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">Clear Admin Chat</button>
     `;
-
-    adminContentArea.appendChild(userList);
-    adminContentArea.appendChild(clearSection);
+    adminPanelGrid.appendChild(clearSection); // Add to grid
     
     // ----------------------------------------------------------------
     // CRITICAL: ATTACH LISTENERS TO DYNAMICALLY CREATED BUTTONS
     // ----------------------------------------------------------------
     
-    // Add event listeners for History Clearing buttons
+    // History Clearing listeners
     document.getElementById('clear-public-btn').addEventListener('click', () => {
         if (confirm('Are you sure you want to clear the PUBLIC chat history?')) {
             socket.emit('admin:clear_history', 'public');
@@ -295,8 +321,8 @@ function openAdminPanel() {
         }
     });
 
-    // Add event listeners for Kick buttons
-    adminContentArea.querySelectorAll('.action-kick').forEach(button => {
+    // Kick button listeners (now functional)
+    userManagementArea.querySelectorAll('.action-kick').forEach(button => {
         button.addEventListener('click', (e) => {
             const targetName = e.target.dataset.user;
             if (confirm(`Are you sure you want to KICK ${targetName}?`)) {
@@ -306,8 +332,8 @@ function openAdminPanel() {
         });
     });
     
-    // Add event listeners for Ban buttons
-    adminContentArea.querySelectorAll('.action-ban').forEach(button => {
+    // Ban button listeners (now functional)
+    userManagementArea.querySelectorAll('.action-ban').forEach(button => {
         button.addEventListener('click', (e) => {
             const targetName = e.target.dataset.user;
             const days = parseInt(prompt(`Ban ${targetName} for how many days? (0 for temporary)`)) || 0;
@@ -336,6 +362,7 @@ socket.on('name_accepted', (name) => {
     chatContainer.style.display = 'flex';
     if (staffControls) staffControls.style.display = 'none'; 
     if (guestControls) guestControls.style.display = 'block';
+    if (publicTab) publicTab.style.display = 'none'; // Hide Public button for Guests
     updateCommands();
 });
 
@@ -353,6 +380,7 @@ socket.on('staff_status_update', (data) => {
     if (staffControls) staffControls.style.display = 'flex';
     if (guestControls) guestControls.style.display = 'none';
     if (adminPanelButton) adminPanelButton.style.display = 'block';
+    if (publicTab) publicTab.style.display = 'block'; // Show Public button for Staff
     
     updateCommands();
 });
