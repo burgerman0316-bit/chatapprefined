@@ -6,12 +6,22 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// CRITICAL FIX FOR DEPLOYMENT: Use the environment port provided by Railway, or default to 3000
 const PORT = process.env.PORT || 3000;
 const MAX_USERNAME_LENGTH = 16;
+
+// =================================================================
+// !!! ATTENTION !!!
+// THESE ARE PLACEHOLDER KEYS. YOU MUST CHANGE THEM TO YOUR OWN SECRETS.
+// =================================================================
 const STAFF_KEYS = {
-    "admin_key_12345": "ModAdmin",
-    "super_mod_key_67890": "SuperModerator"
+    "hfdskLshkdgdibIdsjfkbdAshfjhsfdshfjMdjsbfhd": "Liam Stern", // Change "YOUR_SECRET_ADMIN_KEY" to a long, complex secret phrase
+    "hfsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh": "Diesel Carter", // Change "YOUR_SECRET_MODERATOR_KEY" to a long, complex secret phrase
+    "hdufAhudsAifhudiRsfOuidsuNfdsmklfdskfdndsjk": "Aaron Ortega",
+    "hbjrhfjRnjkfdvjkIfhdCnjfkdnjKjndksdjkfjdkdy": "Ricky Martinez",
+    "dnjsDkfjdsOfjdNsfjdOksfjVkdAsnfNjdsnfjkdkfd": "Donovan Powell"
 };
+// =================================================================
 
 // --- STATE MANAGEMENT ---
 let publicHistory = [];
@@ -190,6 +200,7 @@ io.on('connection', (socket) => {
         // Join rooms
         socket.join('public');
         if (isStaff) {
+            socket.leave('public'); // Staff join admin chat by default
             socket.join('admin_chat');
             currentUser.currentContext = 'admin_chat';
             socket.emit('staff_status_update', { 
@@ -219,7 +230,13 @@ io.on('connection', (socket) => {
         if (!currentUser.displayName) return socket.emit('system_error', 'Please log in first.');
         if (!msg.content.trim()) return;
 
+        // Use the context provided by the client, or fall back to the user's current context
         const context = msg.context || currentUser.currentContext;
+
+        // Security check: regular users can only send to public
+        if (!currentUser.isAdmin && context === 'admin_chat') {
+            return socket.emit('system_error', 'Permission denied to send to admin chat.');
+        }
 
         const message = {
             username: currentUser.displayName,
@@ -357,8 +374,12 @@ io.on('connection', (socket) => {
         if (!currentUser.isAdmin) return;
         
         const oldName = currentUser.displayName;
+        
+        // Check if the current display name is a staff key value
+        const isDefaultStaffName = Object.values(STAFF_KEYS).includes(oldName);
+        
         currentUser.isAdmin = false;
-        currentUser.displayName = `Guest_${Math.floor(Math.random() * 1000)}`; 
+        currentUser.displayName = isDefaultStaffName ? `Guest_${Math.floor(Math.random() * 1000)}` : oldName; 
         currentUser.currentContext = 'public';
         
         socket.leave('admin_chat');
@@ -447,7 +468,10 @@ io.on('connection', (socket) => {
         
         if (disconnectedUser && disconnectedUser.displayName) {
             const name = disconnectedUser.displayName;
-            broadcastSystemMessage(`${name} has left the chat.`, 'public');
+            // Only send leaving message if they were in the public room or admin room
+            if (disconnectedUser.currentContext === 'public' || !disconnectedUser.isAdmin) {
+                 broadcastSystemMessage(`${name} has left the chat.`, 'public');
+            }
             if (disconnectedUser.isAdmin) {
                  broadcastSystemMessage(`${name} has disconnected from admin mode.`, 'admin_chat');
             }
@@ -468,4 +492,3 @@ io.on('connection', (socket) => {
 server.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
-
