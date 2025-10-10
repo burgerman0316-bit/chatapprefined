@@ -1,266 +1,513 @@
-/* General Styling */
+/* --- BASE STYLES --- */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: #0d1117 !important; /* FORCED DARK BACKGROUND */
-    color: #c9d1d9; /* Light grey text */
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #f0f0f0;
     margin: 0;
     padding: 0;
+    height: 100vh;
     display: flex;
     justify-content: center;
-    align-items: flex-start; 
-    min-height: 100vh;
+    align-items: center;
 }
 
 #chat-container {
-    display: flex;
+    display: none; /* Hidden until login */
     width: 90%;
-    max-width: 1000px;
-    margin-top: 5vh;
-    background-color: #161b22; /* Inner Panel Dark Background */
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
-    min-height: 85vh;
+    max-width: 1200px;
+    height: 90vh;
+    background-color: #ffffff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
     overflow: hidden;
+    grid-template-columns: 3fr 1fr;
+    grid-template-rows: auto 1fr auto;
+    /* Use grid for main chat layout */
+    display: grid; 
 }
 
-/* --- Left Panel (Chat Info) --- */
-#chat-info-panel {
-    width: 300px;
-    padding: 20px;
-    border-right: 1px solid #30363d;
-    flex-shrink: 0;
+/* --- LEFT PANEL (MESSAGES) --- */
+#messages-panel {
+    grid-column: 1;
+    grid-row: 1 / span 3; /* Takes up all rows in the first column */
     display: flex;
     flex-direction: column;
-    gap: 15px; 
-}
-
-h2 {
-    color: #c9d1d9; 
-    font-size: 1.1em;
-    border-bottom: 1px solid #30363d;
-    padding-bottom: 5px;
-    margin-top: 0;
-}
-
-/* User Info Styling */
-.user-info {
-    padding: 10px;
-    background-color: #0d1117; 
-    border-radius: 6px;
-    border: 1px solid #30363d;
-}
-
-/* Tabs Styling */
-#chat-context-tabs button {
-    background-color: #30363d;
-    color: #c9d1d9;
-    border: none;
-    padding: 8px 15px;
-    margin-right: 5px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-#chat-context-tabs button.active {
-    background-color: #58a6ff; 
-    color: #0d1117;
-    font-weight: bold;
-}
-
-/* Online Users Styling */
-#online-users-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-#online-users-list li {
-    padding: 4px 0;
-    font-size: 0.95em;
-    cursor: pointer; 
-}
-
-.mod-tag {
-    color: #58a6ff;
-    font-weight: bold;
-    font-size: 0.9em;
-}
-
-/* Commands Styling */
-.commands-section ul {
-    list-style-type: disc; 
-    padding-left: 20px;
-}
-.commands-section li {
-    font-family: monospace;
-    font-size: 0.85em;
-    margin-bottom: 6px;
-    color: #8b949e;
-    line-height: 1.2;
-}
-
-/* Admin Panel Button */
-#admin-panel-button {
-    background-color: #58a6ff;
-    color: #0d1117;
-    border: none;
-    padding: 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    margin-top: auto; 
-    width: 100%;
-}
-
-/* Rename Button (In User Info) */
-#rename-button, #rename-button-guest {
-    background-color: #30363d;
-    color: #c9d1d9;
-    border: 1px solid #404b57;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-top: 5px;
-}
-
-/* --- Right Panel (Main Chat) --- */
-#main-chat-area {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
+    height: 100%;
+    border-right: 1px solid #ddd;
 }
 
 #chat-header {
-    padding: 15px 20px;
+    padding: 15px;
+    background-color: #e5e5e5;
+    border-bottom: 1px solid #ccc;
     font-size: 1.1em;
     font-weight: bold;
-    background-color: #161b22;
-    border-bottom: 1px solid #30363d;
-    color: #c9d1d9;
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#chat-tabs {
+    display: flex;
+}
+
+#chat-tabs button {
+    padding: 8px 15px;
+    margin-left: 5px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    font-weight: 500;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+}
+
+#chat-tabs button.active {
+    background-color: #c0c0c0;
+    color: #000;
 }
 
 #messages {
-    list-style-type: none;
+    list-style: none;
+    padding: 10px 15px;
     margin: 0;
-    padding: 20px;
-    flex-grow: 1;
     overflow-y: auto;
+    flex-grow: 1;
+    background-color: #f7f7f7; /* iMessage-style light background */
 }
 
+/* --- MESSAGE BUBBLE STYLING --- */
+
+/* Remove divider between list items */
 #messages li {
-    padding: 6px 0;
-    border-bottom: 1px dotted #30363d30;
-    line-height: 1.4;
+    padding: 0;
+    margin-bottom: 8px; /* Spacing between bubbles */
+    clear: both;
+    position: relative;
+    max-width: 70%;
+    word-wrap: break-word;
 }
 
-/* Message Types */
-.system-message {
-    color: #58a6ff; 
+/* Base bubble style */
+#messages li:not(.system-message) {
+    background: #e5e5ea; /* Light gray for others */
+    padding: 10px 15px;
+    border-radius: 18px;
+    line-height: 1.4;
+    position: relative;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Self-sent messages */
+#messages li.message-self {
+    float: right;
+    background-color: #0b93f6; /* Blue for self */
+    color: white;
+}
+
+/* Other users' messages */
+#messages li.message-other {
+    float: left;
+    background-color: #e5e5ea; /* Gray for others */
+    color: #000;
+}
+
+/* --- Bubble Arrow (using pseudo-elements) --- */
+
+/* Base arrow */
+#messages li:not(.system-message)::before {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: 10px solid transparent;
+    top: 0;
+}
+
+/* Arrow for self-sent messages (right corner) */
+#messages li.message-self::before {
+    right: -7px;
+    border-top-color: #0b93f6;
+    border-right-color: #0b93f6;
+    border-left-width: 0;
+    border-bottom-width: 0;
+    border-radius: 0 18px 0 0;
+}
+
+/* Arrow for other users' messages (left corner) */
+#messages li.message-other::before {
+    left: -7px;
+    border-top-color: #e5e5ea;
+    border-left-color: #e5e5ea;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-radius: 18px 0 0 0;
+}
+
+
+/* System Messages (Full width) */
+#messages li.system-message {
+    text-align: center;
+    color: #888;
     font-style: italic;
     font-size: 0.9em;
+    margin: 10px 0;
+    padding: 0;
+    float: none;
+    max-width: 100%;
+}
+#messages li.system-message:not(.system-message)::before {
+    content: none;
 }
 
+
+/* Message Content */
+#messages li span {
+    font-weight: 600;
+    margin-right: 5px;
+}
 .admin-message {
-    color: #238636; 
+    color: #ff9900;
     font-weight: bold;
 }
-
 .private-message {
-    color: #f7931e; 
-    font-weight: 500;
+    color: #9900ff;
 }
 
-/* Message Input Area */
+/* --- INPUT FOOTER --- */
+#typing-indicator {
+    padding: 5px 15px;
+    color: #777;
+    font-size: 0.85em;
+    height: 20px;
+}
+
 #message-form {
-    padding: 15px 20px;
+    padding: 10px 15px;
     display: flex;
-    background-color: #161b22;
-    border-top: 1px solid #30363d;
+    border-top: 1px solid #ddd;
+    background-color: #f0f0f0;
 }
 
 #message-input {
     flex-grow: 1;
     padding: 10px;
-    border: 1px solid #30363d;
-    border-radius: 6px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
     margin-right: 10px;
-    background-color: #0d1117;
-    color: #c9d1d9;
     font-size: 1em;
 }
 
 #message-form button {
-    width: 80px;
-    background-color: #58a6ff;
-    color: #0d1117;
+    padding: 10px 20px;
     border: none;
-    padding: 10px;
-    border-radius: 6px;
+    border-radius: 8px;
+    background-color: #0b93f6;
+    color: white;
     cursor: pointer;
     font-weight: bold;
+    transition: background-color 0.2s;
 }
 
-/* Utility/Modal Styling (Name & Ban) */
-#name-modal, #banned-modal, #admin-panel-modal {
+#message-form button:hover {
+    background-color: #007bb5;
+}
+
+/* --- RIGHT PANEL (USERS & COMMANDS) --- */
+#sidebar {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+}
+
+#user-section {
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+    flex-shrink: 0;
+}
+
+#user-section h2 {
+    margin-top: 0;
+    font-size: 1.1em;
+    color: #333;
+}
+
+#display-username {
+    font-weight: bold;
+    color: #0b93f6;
+    margin-bottom: 10px;
+    display: block;
+}
+
+#online-users-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0 0 0;
+    overflow-y: auto;
+    flex-grow: 1;
+    border-bottom: 1px solid #ddd;
+}
+
+#online-users-list li {
+    padding: 8px 15px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: background-color 0.1s;
+}
+
+#online-users-list li:hover {
+    background-color: #f0f0f0;
+}
+
+.mod-tag {
+    color: #ff9900;
+    font-weight: normal;
+    font-size: 0.8em;
+}
+
+#commands-section {
+    padding: 15px;
+    flex-shrink: 0;
+}
+
+#commands-list {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+    font-size: 0.85em;
+    color: #555;
+}
+
+#commands-list li {
+    margin-bottom: 5px;
+}
+#commands-list strong {
+    color: #333;
+}
+
+/* --- BUTTON CONSISTENCY --- */
+#guest-controls button,
+#staff-controls button {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9em;
+    margin-right: 5px;
+    transition: opacity 0.2s;
+    height: 35px; /* Standardize height */
+    line-height: 1;
+}
+
+#guest-controls {
+    display: block;
+}
+#staff-controls {
+    display: none;
+    align-items: center;
+}
+
+#rename-button-guest, #admin-panel-button {
+    background-color: #e0e0e0;
+    color: #333;
+}
+
+
+/* --- MODAL STYLING (LOGIN) --- */
+.modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.95);
+    background-color: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    flex-direction: column;
-    text-align: center;
 }
 
 .modal-content {
-    background-color: #161b22;
+    background-color: #ffffff;
     padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-    border: 1px solid #30363d;
+    border-radius: 12px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    width: 90%;
     max-width: 400px;
-    position: relative;
 }
 
-#name-modal input[type="text"] {
+/* Login Modal Specific Window Style */
+#name-modal .modal-content {
+    border: 1px solid #ccc;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+#name-modal h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+#name-input {
+    width: 100%;
     padding: 12px;
-    margin: 15px 0;
-    width: 250px;
-    border: 1px solid #404b57;
-    background-color: #0d1117;
-    color: #c9d1d9;
-    border-radius: 6px;
+    margin: 10px 0 20px 0;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box;
     font-size: 1em;
 }
 
-#name-modal button, #join-chat-button {
-    background-color: #238636;
-    color: white;
+#join-chat-button {
+    width: 100%;
+    padding: 12px;
     border: none;
-    padding: 10px 20px;
-    border-radius: 6px;
+    border-radius: 8px;
+    background-color: #0b93f6;
+    color: white;
+    font-size: 1.1em;
     cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#name-error-message {
+    color: #d44;
+    margin-top: 10px;
     font-weight: bold;
 }
 
-/* Ban Modal Specifics */
-#banned-modal {
-    background-color: rgba(150, 0, 0, 0.95);
+/* --- ADMIN PANEL MODAL (RESIZABLE) --- */
+#admin-panel-modal .modal-content {
+    /* Make the modal resizable */
+    resize: both;
+    overflow: auto;
+    min-width: 600px;
+    min-height: 400px;
+    width: 70%;
+    height: 70%;
+    max-width: 90%;
+    max-height: 90%;
+    text-align: left;
+    padding: 0; /* Remove padding to make space for custom header */
 }
-#banned-modal h1 {
-    color: #ff9d9d;
+
+#admin-panel-modal h3 {
+    margin-top: 0;
+    font-size: 1em;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+/* Custom Header for Admin Modal */
+#admin-modal-header {
+    background-color: #f7f7f7;
+    padding: 15px 20px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+#admin-modal-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #333;
+}
+
+/* Fixed Close Button (X) */
+.close-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.close-button:hover {
+    color: #d44;
+}
+
+#admin-content-area {
+    padding: 20px;
+}
+
+/* Admin Panel Grid Layout Fix */
+#admin-content-area .admin-panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 5px 1fr;
+    gap: 20px;
+}
+
+/* Vertical Divider */
+#admin-content-area .vertical-divider {
+    width: 1px;
+    height: 100%;
+    background-color: #ccc;
+    grid-column: 2;
+    margin: 0 auto;
+}
+
+/* Admin Table Styling */
+#admin-content-area table {
+    border-collapse: collapse;
     margin-bottom: 20px;
 }
-#ban-timer {
-    font-size: 2.2em;
+
+#admin-content-area th, #admin-content-area td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9em;
+}
+
+#admin-content-area th {
+    background-color: #f0f0f0;
     font-weight: bold;
-    margin: 15px 0;
-    color: #f7931e;
+}
+
+/* Consistent Button Sizes in Admin Panel */
+#admin-content-area button {
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s;
+    min-width: 70px; /* Force consistent width */
+}
+
+/* Ban is RED, Kick is ORANGE */
+#admin-content-area .action-ban {
+    background-color: #d44;
+    color: white;
+}
+#admin-content-area .action-kick {
+    background-color: #f7931e;
+    color: white;
+}
+#admin-content-area #clear-public-btn, #admin-content-area #clear-admin-btn {
+    min-width: 140px; /* Wider for full text */
+}
+
+/* --- BAN MODAL --- */
+#banned-modal .modal-content {
+    background-color: #fff;
+    border: 3px solid #d44;
+}
+#ban-reason {
+    color: #d44;
+    font-weight: bold;
+    margin: 10px 0;
+}
+#ban-timer {
+    font-size: 1.5em;
+    color: #333;
 }
