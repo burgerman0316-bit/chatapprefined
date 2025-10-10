@@ -143,16 +143,23 @@ body {
     border-radius: 0; 
 }
 
-/* Stacking rules: tuck bubbles together and hide repeated names */
+/* --- START OF FIXED STACKING RULES --- */
+
+/* Stacking rules: tuck bubbles together */
 .msg + .msg {
     margin-top: -6px; /* visually tuck bubbles together */
 }
 
 /* Hide the sender name for subsequent messages in the same stack when same sender */
-.msg + .msg .sender-name,
-.msg + .msg ~ .msg .sender-name {
+/* NOTE: We ONLY apply this rule to messages from OTHERS (.msg.other) to allow the 
+         user's own name to display above the first bubble of a group of .own messages. */
+.msg.other + .msg.other .sender-name,
+.msg.other + .msg.other ~ .msg.other .sender-name {
     display: none;
 }
+
+/* --- END OF FIXED STACKING RULES --- */
+
 
 /* Input Box */
 #messageForm {
