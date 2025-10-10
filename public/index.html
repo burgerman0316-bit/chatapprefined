@@ -3,87 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Application</title>
+    <title>Advanced Web Chat</title>
     <link rel="stylesheet" href="style.css"> 
 </head>
 <body>
 
-    <div id="name-modal">
-        <div id="name-modal-content">
-            <h1>Welcome to the Chat!</h1>
-            <p>Please enter your desired username (or staff key) to join.</p>
-            <input type="text" id="name-input" placeholder="Enter name (Max 16 chars) or staff key">
-            <button id="join-chat-button">Join Chat</button>
-            <p id="name-error-message" style="color: #ff5555; margin-top: 10px;"></p>
-        </div>
-    </div>
-
-    <div id="banned-modal" style="display: none;">
-        <div id="banned-modal-content">
-            <h1>You are BANNED</h1>
-            <p>Reason: <span id="ban-reason"></span></p>
-            <p>You may reconnect in:</p>
-            <div id="ban-timer"></div>
-        </div>
-    </div>
-
-    <div id="chat-container" style="display: none;">
+    <div id="chat-container">
         
-        <div id="chat-info-panel">
+        <div id="messages-panel">
             
-            <div class="user-info">
-                <p>Welcome, <span id="display-username">Guest</span>!</p>
-                
-                <div id="staff-controls" style="display: none;">
-                    <div id="chat-context-tabs">
-                        <button id="public-tab" class="active">Public</button>
-                        <button id="admin-tab">Admin</button>
-                    </div>
+            <div id="chat-header">
+                <span id="header-title">Public Chat</span>
+                <div id="chat-tabs">
+                    <button id="public-tab" class="active" style="display: none;">Public</button>
+                    <button id="admin-tab">Admin</button>
                 </div>
+            </div>
 
+            <ul id="messages">
+                </ul>
+
+            <div id="typing-indicator"></div>
+
+            <form id="message-form" action="">
+                <input id="message-input" autocomplete="off" placeholder="Type your message..." />
+                <button type="submit">Send</button>
+            </form>
+        </div>
+
+        <div id="sidebar">
+            
+            <div id="user-section">
+                <h2>User Info</h2>
+                <span id="display-username">Guest</span>
+                
                 <div id="guest-controls">
                     <button id="rename-button-guest">Rename</button>
                 </div>
+
+                <div id="staff-controls" style="display: none;">
+                    <button id="admin-panel-button">Admin Panel</button>
+                </div>
+            </div>
+            
+            <div id="user-section">
+                <h2 id="users-online-count">Users Online: 0</h2>
+                <ul id="online-users-list">
+                    </ul>
             </div>
 
-            <p id="users-online-count">Users Online: 0</p>
-            <h2>Online Users:</h2>
-            <ul id="online-users-list">
-                </ul>
-            
-            <div class="commands-section">
-                <h2>Commands:</h2>
+            <div id="commands-section">
+                <h2>Commands</h2>
                 <ul id="commands-list">
                     </ul>
             </div>
-            
-            <button id="admin-panel-button" style="display: none;">Admin Panel</button>
-        </div>
-
-        <div id="main-chat-area">
-            <div id="chat-header">Public Chat</div>
-            <ul id="messages">
-                </ul>
-            <form id="message-form">
-                <input id="message-input" autocomplete="off" placeholder="Type your message or command..." />
-                <button>Send</button>
-            </form>
         </div>
     </div>
-    
+
+
+    <div id="name-modal" class="modal">
+        <div class="modal-content">
+            <h2>Welcome to the Chat</h2>
+            <p>Enter your display name or staff key to join.</p>
+            <input id="name-input" type="text" placeholder="Your Name or Staff Key" maxlength="20" />
+            <p id="name-error-message" style="height: 1.2em;"></p>
+            <button id="join-chat-button">Join Chat</button>
+        </div>
+    </div>
+
     <div id="admin-panel-modal" class="modal" style="display: none;">
         <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2>Moderator Panel</h2>
+            <div id="admin-modal-header">
+                <h2>Moderator Panel</h2>
+                <button class="close-button" aria-label="Close Modal">&times;</button>
+            </div>
             <div id="admin-content-area">
                 </div>
         </div>
     </div>
 
+    <div id="banned-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>🚨 BANNED 🚨</h2>
+            <p>You have been banned from this chat.</p>
+            <p>Reason: <strong id="ban-reason"></strong></p>
+            <p>Remaining Time: <span id="ban-timer"></span></p>
+        </div>
+    </div>
+    
     <script src="/socket.io/socket.io.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/fingerprintjs2@2.1.0/dist/fingerprint2.min.js"></script>
-    <script src="chat.js"></script>
+    
+    <script src="chat.js"></script> 
+
 </body>
 </html>
-
-
