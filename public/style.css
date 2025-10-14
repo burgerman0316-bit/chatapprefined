@@ -2,7 +2,7 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-color: #000 !important;
+    background-color: #transparent !important;
     color: #f0f0f0; 
     display: flex;
     justify-content: center;
@@ -408,3 +408,4 @@ body {
     scrollbar-color: #555 #1e1e1e;
     scrollbar-width: thin; 
 }
+
