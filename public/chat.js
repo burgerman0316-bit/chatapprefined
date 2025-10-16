@@ -65,6 +65,28 @@ document.addEventListener('DOMContentLoaded', () => {
     myModal.show();
 });
 
+// ============================================
+// CLIENT-SIDE: Update public/chat.js
+// ============================================
+// Add at the TOP of chat.js (after socket connection):
+
+let deviceFingerprint = '';
+
+// Generate fingerprint on page load
+(async () => {
+    deviceFingerprint = await generateDeviceFingerprint();
+    console.log('Device Fingerprint Generated:', deviceFingerprint);
+})();
+
+// UPDATE the 'check_staff_status' event to include fingerprint:
+socket.on('check_staff_status', enteredName => {
+    const name = (enteredName || '').trim();
+    if (!name) return;
+    
+    // Send fingerprint along with name
+    socket.emit('check_staff_status', { name, fingerprint: deviceFingerprint });
+});
+
 // Utility: Appends a message to the chat
 function appendMessage(msg) {
     const item = document.createElement('li');
@@ -526,3 +548,4 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
