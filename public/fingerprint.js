@@ -1,5 +1,5 @@
 // ============================================
-// CLIENT-SIDE: public/fingerprint.js
+// CLIENT-SIDE: public/fingerprint
 // ============================================
 // Add this NEW file to generate device fingerprints
 
