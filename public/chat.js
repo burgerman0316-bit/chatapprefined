@@ -1,4 +1,4 @@
-// chat.js - FIXED VERSION FOR LOGIN
+// chat.js - FIXED VERSION
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
