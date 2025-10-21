@@ -1,4 +1,4 @@
-// chat.js - FINAL SCRIPT WITH ALL FEATURES (FIXED for Name Display)
+// chat.js - FIXED VERSION FOR LOGIN AND MSG COMMANDS
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
@@ -282,6 +282,7 @@ messageForm.addEventListener('submit', e => {
 
         if (command === '/msg') {
             // FIXED: Properly handle spaces in usernames with quotes
+            // This regex handles both quoted and unquoted names with spaces
             const match = args.match(/^(".*?"|[^\\s]+)(\\s+(.*))?$/);
             if (match) {
                 // Extract recipient (handle quoted names)
