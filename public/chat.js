@@ -281,7 +281,7 @@ messageForm.addEventListener('submit', e => {
         const args = content.substring(command.length).trim();
 
         if (command === '/msg') {
-            const match = args.match(/^(\\S+)\\s+(.*)/s); 
+            const match = args.match(/^(\S+)\s+(.*)/s); 
             if (match) {
                 const recipient = match[1];
                 const dmContent = match[2];
