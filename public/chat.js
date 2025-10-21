@@ -281,17 +281,18 @@ messageForm.addEventListener('submit', e => {
         const args = content.substring(command.length).trim();
 
         if (command === '/msg') {
-            const match = args.match(/^(\S+)\s+(.*)/s); 
+            // FIXED: Properly handle spaces in usernames
+            const match = args.match(/^(".*?"|[^\\s]+)(\\s+(.*))?$/);
             if (match) {
-                const recipient = match[1];
-                const dmContent = match[2];
+                const recipient = match[1].replace(/^"(.*)"$/, '$1'); // Remove quotes if present
+                const dmContent = match[3] || '';
                 if (recipient && dmContent && currentChatContext === 'public') {
                     socket.emit('private message', { recipient: recipient, content: dmContent });
                 } else {
                     appendMessage({ username: 'System', content: 'Invalid /msg command or only available in public chat.', timestamp: new Date(), type: 'system' });
                 }
             } else {
-                 appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg [username] [message]', timestamp: new Date(), type: 'system' });
+                 appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg "username with spaces" [message] or /msg username [message]', timestamp: new Date(), type: 'system' });
             }
         } 
         else if (command === '/kick') { 
