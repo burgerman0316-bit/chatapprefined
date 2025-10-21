@@ -445,6 +445,7 @@ io.on('connection', socket => {
     
     pushHistory(clearMsg, targetChatId === 'public' ? 'public' : 'admin');
     
+    // FIXED: Properly broadcast to all clients
     if (targetChatId === 'public') {
         io.emit('admin:history_cleared', { clearMsg, targetChatId });
     } else {
