@@ -281,10 +281,14 @@ messageForm.addEventListener('submit', e => {
         const args = content.substring(command.length).trim();
 
         if (command === '/msg') {
-            // FIXED: Properly handle spaces in usernames
+            // FIXED: Properly handle spaces in usernames with quotes
             const match = args.match(/^(".*?"|[^\\s]+)(\\s+(.*))?$/);
             if (match) {
-                const recipient = match[1].replace(/^"(.*)"$/, '$1'); // Remove quotes if present
+                // Extract recipient (handle quoted names)
+                let recipient = match[1];
+                if (recipient.startsWith('"') && recipient.endsWith('"')) {
+                    recipient = recipient.slice(1, -1); // Remove quotes
+                }
                 const dmContent = match[3] || '';
                 if (recipient && dmContent && currentChatContext === 'public') {
                     socket.emit('private message', { recipient: recipient, content: dmContent });
