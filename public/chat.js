@@ -51,6 +51,7 @@ const banDurationDaysInput = document.getElementById('banDurationDays');
 const banDurationHoursInput = document.getElementById('banDurationHours');
 const banDurationMinutesInput = document.getElementById('banDurationMinutes');
 const banReasonInput = document.getElementById('banReason');
+const banTypeSelect = document.getElementById('banType');
 
 let displayName = '';
 let isAdmin = false;
@@ -77,6 +78,31 @@ let deviceFingerprint = '';
     deviceFingerprint = await generateDeviceFingerprint();
     console.log('Device Fingerprint Generated:', deviceFingerprint);
 })();
+
+// Utility: Generate a device fingerprint
+async function generateDeviceFingerprint() {
+    // In a real implementation, this would use a more robust fingerprinting method
+    // For this example, we'll use a simple approach with browser properties
+    const fingerprint = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width,
+        screen.height,
+        screen.colorDepth,
+        navigator.platform,
+        navigator.hardwareConcurrency,
+        Math.round(window.devicePixelRatio * 100)
+    ].join('|');
+    
+    // Simple hash function to create a consistent fingerprint
+    let hash = 0;
+    for (let i = 0; i < fingerprint.length; i++) {
+        const char = fingerprint.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return hash.toString();
+}
 
 // UPDATE the 'check_staff_status' event to include fingerprint:
 socket.on('check_staff_status', enteredName => {
@@ -255,7 +281,7 @@ messageForm.addEventListener('submit', e => {
         const args = content.substring(command.length).trim();
 
         if (command === '/msg') {
-            const match = args.match(/^(\S+)\s+(.*)/s); 
+            const match = args.match(/^(\\S+)\\s+(.*)/s); 
             if (match) {
                 const recipient = match[1];
                 const dmContent = match[2];
@@ -285,6 +311,17 @@ messageForm.addEventListener('submit', e => {
                  clearConfirmModal.show();
             } else {
                 appendMessage({ username: 'System', content: 'You do not have permission to use the /clear command.', timestamp: new Date(), type: 'system' });
+            }
+        }
+        else if (command === '/machinegun') {
+            if (!isAdmin) {
+                appendMessage({ username: 'System', content: 'You do not have permission to use the /machinegun command.', timestamp: new Date(), type: 'system' });
+                return;
+            }
+            if (args) {
+                socket.emit('admin:machine_gun', { targetName: args });
+            } else {
+                appendMessage({ username: 'System', content: 'Invalid /machinegun command. Usage: /machinegun [username]', timestamp: new Date(), type: 'system' });
             }
         } else {
              appendMessage({ username: 'System', content: `Unknown command: ${command}`, timestamp: new Date(), type: 'system' });
@@ -348,6 +385,7 @@ document.getElementById('kickToBanBtn').addEventListener('click', () => {
         banDurationHoursInput.value = '0';
         banDurationMinutesInput.value = '30';
         banReasonInput.value = 'Spam/Hate Speech';
+        banTypeSelect.value = 'ip';
         banModal.show();
     } else {
          userToKick = null; 
@@ -365,7 +403,6 @@ document.getElementById('kickDirectlyBtn').addEventListener('click', () => {
      userIpToBan = null;
 });
 
-
 // 8. Admin: IP Ban Submission
 banConfirmBtn.addEventListener('click', () => {
     if (!isAdmin || !userToKick || !userIpToBan) {
@@ -377,6 +414,7 @@ banConfirmBtn.addEventListener('click', () => {
     const hours = parseInt(banDurationHoursInput.value);
     const minutes = parseInt(banDurationMinutesInput.value);
     const reason = banReasonInput.value;
+    const banType = banTypeSelect.value;
     
     if (isNaN(days) || isNaN(hours) || isNaN(minutes) || (days === 0 && hours === 0 && minutes === 0) || days > 999 || hours > 99 || minutes > 99) {
         alert('Invalid duration. Max: 999 days, 99 hours, 99 minutes. Duration must be > 0.');
@@ -389,7 +427,8 @@ banConfirmBtn.addEventListener('click', () => {
         days: days, 
         hours: hours, 
         minutes: minutes,
-        reason: reason
+        reason: reason,
+        banType: banType
     });
     
     banModal.hide(); 
@@ -397,18 +436,36 @@ banConfirmBtn.addEventListener('click', () => {
     userIpToBan = null;
 });
 
-// 9. Admin: Log out (Go Anonymous)
+// 9. Admin: Machine Gun Button Click
+document.getElementById('machineGunBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    const targetName = prompt('Enter username to spam:');
+    if (targetName) {
+        socket.emit('admin:machine_gun', { targetName });
+    }
+});
+
+// 10. Admin: Unban Device Button Click
+document.getElementById('unbanDeviceBtn').addEventListener('click', () => {
+    if (!isAdmin) return;
+    const fingerprint = prompt('Enter device fingerprint to unban:');
+    if (fingerprint) {
+        socket.emit('admin:unban_device', fingerprint);
+    }
+});
+
+// 11. Admin: Log out (Go Anonymous)
 document.getElementById('adminLogoutBtn').addEventListener('click', () => {
     if (isAdmin) {
         socket.emit('admin:go_anonymous');
     }
 });
 
-// 10. Chat Tab Switches
+// 12. Chat Tab Switches
 publicChatTab.addEventListener('click', () => switchChatContext('public'));
 adminChatTab.addEventListener('click', () => switchChatContext(ADMIN_CHAT_ID));
 
-// 11. Rename form submission
+// 13. Rename form submission
 document.getElementById('rename-form').addEventListener('submit', e => {
     e.preventDefault();
     const newName = document.getElementById('new-name-input').value.trim();
@@ -418,7 +475,7 @@ document.getElementById('rename-form').addEventListener('submit', e => {
     renameModal.hide();
 });
 
-// 12. Enable rename button after successful login
+// 14. Enable rename button after successful login
 renameBtn.addEventListener('click', () => {
     document.getElementById('new-name-input').value = displayName;
     renameModal.show();
@@ -440,6 +497,10 @@ function handleSuccessfulLogin(data) {
     renameBtn.style.display = 'block';
     document.getElementById('adminLogoutBtn').style.display = isAdmin ? 'block' : 'none'; 
     adminChatTab.style.display = isAdmin ? 'block' : 'none';
+    
+    // Show/hide machine gun and unban device buttons
+    document.getElementById('machineGunBtn').style.display = isAdmin ? 'block' : 'none';
+    document.getElementById('unbanDeviceBtn').style.display = isAdmin ? 'block' : 'none';
     
     if (isAdmin && currentChatContext === ADMIN_CHAT_ID) {
         switchChatContext(ADMIN_CHAT_ID);
@@ -500,7 +561,6 @@ socket.on('admin:history_cleared', data => {
 socket.on('system_error', msg => appendMessage({ username: 'System', content: `ERROR: ${msg}`, timestamp: new Date(), type: 'system' }));
 socket.on('system_alert', msg => appendMessage({ username: 'System', content: msg, timestamp: new Date(), type: 'system' }));
 
-
 // IP Banned Modal (NEW)
 socket.on('banned_modal', data => {
     const banReason = data.reason;
@@ -509,7 +569,7 @@ socket.on('banned_modal', data => {
     const bannedModalBody = document.getElementById('bannedModalBody');
     const bannedModal = new bootstrap.Modal(document.getElementById('bannedModal'));
     
-    bannedModalBody.innerHTML = `You are BANNED from the chat.<br>Reason: <strong>${banReason}</strong><br>Time remaining: <span id="banTimer"></span>`;
+    bannedModalBody.innerHTML = `You are BANNED from the chat.<br>Reason: <strong>${banReason}</strong><br>Time remaining: <span id="banTimer"></span><br>Device Fingerprint: ${deviceFingerprint}`;
     bannedModal.show();
     
     // Countdown Timer Logic
@@ -540,7 +600,6 @@ socket.on('banned_modal', data => {
     socket.disconnect();
 });
 
-
 // User List Update
 socket.on('user count', data => updatePublicUserList(data)); 
 
@@ -548,4 +607,3 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
-
