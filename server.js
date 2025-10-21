@@ -1,4 +1,3 @@
-
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -32,6 +31,8 @@ const adminChatHistory = [];
 const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext }
 const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
 const ipBanList = new Map(); // ipAddress -> { banUntil: Date, reason: string }
+const DEVICE_BAN_LIST = new Map(); // deviceFingerprint -> { banUntil: Date, reason: string }
+const MACHINE_GUN_COOLDOWN = new Map(); // socket.id -> lastUsed timestamp
 
 // --- STATIC FILE SERVING ---
 app.use(express.static(path.join(__dirname, 'public')));
@@ -123,10 +124,10 @@ io.on('connection', socket => {
   broadcastUserCount();
 
   // 1. Name check & Login
-  socket.on('check_staff_status', enteredName => {
-    const name = (enteredName || '').trim();
-    const lower = name.toLowerCase();
-
+  socket.on('check_staff_status', data => {
+    const name = (data.name || '').trim();
+    const fingerprint = data.fingerprint;
+    
     cleanUpUser(socket.id); 
 
     if (!name) { 
@@ -145,13 +146,25 @@ io.on('connection', socket => {
             return;
         }
 
+        // Check device ban
+        const deviceBanEntry = DEVICE_BAN_LIST.get(fingerprint);
+        if (deviceBanEntry && deviceBanEntry.banUntil > new Date()) {
+            const banDurationMs = deviceBanEntry.banUntil.getTime() - new Date().getTime();
+            socket.emit('banned_modal', { 
+                reason: deviceBanEntry.reason, 
+                banDurationMs: banDurationMs 
+            });
+            return;
+        }
+
         // SUCCESSFUL ADMIN LOGIN
         users.set(socket.id, { 
             displayName: staffName, 
             secureName: staffLoginAttempt.loginName, 
             isAdmin: true,
             ip: userIp,
-            chatContext: 'public' 
+            chatContext: 'public',
+            deviceFingerprint: fingerprint
         });
         usernamesMap.set(staffLower, socket.id);
         socket.join(STAFF_ROOM); 
@@ -172,7 +185,7 @@ io.on('connection', socket => {
     // --- END ADMIN LOGIN ATTEMPT ---
 
     // Name uniqueness check (after admin attempt fails)
-    if (usernamesMap.has(lower)) {
+    if (usernamesMap.has(name.toLowerCase())) {
         socket.emit('name_rejected', 'That name is already in use (Name collision).');
         return;
     }
@@ -183,15 +196,27 @@ io.on('connection', socket => {
         return;
     }
 
+    // Check device ban
+    const deviceBanEntry = DEVICE_BAN_LIST.get(fingerprint);
+    if (deviceBanEntry && deviceBanEntry.banUntil > new Date()) {
+        const banDurationMs = deviceBanEntry.banUntil.getTime() - new Date().getTime();
+        socket.emit('banned_modal', { 
+            reason: deviceBanEntry.reason, 
+            banDurationMs: banDurationMs 
+        });
+        return;
+    }
+
     // Normal User Login Logic
     users.set(socket.id, { 
         displayName: name, 
         secureName: name, 
         isAdmin: false,
         ip: userIp,
-        chatContext: 'public'
+        chatContext: 'public',
+        deviceFingerprint: fingerprint
     });
-    usernamesMap.set(lower, socket.id);
+    usernamesMap.set(name.toLowerCase(), socket.id);
     socket.emit('name_accepted', name);
 
     const joinMsg = {
@@ -477,6 +502,7 @@ io.on('connection', socket => {
       const hours = parseInt(data.hours) || 0;
       const minutes = parseInt(data.minutes) || 0;
       const reason = data.reason || 'No reason provided';
+      const banType = data.banType || 'ip';
       
       if (!admin || !admin.isAdmin || !targetIp) {
           socket.emit('system_error', 'Ban failed: Unauthorized or missing IP.');
@@ -495,23 +521,30 @@ io.on('connection', socket => {
           socket.emit('system_error', `Cannot ban Admin '${targetName}'.`);
           return;
       }
-      
+
       const banUntil = new Date();
       banUntil.setDate(banUntil.getDate() + days);
       banUntil.setHours(banUntil.getHours() + hours);
       banUntil.setMinutes(banUntil.getMinutes() + minutes);
 
-      ipBanList.set(targetIp, { banUntil, reason });
+      if (banType === 'device') {
+          const targetFingerprint = targetUser ? targetUser.deviceFingerprint : data.targetFingerprint;
+          if (targetFingerprint) {
+              DEVICE_BAN_LIST.set(targetFingerprint, { banUntil, reason });
+          }
+      } else {
+          ipBanList.set(targetIp, { banUntil, reason });
+      }
 
       if (targetSocketId) {
-          io.to(targetSocketId).emit('system_error', `You have been IP BANNED by Moderator ${admin.displayName} for ${days}d ${hours}h ${minutes}m (${reason}).`);
+          io.to(targetSocketId).emit('system_error', `You have been ${banType === 'device' ? 'DEVICE BANNED' : 'IP BANNED'} by Moderator ${admin.displayName} for ${days}d ${hours}h ${minutes}m (${reason}).`);
           const targetSocket = io.sockets.sockets.get(targetSocketId);
           if (targetSocket) targetSocket.disconnect(true);
       }
       
       const banMsg = {
         username: 'System',
-        content: `Moderator ${admin.displayName} has IP BANNED ${targetName || targetIp} for ${days}d ${hours}h ${minutes}m.`,
+        content: `Moderator ${admin.displayName} has ${banType === 'device' ? 'DEVICE BANNED' : 'IP BANNED'} ${targetName || targetIp} for ${days}d ${hours}h ${minutes}m.`,
         timestamp: new Date(),
         isAdmin: true,
         type: 'system'
@@ -522,8 +555,61 @@ io.on('connection', socket => {
       broadcastUserCount();
   });
 
+  // 10. Admin: Machine Gun Command
+  socket.on('admin:machine_gun', data => {
+      const user = users.get(socket.id);
+      if (!user || !user.isAdmin) {
+          socket.emit('system_error', 'Unauthorized: Admin privileges required.');
+          return;
+      }
+      
+      const targetName = (data.targetName || '').trim();
+      const targetLower = targetName.toLowerCase();
+      const targetSocketId = usernamesMap.get(targetLower);
+      const targetUser = users.get(targetSocketId);
+      
+      if (!targetSocketId || !targetUser) {
+          socket.emit('system_error', `User '${targetName}' not found or offline.`);
+          return;
+      }
+      
+      // Check cooldown
+      const lastUsed = MACHINE_GUN_COOLDOWN.get(socket.id);
+      if (lastUsed && (Date.now() - lastUsed) < 24 * 60 * 60 * 1000) {
+          socket.emit('system_error', 'Machine gun command can only be used once per day.');
+          return;
+      }
+      
+      // Set cooldown
+      MACHINE_GUN_COOLDOWN.set(socket.id, Date.now());
+      
+      // Send spam messages
+      for (let i = 0; i < 100; i++) {
+          setTimeout(() => {
+              const messageData = {
+                  username: 'Machine Gun',
+                  content: 'DRRRRR',
+                  timestamp: new Date(),
+                  isAdmin: true,
+                  type: 'public'
+              };
+              io.to(targetSocketId).emit('chat message', messageData);
+          }, i * 50); // 50ms intervals
+      }
+  });
 
-  // 10. Disconnect 
+  // 11. Admin: Unban Device Fingerprint
+  socket.on('admin:unban_device', fingerprint => {
+      const user = users.get(socket.id);
+      if (!user || !user.isAdmin) {
+          socket.emit('system_error', 'Unauthorized: Admin privileges required.');
+          return;
+      }
+      DEVICE_BAN_LIST.delete(fingerprint);
+      socket.emit('system_alert', `Device fingerprint ${fingerprint} has been unbanned.`);
+  });
+
+  // 12. Disconnect 
   socket.on('disconnect', () => {
     const user = users.get(socket.id);
     if (!user) return;
@@ -551,4 +637,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
