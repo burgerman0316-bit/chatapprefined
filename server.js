@@ -1,7 +1,6 @@
-
 const express = require('express');
 const http = require('http');
-const { erver } = require('ocket.io');
+const { Server } = require('socket.io');
 const path = require('path');
 
 const app = express();
@@ -15,7 +14,7 @@ const STAFF_ROOM = 'staff_room';
 const ADMIN_CHAT_ID = 'admin_chat'; 
 const MAX_HISTORY = 100;
 const CONTENT_MAX_CHARS = 500; 
-const BANNED_WORDS = ['hitler', 'swear', 'badword', 'bannedword', 'adminchat', 'ashaz', 'Ashaz', 'Jimmy', 'timmy', 'jimmy', 'Timmy', 'boom', 'coke', 'Zashas', 'zashaz', 'zashas', 'zashaz', 'A S H A Z', 'AASSHHAAZZ', 'Diesel Phillips Carter', 'phillips', 'Phillips', 'philips', 'Philips','slim', 'Slim', 'shady', 'Shady', 'Slim shady', 'slim Shady', 'slim shady', 'Slim Shady', 'SLIM SHADY'];
+const BANNED_WORDS = ['hitler', 'swear', 'badword', 'bannedword', 'adminchat'];
 
 // Staff accounts - NOTE: LoginName is the SECURE password/key
 const STAFF_LIST = [
@@ -23,7 +22,10 @@ const STAFF_LIST = [
   { loginName: 'hfsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh', displayName: 'Diesel Carter' },
   { loginName: 'hbjrhfjRnjkfdvjkIfhdCnjfkdnjKjndksdjkfjdkdy', displayName: 'Ricky Martinez' },
   { loginName: 'hdufAhudsAifhudiRsfOuidsuNfdsmklfdskfdndsjk', displayName: 'Aaron Ortega' },
-  { loginName: 'dnjsDkfjdsOfjdNsfjdOksfjVkdAsnfNjdsnfjkdkfd', displayName: 'Donovan Powell' }
+  { loginName: 'dnjsDkfjdsOfjdNsfjdOksfjVkdAsnfNjdsnfjkdkfd', displayName: 'Donovan Powell' },
+  // Add Google admin names here
+  { loginName: 'Liam Stern', displayName: 'Liam Stern' },
+  { loginName: 'Diesel Carter', displayName: 'Diesel Carter' }
 ];
 
 const chatHistory = [];
@@ -122,7 +124,86 @@ io.on('connection', socket => {
   socket.emit('chat history', chatHistory);
   broadcastUserCount();
 
-  // 1. Name check & Login
+  // 1. Google Login
+  socket.on('google_login', userData => {
+    const { name, email } = userData;
+    const lower = name.toLowerCase();
+    
+    cleanUpUser(socket.id);
+    
+    // Check if user is admin
+    const staffMember = STAFF_LIST.find(s => s.displayName.toLowerCase() === lower);
+    
+    if (staffMember) {
+      // Admin login
+      if (usernamesMap.has(lower)) {
+        socket.emit('name_rejected', `The staff display name '${staffMember.displayName}' is already in use.`);
+        return;
+      }
+      
+      users.set(socket.id, {
+        displayName: staffMember.displayName,
+        secureName: staffMember.loginName,
+        isAdmin: true,
+        ip: userIp,
+        chatContext: 'public'
+      });
+      usernamesMap.set(lower, socket.id);
+      socket.join(STAFF_ROOM);
+      
+      socket.emit('staff_status_update', {
+        isAdmin: true,
+        displayName: staffMember.displayName,
+        secureName: staffMember.loginName,
+        currentContext: 'public'
+      });
+      
+      const publicMsg = {
+        username: 'System',
+        content: `A moderator has entered the chat.`,
+        timestamp: new Date(),
+        isAdmin: true,
+        type: 'system'
+      };
+      pushHistory(publicMsg, 'public');
+      io.emit('chat message', publicMsg);
+      broadcastUserCount();
+    } else {
+      // Regular user login
+      if (usernamesMap.has(lower)) {
+        socket.emit('name_rejected', 'That name is already in use.');
+        return;
+      }
+      
+      if (isNameReservedOrBanned(name)) {
+        socket.emit('name_rejected', 'That name is either reserved for staff or not allowed.');
+        return;
+      }
+      
+      users.set(socket.id, {
+        displayName: name,
+        secureName: name,
+        isAdmin: false,
+        ip: userIp,
+        chatContext: 'public'
+      });
+      usernamesMap.set(lower, socket.id);
+      socket.emit('name_accepted', name);
+      
+      const joinMsg = {
+        username: 'System',
+        content: `${name} has joined the chat.`,
+        timestamp: new Date(),
+        isAdmin: false,
+        type: 'system'
+      };
+      pushHistory(joinMsg, 'public');
+      io.emit('chat message', joinMsg);
+      broadcastUserCount();
+    }
+  });
+
+  // 2. Name check & Login
   socket.on('check_staff_status', enteredName => {
     const name = (enteredName || '').trim();
     const lower = name.toLowerCase();
@@ -206,7 +287,7 @@ io.on('connection', socket => {
     broadcastUserCount();
   });
 
-  // 2. Change Chat Context (Admin only)
+  // 3. Change Chat Context (Admin only)
   socket.on('admin:set_context', newContext => {
       const user = users.get(socket.id);
       if (!user || !user.isAdmin || (newContext !== 'public' && newContext !== ADMIN_CHAT_ID)) {
@@ -221,7 +302,7 @@ io.on('connection', socket => {
       broadcastUserCount();
   });
 
-  // 3. Normal Chat Messages
+  // 4. Normal Chat Messages
   socket.on('chat message', msg => {
     const user = users.get(socket.id);
     if (!user) {
@@ -257,7 +338,7 @@ io.on('connection', socket => {
     broadcastUserCount();
   });
   
-  // 4. Name Change (All Users)
+  // 5. Name Change (All Users)
   socket.on('name_change', newName => {
     const user = users.get(socket.id);
     if (!user) {
@@ -310,7 +391,7 @@ io.on('connection', socket => {
     broadcastUserCount();
   });
 
-  // 5. Admin: Go Anonymous 
+  // 6. Admin: Go Anonymous 
   socket.on('admin:go_anonymous', () => {
       const user = users.get(socket.id);
       if (!user || !user.isAdmin) return;
@@ -352,7 +433,7 @@ io.on('connection', socket => {
       broadcastUserCount();
   });
 
-  // 6. Private Message
+  // 7. Private Message
   socket.on('private message', msg => {
     const sender = users.get(socket.id);
     if (!sender || sender.chatContext !== 'public') {
@@ -398,7 +479,7 @@ io.on('connection', socket => {
     }
   });
 
-  // 7. Admin: Clear History
+  // 8. Admin: Clear History
   socket.on('admin:clear_history', targetChatId => {
     const user = users.get(socket.id);
     if (!user || !user.isAdmin) {
@@ -427,7 +508,7 @@ io.on('connection', socket => {
     }
   });
 
-  // 8. Admin: Kick User (/kick, Button)
+  // 9. Admin: Kick User (/kick, Button)
   socket.on('admin:kick_user', data => {
       const admin = users.get(socket.id); 
       const targetName = (data.targetName || '').trim();
@@ -468,7 +549,7 @@ io.on('connection', socket => {
       }
   });
   
-  // 9. Admin: IP Ban User
+  // 10. Admin: IP Ban User
   socket.on('admin:ip_ban_user', data => {
       const admin = users.get(socket.id);
       const targetName = (data.targetName || '').trim();
@@ -522,8 +603,7 @@ io.on('connection', socket => {
       broadcastUserCount();
   });
 
-
-  // 10. Disconnect 
+  // 11. Disconnect 
   socket.on('disconnect', () => {
     const user = users.get(socket.id);
     if (!user) return;
@@ -551,7 +631,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
-
-
-
