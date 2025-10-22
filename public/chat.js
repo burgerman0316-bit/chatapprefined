@@ -77,7 +77,7 @@ function initializeGoogleSignIn() {
             callback: handleGoogleLogin
         });
         
-        // Render the Google Sign-In button
+        // Render the Google Sign-In button with proper width
         google.accounts.id.renderButton(
             document.getElementById("google-signin-button"),
             { 
@@ -110,18 +110,6 @@ function parseJwt(token) {
     }).join(''));
     return JSON.parse(jsonPayload);
 }
-
-// ============================================
-// CLIENT-SIDE: Update public/chat.js
-// ============================================
-
-let deviceFingerprint = '';
-
-// Generate fingerprint on page load
-(async () => {
-    deviceFingerprint = await generateDeviceFingerprint();
-    console.log('Device Fingerprint Generated:', deviceFingerprint);
-})();
 
 // Utility: Appends a message to the chat
 function appendMessage(msg) {
