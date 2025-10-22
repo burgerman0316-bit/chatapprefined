@@ -80,7 +80,11 @@ function initializeGoogleSignIn() {
         // Render the Google Sign-In button
         google.accounts.id.renderButton(
             document.getElementById("google-signin-button"),
-            { theme: "outline", size: "large" }
+            { 
+                theme: "outline", 
+                size: "large",
+                width: "100%"
+            }
         );
     } else {
         // If Google is not loaded, try again after a short delay
@@ -118,15 +122,6 @@ let deviceFingerprint = '';
     deviceFingerprint = await generateDeviceFingerprint();
     console.log('Device Fingerprint Generated:', deviceFingerprint);
 })();
-
-// UPDATE the 'check_staff_status' event to include fingerprint:
-socket.on('check_staff_status', enteredName => {
-    const name = (enteredName || '').trim();
-    if (!name) return;
-    
-    // Send fingerprint along with name
-    socket.emit('check_staff_status', { name, fingerprint: deviceFingerprint });
-});
 
 // Utility: Appends a message to the chat
 function appendMessage(msg) {
@@ -296,7 +291,7 @@ messageForm.addEventListener('submit', e => {
         const args = content.substring(command.length).trim();
 
         if (command === '/msg') {
-            const match = args.match(/^(\S+)\s+(.*)/s); 
+            const match = args.match(/^(\\S+)\\s+(.*)/s); 
             if (match) {
                 const recipient = match[1];
                 const dmContent = match[2];
@@ -588,4 +583,3 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
-
