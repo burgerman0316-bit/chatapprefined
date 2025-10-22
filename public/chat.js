@@ -1,4 +1,4 @@
-// chat.js - FINAL SCRIPT WITH ALL FEATURES (FIXED for Name Display)
+// chat.js - FIXED VERSION
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
@@ -8,7 +8,7 @@ const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
 const socket = io();
 
 // Elements
-const nameForm = document.getElementById('name-form');
+const nameForm = document.getElementById('name-form'); // This was missing
 const nameInput = document.getElementById('name-input');
 const container = document.getElementById('container'); 
 
