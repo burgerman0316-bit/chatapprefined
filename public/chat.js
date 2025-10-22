@@ -55,7 +55,7 @@ const banReasonInput = document.getElementById('banReason');
 let displayName = '';
 let isAdmin = false;
 let userToKick = null; 
-let userIpToBan = null; 
+let userGoogleIdToBan = null; 
 let currentChatContext = 'public'; 
 const MAX_CHARS = 500;
 const ADMIN_CHAT_ID = 'admin_chat';
@@ -97,9 +97,10 @@ function handleGoogleLogin(response) {
     const payload = parseJwt(response.credential);
     const name = payload.name;
     const email = payload.email;
+    const googleId = payload.sub; // Google ID
     
     // Send to server
-    socket.emit('google_login', { name, email });
+    socket.emit('google_login', { name, email, googleId });
 }
 
 function parseJwt(token) {
@@ -216,9 +217,9 @@ function updateAdminManagementList(adminUsersMap) {
              }
              
              userToKick = userDisplayName; 
-             userIpToBan = user.ip; 
+             userGoogleIdToBan = user.googleId; 
              
-             kickConfirmBody.innerHTML = `Manage user: <strong>${userDisplayName}</strong><br>IP: ${user.ip}<br>Admin Status: ${user.isAdmin ? 'Yes' : 'No'}`;
+             kickConfirmBody.innerHTML = `Manage user: <strong>${userDisplayName}</strong><br>Google ID: ${user.googleId}<br>Admin Status: ${user.isAdmin ? 'Yes' : 'No'}`;
              
              const adminModal = bootstrap.Modal.getInstance(adminModalEl);
              if (adminModal) adminModal.hide(); 
@@ -366,7 +367,7 @@ clearConfirmBtn.addEventListener('click', () => {
 document.getElementById('kickToBanBtn').addEventListener('click', () => {
     kickConfirmModal.hide(); 
     
-    if (isAdmin && userToKick && userIpToBan) {
+    if (isAdmin && userToKick && userGoogleIdToBan) {
         banTargetNameSpan.textContent = userToKick;
         banDurationDaysInput.value = '0';
         banDurationHoursInput.value = '0';
@@ -375,7 +376,7 @@ document.getElementById('kickToBanBtn').addEventListener('click', () => {
         banModal.show();
     } else {
          userToKick = null; 
-         userIpToBan = null;
+         userGoogleIdToBan = null;
     }
 });
 
@@ -386,12 +387,12 @@ document.getElementById('kickDirectlyBtn').addEventListener('click', () => {
      }
      kickConfirmModal.hide();
      userToKick = null;
-     userIpToBan = null;
+     userGoogleIdToBan = null;
 });
 
 // 8. Admin: IP Ban Submission
 banConfirmBtn.addEventListener('click', () => {
-    if (!isAdmin || !userToKick || !userIpToBan) {
+    if (!isAdmin || !userToKick || !userGoogleIdToBan) {
         banModal.hide();
         return;
     }
@@ -406,9 +407,9 @@ banConfirmBtn.addEventListener('click', () => {
         return;
     }
     
-    socket.emit('admin:ip_ban_user', { 
+    socket.emit('admin:google_ban_user', { 
         targetName: userToKick,
-        targetIp: userIpToBan, 
+        targetGoogleId: userGoogleIdToBan, 
         days: days, 
         hours: hours, 
         minutes: minutes,
@@ -417,7 +418,7 @@ banConfirmBtn.addEventListener('click', () => {
     
     banModal.hide(); 
     userToKick = null; 
-    userIpToBan = null;
+    userGoogleIdToBan = null;
 });
 
 // 9. Admin: Log out (Go Anonymous)
