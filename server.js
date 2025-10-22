@@ -16,14 +16,13 @@ const MAX_HISTORY = 100;
 const CONTENT_MAX_CHARS = 500;
 const BANNED_WORDS = [‘hitler’, ‘swear’, ‘badword’, ‘bannedword’, ‘adminchat’];
 
-// Staff accounts - NOTE: LoginName is the SECURE password/key
+// Staff accounts
 const STAFF_LIST = [
 { loginName: ‘hfdskLshkdgdibIdsjfkbdAshfjhsfdshfjMdjsbfhd’, displayName: ‘Liam Stern’ },
 { loginName: ‘hfsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh’, displayName: ‘Diesel Carter’ },
 { loginName: ‘hbjrhfjRnjkfdvjkIfhdCnjfkdnjKjndksdjkfjdkdy’, displayName: ‘Ricky Martinez’ },
 { loginName: ‘hdufAhudsAifhudiRsfOuidsuNfdsmklfdskfdndsjk’, displayName: ‘Aaron Ortega’ },
 { loginName: ‘dnjsDkfjdsOfjdNsfjdOksfjVkdAsnfNjdsnfjkdkfd’, displayName: ‘Donovan Powell’ },
-// Add Google admin names here
 { loginName: ‘Liam Stern’, displayName: ‘Liam Stern’ },
 { loginName: ‘Diesel Carter’, displayName: ‘Diesel Carter’ }
 ];
@@ -31,9 +30,9 @@ const STAFF_LIST = [
 const chatHistory = [];
 const adminChatHistory = [];
 
-const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext, googleId, profilePic }
-const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
-const googleBanList = new Map(); // googleId -> { banUntil: Date, reason: string, bannedName: string }
+const users = new Map();
+const usernamesMap = new Map();
+const googleBanList = new Map();
 
 // Anonymous name generator
 const ADJECTIVES = [‘Swift’, ‘Silent’, ‘Mystic’, ‘Shadow’, ‘Crimson’, ‘Azure’, ‘Phantom’, ‘Thunder’, ‘Frost’, ‘Cosmic’];
@@ -74,12 +73,10 @@ if (!name) return true;
 const lower = name.trim().toLowerCase();
 
 ```
-// 1. Check for banned words
 if (BANNED_WORDS.some(banned => lower.includes(banned.toLowerCase()))) {
     return true;
 }
 
-// 2. Check for staff display names (Prevents regular users from taking 'Liam Stern')
 if (STAFF_LIST.some(s => s.displayName.toLowerCase() === lower)) {
     return true;
 }
@@ -142,7 +139,6 @@ console.log(‘Client connected:’, socket.id, ‘IP:’, userIp);
 socket.emit(‘chat history’, chatHistory);
 broadcastUserCount();
 
-// 0. Check for ban
 socket.on(‘check_ban_status’, googleId => {
 if (googleId) {
 const banEntry = googleBanList.get(googleId);
@@ -152,18 +148,15 @@ socket.emit(‘banned_modal’, {
 reason: banEntry.reason,
 banDurationMs: banDurationMs
 });
-return;
 }
 }
 });
 
-// 1. Google Login
 socket.on(‘google_login’, userData => {
 const { name, email, googleId, profilePic } = userData;
 const lower = name.toLowerCase();
 
 ```
-// Check if banned
 const banEntry = googleBanList.get(googleId);
 if (banEntry && banEntry.banUntil > new Date()) {
   const banDurationMs = banEntry.banUntil.getTime() - new Date().getTime();
@@ -213,7 +206,6 @@ if (staffMember) {
   pushHistory(publicMsg, 'public');
   io.emit('chat message', publicMsg);
   
-  // Send ban list to admin
   socket.emit('ban_list_update', getBanList());
   broadcastUserCount();
 } else {
@@ -254,7 +246,6 @@ if (staffMember) {
 
 });
 
-// 2. Name check & Login (legacy)
 socket.on(‘check_staff_status’, enteredName => {
 const name = (enteredName || ‘’).trim();
 const lower = name.toLowerCase();
@@ -340,7 +331,6 @@ broadcastUserCount();
 
 });
 
-// 3. Change Chat Context (Admin only)
 socket.on(‘admin:set_context’, newContext => {
 const user = users.get(socket.id);
 if (!user || !user.isAdmin || (newContext !== ‘public’ && newContext !== ADMIN_CHAT_ID)) {
@@ -358,7 +348,6 @@ users.set(socket.id, user);
 
 });
 
-// 4. Normal Chat Messages
 socket.on(‘chat message’, msg => {
 const user = users.get(socket.id);
 if (!user) {
@@ -398,7 +387,6 @@ broadcastUserCount();
 
 });
 
-// 5. Name Change (All Users)
 socket.on(‘name_change’, newName => {
 const user = users.get(socket.id);
 if (!user) {
@@ -454,7 +442,6 @@ broadcastUserCount();
 
 });
 
-// 6. Admin: Go Anonymous
 socket.on(‘admin:go_anonymous’, () => {
 const user = users.get(socket.id);
 if (!user || !user.isAdmin) return;
@@ -499,7 +486,6 @@ if (!user || !user.isAdmin) return;
 
 });
 
-// 7. Private Message
 socket.on(‘private message’, msg => {
 const sender = users.get(socket.id);
 if (!sender || sender.chatContext !== ‘public’) {
@@ -549,7 +535,6 @@ if (recSocketId) {
 
 });
 
-// 8. Admin: Clear History
 socket.on(‘admin:clear_history’, targetChatId => {
 const user = users.get(socket.id);
 if (!user || !user.isAdmin) {
@@ -581,7 +566,6 @@ if (targetChatId === 'public') {
 
 });
 
-// 9. Admin: Kick User
 socket.on(‘admin:kick_user’, data => {
 const admin = users.get(socket.id);
 const targetName = (data.targetName || ‘’).trim();
@@ -625,7 +609,6 @@ const targetName = (data.targetName || ‘’).trim();
 
 });
 
-// 10. Admin: Google Ban User
 socket.on(‘admin:google_ban_user’, data => {
 const admin = users.get(socket.id);
 const targetName = (data.targetName || ‘’).trim();
@@ -677,14 +660,12 @@ const reason = data.reason || ‘No reason provided’;
   pushHistory(banMsg, admin.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public');
   io.emit('chat message', banMsg);
   
-  // Update ban list for all admins
   io.to(STAFF_ROOM).emit('ban_list_update', getBanList());
   broadcastUserCount();
 ```
 
 });
 
-// 11. Admin: Unban User
 socket.on(‘admin:google_unban_user’, data => {
 const admin = users.get(socket.id);
 const targetGoogleId = (data.targetGoogleId || ‘’).trim();
@@ -710,7 +691,6 @@ const targetGoogleId = (data.targetGoogleId || ‘’).trim();
       io.emit('chat message', unbanMsg);
       socket.emit('system_alert', 'User successfully unbanned.');
       
-      // Update ban list for all admins
       io.to(STAFF_ROOM).emit('ban_list_update', getBanList());
   } else {
       socket.emit('system_error', 'User is not currently banned.');
@@ -719,12 +699,10 @@ const targetGoogleId = (data.targetGoogleId || ‘’).trim();
 
 });
 
-// 12. Disconnect
 socket.on(‘disconnect’, () => {
 const user = users.get(socket.id);
-if (!user) return;
-
-```
+if (!user) return
+    
 cleanUpUser(socket.id);
 
 const leaveMsg = {
@@ -741,7 +719,7 @@ if (user.chatContext === 'public' && !user.isAdmin) {
 }
 
 broadcastUserCount();
-```
+
 
 });
 });
