@@ -73,7 +73,7 @@ function initializeGoogleSignIn() {
     // Check if Google Identity Services is loaded
     if (typeof google !== 'undefined' && google.accounts) {
         google.accounts.id.initialize({
-            client_id: "YOUR_GOOGLE_CLIENT_ID", // Replace with your actual client ID
+            client_id: "48828983321-bn7hjk3clua805bb54r7mk4tjs1mjsbm.apps.googleusercontent.com", // Replace with your actual client ID
             callback: handleGoogleLogin
         });
         
@@ -588,3 +588,4 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
