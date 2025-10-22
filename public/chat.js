@@ -64,19 +64,29 @@ const ADMIN_CHAT_ID = 'admin_chat';
 document.addEventListener('DOMContentLoaded', () => {
     myModal.show();
     
-    // Initialize Google Sign-In
-    if (typeof google !== 'undefined') {
+    // Initialize Google Sign-In after the DOM is ready
+    initializeGoogleSignIn();
+});
+
+// Initialize Google Sign-In
+function initializeGoogleSignIn() {
+    // Check if Google Identity Services is loaded
+    if (typeof google !== 'undefined' && google.accounts) {
         google.accounts.id.initialize({
-            client_id: "48828983321-bn7hjk3clua805bb54r7mk4tjs1mjsbm.apps.googleusercontent.com",
+            client_id: "YOUR_GOOGLE_CLIENT_ID", // Replace with your actual client ID
             callback: handleGoogleLogin
         });
         
+        // Render the Google Sign-In button
         google.accounts.id.renderButton(
             document.getElementById("google-signin-button"),
             { theme: "outline", size: "large" }
         );
+    } else {
+        // If Google is not loaded, try again after a short delay
+        setTimeout(initializeGoogleSignIn, 500);
     }
-});
+}
 
 // Google Login Handler
 function handleGoogleLogin(response) {
@@ -578,5 +588,3 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
-
-
