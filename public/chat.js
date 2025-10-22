@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Google Sign-In
     if (typeof google !== 'undefined') {
         google.accounts.id.initialize({
-            client_id: "YOUR_GOOGLE_CLIENT_ID",
+            client_id: "48828983321-bn7hjk3clua805bb54r7mk4tjs1mjsbm.apps.googleusercontent.com",
             callback: handleGoogleLogin
         });
         
@@ -578,3 +578,4 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
