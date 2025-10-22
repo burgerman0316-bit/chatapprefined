@@ -15,7 +15,7 @@ const STAFF_ROOM = 'staff_room';
 const ADMIN_CHAT_ID = 'admin_chat'; 
 const MAX_HISTORY = 100;
 const CONTENT_MAX_CHARS = 500; 
-const BANNED_WORDS = ['hitler', 'swear', 'badword', 'bannedword', 'adminchat', 'ashaz', 'Ashaz', 'Jimmy', 'timmy', 'jimmy', 'Timmy', 'boom', 'coke', 'Zashas', 'zashaz', 'zashas', 'zashaz', 'A S H A Z', 'AASSHHAAZZ', 'Diesel Phillips Carter', 'phillips', 'Phillips', 'philips', 'Philips'];
+const BANNED_WORDS = ['hitler', 'swear', 'badword', 'bannedword', 'adminchat', 'ashaz', 'Ashaz', 'Jimmy', 'timmy', 'jimmy', 'Timmy', 'boom', 'coke', 'Zashas', 'zashaz', 'zashas', 'zashaz', 'A S H A Z', 'AASSHHAAZZ', 'Diesel Phillips Carter', 'phillips', 'Phillips', 'philips', 'Philips','slim', 'Slim', 'shady', 'Shady', 'Slim shady', 'slim Shady', 'slim shady', 'Slim Shady', 'SLIM SHADY'];
 
 // Staff accounts - NOTE: LoginName is the SECURE password/key
 const STAFF_LIST = [
@@ -551,5 +551,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
