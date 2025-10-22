@@ -63,6 +63,19 @@ const ADMIN_CHAT_ID = 'admin_chat';
 // --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
     myModal.show();
+    
+    // Initialize Google Sign-In
+    window.onload = function() {
+        google.accounts.id.initialize({
+            client_id: "YOUR_GOOGLE_CLIENT_ID",
+            callback: handleGoogleLogin
+        });
+        
+        google.accounts.id.renderButton(
+            document.getElementById("google-signin-button"),
+            { theme: "outline", size: "large" }
+        );
+    };
 });
 
 // ============================================
@@ -237,7 +250,26 @@ nameForm.addEventListener('submit', e => {
     socket.emit('check_staff_status', name);
 });
 
-// 2. Handle Message Form Submission 
+// 2. Handle Google Login
+function handleGoogleLogin(response) {
+    const payload = parseJwt(response.credential);
+    const name = payload.name;
+    const email = payload.email;
+    
+    // Send to server
+    socket.emit('google_login', { name, email });
+}
+
+function parseJwt(token) {
+    var base64Url = token.split('.')[1];
+    var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+}
+
+// 3. Handle Message Form Submission 
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
     const content = messageInputDiv.innerText.trim();
@@ -295,7 +327,7 @@ messageForm.addEventListener('submit', e => {
     }
 });
 
-// 3. Input Character Counter (Visibility improved via CSS)
+// 4. Input Character Counter (Visibility improved via CSS)
 messageInputDiv.addEventListener('input', () => {
     const currentLength = messageInputDiv.innerText.length;
     
@@ -322,7 +354,7 @@ messageInputDiv.addEventListener('keydown', e => {
     }
 });
 
-// 4. Admin Panel Button Handlers
+// 5. Admin Panel Button Handlers
 document.getElementById('clearChatBtn').addEventListener('click', () => {
     clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';
     clearConfirmModal.show();
@@ -330,7 +362,7 @@ document.getElementById('clearChatBtn').addEventListener('click', () => {
     if (adminModal) adminModal.hide();
 });
 
-// 5. Clear History Confirmation Click 
+// 6. Clear History Confirmation Click 
 clearConfirmBtn.addEventListener('click', () => {
     if (isAdmin) {
         socket.emit('admin:clear_history', currentChatContext); 
@@ -338,7 +370,7 @@ clearConfirmBtn.addEventListener('click', () => {
     clearConfirmModal.hide(); 
 });
 
-// 6. Admin: Kick User Confirmation Click Handler (Step 1: Open Ban Modal)
+// 7. Admin: Kick User Confirmation Click Handler (Step 1: Open Ban Modal)
 document.getElementById('kickToBanBtn').addEventListener('click', () => {
     kickConfirmModal.hide(); 
     
@@ -355,7 +387,7 @@ document.getElementById('kickToBanBtn').addEventListener('click', () => {
     }
 });
 
-// 7. Admin: Kick User Directly (Skip Ban Modal)
+// 8. Admin: Kick User Directly (Skip Ban Modal)
 document.getElementById('kickDirectlyBtn').addEventListener('click', () => {
      if (isAdmin && userToKick) {
          socket.emit('admin:kick_user', { targetName: userToKick });
@@ -365,8 +397,7 @@ document.getElementById('kickDirectlyBtn').addEventListener('click', () => {
      userIpToBan = null;
 });
 
-
-// 8. Admin: IP Ban Submission
+// 9. Admin: IP Ban Submission
 banConfirmBtn.addEventListener('click', () => {
     if (!isAdmin || !userToKick || !userIpToBan) {
         banModal.hide();
@@ -397,18 +428,18 @@ banConfirmBtn.addEventListener('click', () => {
     userIpToBan = null;
 });
 
-// 9. Admin: Log out (Go Anonymous)
+// 10. Admin: Log out (Go Anonymous)
 document.getElementById('adminLogoutBtn').addEventListener('click', () => {
     if (isAdmin) {
         socket.emit('admin:go_anonymous');
     }
 });
 
-// 10. Chat Tab Switches
+// 11. Chat Tab Switches
 publicChatTab.addEventListener('click', () => switchChatContext('public'));
 adminChatTab.addEventListener('click', () => switchChatContext(ADMIN_CHAT_ID));
 
-// 11. Rename form submission
+// 12. Rename form submission
 document.getElementById('rename-form').addEventListener('submit', e => {
     e.preventDefault();
     const newName = document.getElementById('new-name-input').value.trim();
@@ -418,7 +449,7 @@ document.getElementById('rename-form').addEventListener('submit', e => {
     renameModal.hide();
 });
 
-// 12. Enable rename button after successful login
+// 13. Enable rename button after successful login
 renameBtn.addEventListener('click', () => {
     document.getElementById('new-name-input').value = displayName;
     renameModal.show();
