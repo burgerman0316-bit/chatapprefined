@@ -31,9 +31,9 @@ const STAFF_LIST = [
 const chatHistory = [];
 const adminChatHistory = []; 
 
-const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext }
+const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext, googleId }
 const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
-const ipBanList = new Map(); // ipAddress -> { banUntil: Date, reason: string }
+const googleBanList = new Map(); // googleId -> { banUntil: Date, reason: string }
 
 // --- STATIC FILE SERVING ---
 app.use(express.static(path.join(__dirname, 'public')));
@@ -92,7 +92,8 @@ function broadcastUserCount() {
     if (user.chatContext === 'public' || user.isAdmin) {
         // FIX: Include isAdmin status for all clients to see who is a moderator
         userMap[user.displayName] = { 
-            isAdmin: user.isAdmin
+            isAdmin: user.isAdmin,
+            googleId: user.googleId
             // IP address removed from public broadcast for security
         };
     }
@@ -109,15 +110,18 @@ io.on('connection', socket => {
   const userIp = socket.handshake.address;
   console.log('Client connected:', socket.id, 'IP:', userIp);
 
-  // 0. IP Ban Check
-  const banEntry = ipBanList.get(userIp);
-  if (banEntry && banEntry.banUntil > new Date()) {
-      const banDurationMs = banEntry.banUntil.getTime() - new Date().getTime();
-      socket.emit('banned_modal', { 
-          reason: banEntry.reason, 
-          banDurationMs: banDurationMs 
-      });
-      return; 
+  // 0. Google Ban Check
+  const user = users.get(socket.id);
+  if (user && user.googleId) {
+    const banEntry = googleBanList.get(user.googleId);
+    if (banEntry && banEntry.banUntil > new Date()) {
+        const banDurationMs = banEntry.banUntil.getTime() - new Date().getTime();
+        socket.emit('banned_modal', { 
+            reason: banEntry.reason, 
+            banDurationMs: banDurationMs 
+        });
+        return; 
+    }
   }
 
   // Initial setup
@@ -126,7 +130,7 @@ io.on('connection', socket => {
 
   // 1. Google Login
   socket.on('google_login', userData => {
-    const { name, email } = userData;
+    const { name, email, googleId } = userData;
     const lower = name.toLowerCase();
     
     cleanUpUser(socket.id);
@@ -146,7 +150,8 @@ io.on('connection', socket => {
         secureName: staffMember.loginName,
         isAdmin: true,
         ip: userIp,
-        chatContext: 'public'
+        chatContext: 'public',
+        googleId: googleId
       });
       usernamesMap.set(lower, socket.id);
       socket.join(STAFF_ROOM);
@@ -180,12 +185,24 @@ io.on('connection', socket => {
         return;
       }
       
+      // Check if user is banned by Google ID
+      const banEntry = googleBanList.get(googleId);
+      if (banEntry && banEntry.banUntil > new Date()) {
+        const banDurationMs = banEntry.banUntil.getTime() - new Date().getTime();
+        socket.emit('banned_modal', { 
+            reason: banEntry.reason, 
+            banDurationMs: banDurationMs 
+        });
+        return;
+      }
+      
       users.set(socket.id, {
         displayName: name,
         secureName: name,
         isAdmin: false,
         ip: userIp,
-        chatContext: 'public'
+        chatContext: 'public',
+        googleId: googleId
       });
       usernamesMap.set(lower, socket.id);
       socket.emit('name_accepted', name);
@@ -232,7 +249,8 @@ io.on('connection', socket => {
             secureName: staffLoginAttempt.loginName, 
             isAdmin: true,
             ip: userIp,
-            chatContext: 'public' 
+            chatContext: 'public',
+            googleId: null
         });
         usernamesMap.set(staffLower, socket.id);
         socket.join(STAFF_ROOM); 
@@ -270,7 +288,8 @@ io.on('connection', socket => {
         secureName: name, 
         isAdmin: false,
         ip: userIp,
-        chatContext: 'public'
+        chatContext: 'public',
+        googleId: null
     });
     usernamesMap.set(lower, socket.id);
     socket.emit('name_accepted', name);
@@ -549,18 +568,18 @@ io.on('connection', socket => {
       }
   });
   
-  // 10. Admin: IP Ban User
-  socket.on('admin:ip_ban_user', data => {
+  // 10. Admin: Google Ban User
+  socket.on('admin:google_ban_user', data => {
       const admin = users.get(socket.id);
       const targetName = (data.targetName || '').trim();
-      const targetIp = (data.targetIp || '').trim();
+      const targetGoogleId = (data.targetGoogleId || '').trim();
       const days = parseInt(data.days) || 0;
       const hours = parseInt(data.hours) || 0;
       const minutes = parseInt(data.minutes) || 0;
       const reason = data.reason || 'No reason provided';
       
-      if (!admin || !admin.isAdmin || !targetIp) {
-          socket.emit('system_error', 'Ban failed: Unauthorized or missing IP.');
+      if (!admin || !admin.isAdmin || !targetGoogleId) {
+          socket.emit('system_error', 'Ban failed: Unauthorized or missing Google ID.');
           return;
       }
       if (days === 0 && hours === 0 && minutes === 0) {
@@ -582,17 +601,17 @@ io.on('connection', socket => {
       banUntil.setHours(banUntil.getHours() + hours);
       banUntil.setMinutes(banUntil.getMinutes() + minutes);
 
-      ipBanList.set(targetIp, { banUntil, reason });
+      googleBanList.set(targetGoogleId, { banUntil, reason });
 
       if (targetSocketId) {
-          io.to(targetSocketId).emit('system_error', `You have been IP BANNED by Moderator ${admin.displayName} for ${days}d ${hours}h ${minutes}m (${reason}).`);
+          io.to(targetSocketId).emit('system_error', `You have been BANNED by Moderator ${admin.displayName} for ${days}d ${hours}h ${minutes}m (${reason}).`);
           const targetSocket = io.sockets.sockets.get(targetSocketId);
           if (targetSocket) targetSocket.disconnect(true);
       }
       
       const banMsg = {
         username: 'System',
-        content: `Moderator ${admin.displayName} has IP BANNED ${targetName || targetIp} for ${days}d ${hours}h ${minutes}m.`,
+        content: `Moderator ${admin.displayName} has BANNED ${targetName} for ${days}d ${hours}h ${minutes}m.`,
         timestamp: new Date(),
         isAdmin: true,
         type: 'system'
@@ -603,7 +622,35 @@ io.on('connection', socket => {
       broadcastUserCount();
   });
 
-  // 11. Disconnect 
+  // 11. Admin: Unban User
+  socket.on('admin:google_unban_user', data => {
+      const admin = users.get(socket.id);
+      const targetGoogleId = (data.targetGoogleId || '').trim();
+      
+      if (!admin || !admin.isAdmin || !targetGoogleId) {
+          socket.emit('system_error', 'Unban failed: Unauthorized or missing Google ID.');
+          return;
+      }
+      
+      if (googleBanList.has(targetGoogleId)) {
+          googleBanList.delete(targetGoogleId);
+          
+          const unbanMsg = {
+            username: 'System',
+            content: `Moderator ${admin.displayName} has UNBANNED a user.`,
+            timestamp: new Date(),
+            isAdmin: true,
+            type: 'system'
+          };
+          
+          io.emit('chat message', unbanMsg);
+          socket.emit('system_alert', 'User successfully unbanned.');
+      } else {
+          socket.emit('system_error', 'User is not currently banned.');
+      }
+  });
+
+  // 12. Disconnect 
   socket.on('disconnect', () => {
     const user = users.get(socket.id);
     if (!user) return;
