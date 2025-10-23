@@ -59,7 +59,6 @@
         </div>
     </div>
 
-    <!-- All your modals remain the same -->
     <div class="modal fade" id="nameModal" tabindex="-1" aria-labelledby="nameModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-sm modal-dialog-centered">
             <div class="modal-content">
@@ -110,6 +109,12 @@
                     
                     <h6 class="text-white">Click a user to Manage/Kick/Ban:</h6>
                     <ul id="admin-user-list" class="user-select-list">
+                    </ul>
+                    
+                    <hr class="my-4" style="border-color: #444;">
+                    <h6 class="text-white">Banned Users (Click to Unban):</h6>
+                    <ul id="banned-user-list" class="user-select-list">
+                        <li class="text-muted text-center" id="no-bans-message">No banned users</li>
                     </ul>
                 </div>
             </div>
@@ -209,7 +214,6 @@
         </div>
     </div>
 
-    <!-- Add Google Identity Services script -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
     <script src="/socket.io/socket.io.js"></script>
