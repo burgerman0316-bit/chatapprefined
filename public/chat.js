@@ -430,7 +430,7 @@ messageForm.addEventListener('submit', e => {
             if (unbanMatch) {
                 const [, targetName] = unbanMatch;
                 
-                // Find user in the banned user list
+                // Find user in the banned user list by display name
                 const targetUserElement = Array.from(document.querySelectorAll('#banned-user-list li:not(#no-bans-message)'))
                     .find(li => li.textContent.toLowerCase().includes(targetName.toLowerCase()));
                 
@@ -439,6 +439,12 @@ messageForm.addEventListener('submit', e => {
                     const googleId = targetUserElement.dataset.googleId;
                     if (googleId) {
                         socket.emit('admin:google_unban_user', { targetGoogleId: googleId });
+                        appendMessage({ 
+                            username: 'System', 
+                            content: `Unbanning user ${targetName}.`, 
+                            timestamp: new Date(), 
+                            type: 'system' 
+                        });
                     } else {
                         appendMessage({ username: 'System', content: `Could not find Google ID for user '${targetName}'.`, timestamp: new Date(), type: 'system' });
                     }
