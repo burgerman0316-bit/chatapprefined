@@ -1,4 +1,4 @@
-// chat.js - Complete updated version with all features
+// chat.js - Complete fixed version
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
