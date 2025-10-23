@@ -1,4 +1,3 @@
-```javascript
 // chat.js - Complete updated version with all features
 
 // Import the Bootstrap namespace to use its functions
@@ -737,3 +736,4 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
