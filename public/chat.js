@@ -196,7 +196,7 @@ function updatePublicUserList(data) {
         
         li.title = `Click to send private message to ${userDisplayName}`;
         li.addEventListener('click', () => {
-             messageInputDiv.innerText = `/msg "${userDisplayName}" `;
+             messageInputDiv.innerText = `/msg \"${userDisplayName}\" `;
              messageInputDiv.focus();
              
              // Move cursor to end of input
@@ -283,6 +283,9 @@ function updateBannedUserList(banList) {
         `;
         
         li.title = `Reason: ${ban.reason}\nClick to unban`;
+        
+        // Store the Google ID in a data attribute for later use
+        li.dataset.googleId = ban.googleId;
         
         li.addEventListener('click', () => {
             if (confirm(`Unban ${ban.bannedName || 'this user'}?`)) {
@@ -378,7 +381,7 @@ messageForm.addEventListener('submit', e => {
             }
             
             // Parse ban command: /ban "username" 0d 0h 30m reason
-            const banMatch = args.match(/^\"([^\"]+)\"\s+(\d+)d\s+(\d+)h\s+(\d+)m\s+(.+)$/);
+            const banMatch = args.match(/^\"([^\\\"]+)\"\\s+(\\d+)d\\s+(\\d+)h\\s+(\\d+)m\\s+(.+)$/);
             if (banMatch) {
                 const [, targetName, days, hours, minutes, reason] = banMatch;
                 
@@ -423,7 +426,7 @@ messageForm.addEventListener('submit', e => {
             }
             
             // Parse unban command: /unban "username"
-            const unbanMatch = args.match(/^\"([^\"]+)\"$/);
+            const unbanMatch = args.match(/^\"([^\\\"]+)\"$/);
             if (unbanMatch) {
                 const [, targetName] = unbanMatch;
                 
@@ -674,11 +677,6 @@ socket.on('chat message', msg => {
         appendMessage(msg);
     }
 }); 
-socket.on('admin chat message', msg => {
-    if (currentChatContext === ADMIN_CHAT_ID) {
-        appendMessage(msg);
-    }
-});
 
 // Admin Events 
 socket.on('admin:history_cleared', data => {
