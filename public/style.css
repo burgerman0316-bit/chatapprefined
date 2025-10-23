@@ -448,6 +448,7 @@ body {
 
 /* Google Sign-In Button */
 #google-signin-button {
+    background: transparent !important;
     width: 100%;
     display: flex;
     justify-content: center;
@@ -520,3 +521,4 @@ body {
     font-size: 0.85em;
     color: #ccc;
 }
+
