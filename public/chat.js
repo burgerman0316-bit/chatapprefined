@@ -195,17 +195,18 @@ function updatePublicUserList(data) {
         }
         
         li.title = `Click to send private message to ${userDisplayName}`;
-        li.addEventListener('click', () => {
-             messageInputDiv.innerText = `/msg \"${userDisplayName}\" `;
-             messageInputDiv.focus();
-             
-             // Move cursor to end of input
-             const range = document.createRange();
-             const sel = window.getSelection();
-             range.selectNodeContents(messageInputDiv);
-             range.collapse(false);
-             sel.removeAllRanges();
-             sel.addRange(range);
+        li.addEventListener("click", () => {
+            // Pre-fill with @username instead of /msg "username"
+            messageInputDiv.innerText = `@${userDisplayName} `;
+            messageInputDiv.focus();
+        
+            // Move cursor to end of input
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.selectNodeContents(messageInputDiv);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
         });
         userListEl.appendChild(li);
     });
@@ -763,5 +764,6 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
 
 
