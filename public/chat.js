@@ -21,6 +21,7 @@ const charCountContainer = document.getElementById('charCountContainer');
 const userListEl = document.getElementById('user-list');
 const userCountEl = document.getElementById('user-count');
 const adminUserListEl = document.getElementById('admin-user-list'); 
+const bannedUserListEl = document.getElementById('banned-user-list');
 
 const adminPanelBtn = document.getElementById('adminPanelBtn');
 const adminModalEl = document.getElementById('adminPanelModal'); 
@@ -51,11 +52,19 @@ const banDurationHoursInput = document.getElementById('banDurationHours');
 const banDurationMinutesInput = document.getElementById('banDurationMinutes');
 const banReasonInput = document.getElementById('banReason');
 
+// Modal Elements for Unban Confirmation
+const unbanConfirmModalEl = document.getElementById('unbanConfirmModal');
+const unbanConfirmModal = new bootstrap.Modal(unbanConfirmModalEl);
+const unbanConfirmBtn = document.getElementById('unbanConfirmBtn');
+const unbanTargetName = document.getElementById('unbanTargetName');
+
 let displayName = '';
 let isAdmin = false;
 let userToKick = null; 
 let userGoogleIdToBan = null; 
+let googleIdToUnban = null;
 let currentChatContext = 'public'; 
+let myGoogleId = null;
 const MAX_CHARS = 500;
 const ADMIN_CHAT_ID = 'admin_chat';
 
@@ -252,6 +261,48 @@ function updateAdminManagementList(adminUsersMap) {
     });
 }
 
+// Utility: Updates banned users list
+function updateBannedUsersList(banList) {
+    if (!isAdmin) return;
+
+    bannedUserListEl.innerHTML = '';
+
+    if (banList.length === 0) {
+        const emptyLi = document.createElement('li');
+        emptyLi.textContent = 'No banned users';
+        emptyLi.style.fontStyle = 'italic';
+        emptyLi.style.color = '#888';
+        bannedUserListEl.appendChild(emptyLi);
+        return;
+    }
+
+    banList.forEach(ban => {
+        const li = document.createElement('li');
+        const banDate = new Date(ban.banUntil);
+        const timeLeft = banDate - new Date();
+        
+        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        
+        li.innerHTML = `<strong>${ban.bannedName}</strong><br>
+                        <small>Reason: ${ban.reason}</small><br>
+                        <small>Time left: ${days}d ${hours}h ${minutes}m</small>`;
+        li.style.cursor = 'pointer';
+        li.addEventListener('click', () => {
+            googleIdToUnban = ban.googleId;
+            unbanTargetName.textContent = ban.bannedName;
+            
+            const adminModal = bootstrap.Modal.getInstance(adminModalEl);
+            if (adminModal) adminModal.hide();
+            
+            unbanConfirmModal.show();
+        });
+        
+        bannedUserListEl.appendChild(li);
+    });
+}
+
 // Utility: Switches the chat window (Public vs Admin)
 function switchChatContext(contextId) {
     if (!isAdmin && contextId === ADMIN_CHAT_ID) return;
@@ -345,11 +396,6 @@ messageForm.addEventListener('submit', e => {
                     .find(li => li.textContent.toLowerCase().includes(targetName.toLowerCase()));
                 
                 if (targetUserElement) {
-                    // Get the user's Google ID from the user list
-                    const userDisplayName = targetUserElement.textContent.split(' ')[0];
-                    const userEntry = Array.from(document.querySelectorAll('#user-list li'))
-                        .find(li => li.textContent.includes(userDisplayName));
-                    
                     // For now, we'll just show a message that the command is working
                     appendMessage({ 
                         username: 'System', 
@@ -361,7 +407,7 @@ messageForm.addEventListener('submit', e => {
                     // Send to server to actually ban
                     socket.emit('admin:google_ban_user', { 
                         targetName: targetName,
-                        targetGoogleId: userEntry.textContent.split(' ')[1] || '', 
+                        targetGoogleId: targetUserElement.textContent.split(' ')[1] || '', 
                         days: parseInt(days), 
                         hours: parseInt(hours), 
                         minutes: parseInt(minutes),
@@ -428,7 +474,25 @@ messageForm.addEventListener('submit', e => {
                 return;
             }
             
-            socket.emit('admin:machinegun');
+            const sounds = [
+                'BRRRRRRT',
+                'RAT-TAT-TAT-TAT',
+                'DAKKA DAKKA DAKKA',
+                'BRRRRRAP',
+                'TAT-TAT-TAT-TAT',
+                'RATATATATATAT',
+                'BRAP BRAP BRAP',
+                'TAKKA TAKKA TAKKA'
+            ];
+            
+            let delay = 0;
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    const sound = sounds[Math.floor(Math.random() * sounds.length)];
+                    socket.emit('chat message', { content: sound });
+                }, delay);
+                delay += 200;
+            }
         }
         else {
              appendMessage({ username: 'System', content: `Unknown command: ${command}`, timestamp: new Date(), type: 'system' });
@@ -540,18 +604,27 @@ banConfirmBtn.addEventListener('click', () => {
     userGoogleIdToBan = null;
 });
 
-// 8. Admin: Log out (Go Anonymous)
+// 8. Admin: Unban Confirmation
+unbanConfirmBtn.addEventListener('click', () => {
+    if (isAdmin && googleIdToUnban) {
+        socket.emit('admin:google_unban_user', { targetGoogleId: googleIdToUnban });
+    }
+    unbanConfirmModal.hide();
+    googleIdToUnban = null;
+});
+
+// 9. Admin: Log out (Go Anonymous)
 document.getElementById('adminLogoutBtn').addEventListener('click', () => {
     if (isAdmin) {
         socket.emit('admin:go_anonymous');
     }
 });
 
-// 9. Chat Tab Switches
+// 10. Chat Tab Switches
 publicChatTab.addEventListener('click', () => switchChatContext('public'));
 adminChatTab.addEventListener('click', () => switchChatContext(ADMIN_CHAT_ID));
 
-// 10. Rename form submission
+// 11. Rename form submission
 document.getElementById('rename-form').addEventListener('submit', e => {
     e.preventDefault();
     const newName = document.getElementById('new-name-input').value.trim();
@@ -561,7 +634,7 @@ document.getElementById('rename-form').addEventListener('submit', e => {
     renameModal.hide();
 });
 
-// 11. Enable rename button after successful login
+// 12. Enable rename button after successful login
 renameBtn.addEventListener('click', () => {
     document.getElementById('new-name-input').value = displayName;
     renameModal.show();
@@ -690,4 +763,9 @@ socket.on('user count', data => updatePublicUserList(data));
 // Admin User Map Update (for Admin Panel management list)
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
+});
+
+// Banned Users List Update
+socket.on('ban_list_update', banList => {
+    updateBannedUsersList(banList);
 });
