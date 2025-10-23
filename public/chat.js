@@ -299,6 +299,7 @@ function updateBannedUserList(banList) {
 
 // Utility: Switches the chat window (Public vs Admin)
 function switchChatContext(contextId) {
+    if (contextId === currentChatContext) return;
     if (!isAdmin && contextId === ADMIN_CHAT_ID) return;
     
     currentChatContext = contextId;
@@ -762,4 +763,5 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
 
