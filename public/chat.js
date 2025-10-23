@@ -9,7 +9,6 @@ const socket = io();
 
 // Elements
 const nameForm = document.getElementById('name-form');
-const nameInput = document.getElementById('name-input');
 const container = document.getElementById('container'); 
 
 const displayNameEl = document.getElementById('display-name');
@@ -21,7 +20,7 @@ const charCountContainer = document.getElementById('charCountContainer');
 
 const userListEl = document.getElementById('user-list');
 const userCountEl = document.getElementById('user-count');
-const adminUserListEl = document.getElementById('admin-user-list'); // NEW REFERENCE
+const adminUserListEl = document.getElementById('admin-user-list'); 
 
 const adminPanelBtn = document.getElementById('adminPanelBtn');
 const adminModalEl = document.getElementById('adminPanelModal'); 
@@ -81,9 +80,11 @@ function initializeGoogleSignIn() {
         google.accounts.id.renderButton(
             document.getElementById("google-signin-button"),
             { 
-                theme: "outline", 
+                theme: "filled_black", 
                 size: "large",
-                width: "100%"
+                width: 280,
+                text: "continue_with",
+                shape: "rectangular"
             }
         );
     } else {
@@ -98,9 +99,10 @@ function handleGoogleLogin(response) {
     const name = payload.name;
     const email = payload.email;
     const googleId = payload.sub; // Google ID
+    const profilePic = payload.picture; // Profile picture
     
     // Send to server
-    socket.emit('google_login', { name, email, googleId });
+    socket.emit('google_login', { name, email, googleId, profilePic });
 }
 
 function parseJwt(token) {
@@ -138,7 +140,13 @@ function appendMessage(msg) {
             ? 'sender-name private-name' 
             : 'sender-name';
             
-        item.innerHTML = `<span class="${nameClass}">${nameDisplay}</span>${msg.content} ${timeHtml}`;
+        // Add profile picture if available
+        let profilePicHtml = '';
+        if (msg.profilePic) {
+            profilePicHtml = `<img src="${msg.profilePic}" class="profile-pic" alt="Profile">`;
+        }
+        
+        item.innerHTML = `<span class="${nameClass}">${nameDisplay}</span><div class="msg-content">${profilePicHtml}<span class="msg-text">${msg.content}</span></div>${timeHtml}`;
         // ------------------------------------------------------------------
     } else {
         item.classList.add('other');
@@ -149,7 +157,13 @@ function appendMessage(msg) {
         const nameDisplay = msg.isPrivate ? `Private from ${msg.username}` : msg.username;
         const nameClass = msg.isPrivate ? 'sender-name private-name' : 'sender-name';
         
-        item.innerHTML = `<span class="${nameClass}">${nameDisplay}</span>${msg.content} ${timeHtml}`;
+        // Add profile picture if available
+        let profilePicHtml = '';
+        if (msg.profilePic) {
+            profilePicHtml = `<img src="${msg.profilePic}" class="profile-pic" alt="Profile">`;
+        }
+        
+        item.innerHTML = `<span class="${nameClass}">${nameDisplay}</span><div class="msg-content">${profilePicHtml}<span class="msg-text">${msg.content}</span></div>${timeHtml}`;
     }
 
     messagesDiv.appendChild(item);
@@ -181,8 +195,16 @@ function updatePublicUserList(data) {
         
         li.title = `Click to send private message to ${userDisplayName}`;
         li.addEventListener('click', () => {
-             messageInputDiv.innerText = `/msg ${userDisplayName} `;
+             messageInputDiv.innerText = `/msg "${userDisplayName}" `;
              messageInputDiv.focus();
+             
+             // Move cursor to end of input
+             const range = document.createRange();
+             const sel = window.getSelection();
+             range.selectNodeContents(messageInputDiv);
+             range.collapse(false);
+             sel.removeAllRanges();
+             sel.addRange(range);
         });
         userListEl.appendChild(li);
     });
@@ -254,15 +276,7 @@ function switchChatContext(contextId) {
 
 // --- Event Listeners ---
 
-// 1. Handle Login Form Submission
-nameForm.addEventListener('submit', e => {
-    e.preventDefault();
-    const name = nameInput.value.trim();
-    if (!name) return;
-    socket.emit('check_staff_status', name);
-});
-
-// 2. Handle Message Form Submission 
+// 1. Handle Message Form Submission 
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
     const content = messageInputDiv.innerText.trim();
@@ -280,17 +294,28 @@ messageForm.addEventListener('submit', e => {
         const args = content.substring(command.length).trim();
 
         if (command === '/msg') {
-            const match = args.match(/^(\\S+)\\s+(.*)/s); 
-            if (match) {
-                const recipient = match[1];
-                const dmContent = match[2];
-                if (recipient && dmContent && currentChatContext === 'public') {
-                    socket.emit('private message', { recipient: recipient, content: dmContent });
-                } else {
-                    appendMessage({ username: 'System', content: 'Invalid /msg command or only available in public chat.', timestamp: new Date(), type: 'system' });
+            let recipient, dmContent;
+            
+            // Check if recipient is quoted
+            if (args.startsWith('"')) {
+                const endQuote = args.indexOf('"', 1);
+                if (endQuote !== -1) {
+                    recipient = args.substring(1, endQuote);
+                    dmContent = args.substring(endQuote + 1).trim();
                 }
             } else {
-                 appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg [username] [message]', timestamp: new Date(), type: 'system' });
+                // Old method for backwards compatibility
+                const match = args.match(/^(\\S+)\\s+(.*)/s);
+                if (match) {
+                    recipient = match[1];
+                    dmContent = match[2];
+                }
+            }
+            
+            if (recipient && dmContent && currentChatContext === 'public') {
+                socket.emit('private message', { recipient: recipient, content: dmContent });
+            } else {
+                appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg "username" message', timestamp: new Date(), type: 'system' });
             }
         } 
         else if (command === '/kick') { 
@@ -299,10 +324,48 @@ messageForm.addEventListener('submit', e => {
                  return;
             }
             if (args) {
-                socket.emit('admin:kick_user', { targetName: args, adminName: displayName });
+                socket.emit('admin:kick_user', { targetName: args });
             } else {
-                appendMessage({ username: 'System', content: 'Invalid /kick command. Usage: /kick [username]', timestamp: new Date(), type: 'system' });
+                appendMessage({ username: 'System', content: 'Invalid /kick command. Usage: /kick username', timestamp: new Date(), type: 'system' });
             }
+        }
+        else if (command === '/ban') {
+            if (!isAdmin) {
+                appendMessage({ username: 'System', content: 'You do not have permission to use the /ban command.', timestamp: new Date(), type: 'system' });
+                return;
+            }
+            
+            // Parse ban command: /ban "username" 0d 0h 30m reason
+            const banMatch = args.match(/^\"([^\"]+)\"\\s+(\\d+)d\\s+(\\d+)h\\s+(\\d+)m\\s+(.+)$/);
+            if (banMatch) {
+                const [, targetName, days, hours, minutes, reason] = banMatch;
+                const targetLower = targetName.toLowerCase();
+                
+                // Find the user in the user list
+                const targetSocketId = Array.from(document.querySelectorAll('#user-list li'))
+                    .find(li => li.textContent.toLowerCase().includes(targetLower));
+                
+                if (targetSocketId) {
+                    // Get the user's Google ID from the user list
+                    const userDisplayName = targetSocketId.textContent.split(' ')[0];
+                    const userEntry = Array.from(document.querySelectorAll('#user-list li'))
+                        .find(li => li.textContent.includes(userDisplayName));
+                    
+                    // This is a simplified approach - in a real app, you'd store this in the users map
+                    appendMessage({ username: 'System', content: `Use the Admin Panel to ban ${targetName}.`, timestamp: new Date(), type: 'system' });
+                } else {
+                    appendMessage({ username: 'System', content: `User '${targetName}' not found.`, timestamp: new Date(), type: 'system' });
+                }
+            } else {
+                appendMessage({ username: 'System', content: 'Invalid /ban command. Usage: /ban "username" 0d 0h 30m reason', timestamp: new Date(), type: 'system' });
+            }
+        }
+        else if (command === '/unban') {
+            if (!isAdmin) {
+                appendMessage({ username: 'System', content: 'You do not have permission to use the /unban command.', timestamp: new Date(), type: 'system' });
+                return;
+            }
+            appendMessage({ username: 'System', content: 'Use the Admin Panel to unban users.', timestamp: new Date(), type: 'system' });
         }
         else if (command === '/clear') {
             if (isAdmin) {
@@ -311,7 +374,16 @@ messageForm.addEventListener('submit', e => {
             } else {
                 appendMessage({ username: 'System', content: 'You do not have permission to use the /clear command.', timestamp: new Date(), type: 'system' });
             }
-        } else {
+        }
+        else if (command === '/machinegun') {
+            if (!isAdmin) {
+                appendMessage({ username: 'System', content: 'You do not have permission to use the /machinegun command.', timestamp: new Date(), type: 'system' });
+                return;
+            }
+            
+            socket.emit('admin:machinegun');
+        }
+        else {
              appendMessage({ username: 'System', content: `Unknown command: ${command}`, timestamp: new Date(), type: 'system' });
         }
     } else {
@@ -320,7 +392,7 @@ messageForm.addEventListener('submit', e => {
     }
 });
 
-// 3. Input Character Counter (Visibility improved via CSS)
+// 2. Input Character Counter (Visibility improved via CSS)
 messageInputDiv.addEventListener('input', () => {
     const currentLength = messageInputDiv.innerText.length;
     
@@ -347,7 +419,7 @@ messageInputDiv.addEventListener('keydown', e => {
     }
 });
 
-// 4. Admin Panel Button Handlers
+// 3. Admin Panel Button Handlers
 document.getElementById('clearChatBtn').addEventListener('click', () => {
     clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';
     clearConfirmModal.show();
@@ -355,7 +427,7 @@ document.getElementById('clearChatBtn').addEventListener('click', () => {
     if (adminModal) adminModal.hide();
 });
 
-// 5. Clear History Confirmation Click 
+// 4. Clear History Confirmation Click 
 clearConfirmBtn.addEventListener('click', () => {
     if (isAdmin) {
         socket.emit('admin:clear_history', currentChatContext); 
@@ -363,7 +435,7 @@ clearConfirmBtn.addEventListener('click', () => {
     clearConfirmModal.hide(); 
 });
 
-// 6. Admin: Kick User Confirmation Click Handler (Step 1: Open Ban Modal)
+// 5. Admin: Kick User Confirmation Click Handler (Step 1: Open Ban Modal)
 document.getElementById('kickToBanBtn').addEventListener('click', () => {
     kickConfirmModal.hide(); 
     
@@ -380,7 +452,7 @@ document.getElementById('kickToBanBtn').addEventListener('click', () => {
     }
 });
 
-// 7. Admin: Kick User Directly (Skip Ban Modal)
+// 6. Admin: Kick User Directly (Skip Ban Modal)
 document.getElementById('kickDirectlyBtn').addEventListener('click', () => {
      if (isAdmin && userToKick) {
          socket.emit('admin:kick_user', { targetName: userToKick });
@@ -390,7 +462,7 @@ document.getElementById('kickDirectlyBtn').addEventListener('click', () => {
      userGoogleIdToBan = null;
 });
 
-// 8. Admin: IP Ban Submission
+// 7. Admin: IP Ban Submission
 banConfirmBtn.addEventListener('click', () => {
     if (!isAdmin || !userToKick || !userGoogleIdToBan) {
         banModal.hide();
@@ -421,18 +493,18 @@ banConfirmBtn.addEventListener('click', () => {
     userGoogleIdToBan = null;
 });
 
-// 9. Admin: Log out (Go Anonymous)
+// 8. Admin: Log out (Go Anonymous)
 document.getElementById('adminLogoutBtn').addEventListener('click', () => {
     if (isAdmin) {
         socket.emit('admin:go_anonymous');
     }
 });
 
-// 10. Chat Tab Switches
+// 9. Chat Tab Switches
 publicChatTab.addEventListener('click', () => switchChatContext('public'));
 adminChatTab.addEventListener('click', () => switchChatContext(ADMIN_CHAT_ID));
 
-// 11. Rename form submission
+// 10. Rename form submission
 document.getElementById('rename-form').addEventListener('submit', e => {
     e.preventDefault();
     const newName = document.getElementById('new-name-input').value.trim();
@@ -442,7 +514,7 @@ document.getElementById('rename-form').addEventListener('submit', e => {
     renameModal.hide();
 });
 
-// 12. Enable rename button after successful login
+// 11. Enable rename button after successful login
 renameBtn.addEventListener('click', () => {
     document.getElementById('new-name-input').value = displayName;
     renameModal.show();
