@@ -149,7 +149,12 @@ body {
     margin-bottom: 12px;
     padding: 8px 12px;
     position: relative; 
+    /* Wrapping/flex fixes: allow wrapping and avoid forcing overflow */
     word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+    min-width: 0; /* IMPORTANT: allow flex children to shrink */
     clear: both; 
     list-style: none;
     border-radius: 12px;
@@ -160,10 +165,20 @@ body {
     display: flex;
     align-items: flex-start;
     gap: 8px;
+    /* Keep layout stable while letting text wrap inside .msg-text */
+    flex-wrap: nowrap; /* text wrapping handled by .msg-text */
 }
 
+/* The text container inside the bubble */
 .msg-text {
-    flex: 1;
+    flex: 1 1 auto;      /* allow to grow and shrink */
+    min-width: 0;        /* IMPORTANT: lets the text wrap instead of causing overflow */
+    max-width: 100%;
+    display: block;
+    white-space: normal !important;
+    overflow-wrap: anywhere; /* break long unbroken strings (URLs, long words) */
+    word-break: break-word;
+    hyphens: auto;
 }
 
 /* Profile picture styling */
@@ -271,7 +286,6 @@ body {
     flex-grow: 1 !important; 
     flex-shrink: 1 !important; 
     min-width: 0 !important; 
-    
     padding: 10px;
     border-radius: 4px;
     background-color: #383838;
@@ -285,7 +299,7 @@ body {
     -webkit-user-modify: read-write-plaintext-only;
     box-sizing: border-box !important; 
     -webkit-box-sizing: border-box !important; 
-    word-break: break-all !important; 
+    word-break: break-word !important; 
     overflow-wrap: break-word !important; 
     overflow-x: hidden !important; 
     white-space: normal !important; 
