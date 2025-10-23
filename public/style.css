@@ -1,3 +1,6 @@
+Here’s the **CSS file (style.css)**:
+
+```css
 /* Reset & Body */
 body {
     margin: 0;
@@ -470,3 +473,21 @@ body {
     font-weight: bold;
     border-color: #777;
 }
+
+/* Banned user list styling */
+#banned-user-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+}
+
+#banned-user-list li:not(#no-bans-message):hover {
+    background-color: #555;
+}
+
+.ban-info {
+    font-size: 0.85em;
+    color: #aaa;
+}
+​​​​
