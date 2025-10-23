@@ -506,23 +506,21 @@ messageForm.addEventListener('submit', e => {
 });
 
 // 2. Input Character Counter (Visibility improved via CSS)
+// 2. Input Character Counter (Visibility improved via CSS)
 messageInputDiv.addEventListener('input', () => {
     const currentLength = messageInputDiv.innerText.length;
     
-    if (currentLength > MAX_CHARS) {
-        messageInputDiv.innerText = messageInputDiv.innerText.substring(0, MAX_CHARS);
-        charCountSpan.textContent = `${MAX_CHARS}/${MAX_CHARS}`;
-    } else {
-        charCountSpan.textContent = `${currentLength}/${MAX_CHARS}`;
-    }
+    // Update character count display
+    charCountSpan.textContent = `${currentLength}/${MAX_CHARS}`;
     
-    // Style change
+    // Style change based on length
     if (currentLength >= MAX_CHARS * 0.9) {
         charCountContainer.style.color = '#ff4d4d'; 
     } else {
         charCountContainer.style.color = '#ccc'; 
     }
 });
+
 
 // Ensure Enter sends message
 messageInputDiv.addEventListener('keydown', e => {
@@ -762,4 +760,5 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
 
