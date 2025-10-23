@@ -1,4 +1,4 @@
-// chat.js - Complete updated version with rename feature
+// chat.js - Complete fixed version with working /unban and /rename commands
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
