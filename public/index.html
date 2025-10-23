@@ -13,7 +13,7 @@
         <div id="user-info">
             <h2>Chat Info</h2>
             
-            <hr class="info-divider"> <p>Welcome, <span id="display-name">Guest</span>! <button id="renameBtn" class="btn btn-sm btn-outline-light ms-2" style="display: none;">Rename</button></p>
+            <hr class="info-divider"> <p>Welcome, <span id="display-name">Guest</span>!</p>
             <div class="chat-tabs">
                 <div id="publicChatTab" class="chat-tab active">Public</div>
                 <div id="adminChatTab" class="chat-tab" style="display: none;">Admin</div>
@@ -102,6 +102,11 @@
                     
                     <h6 class="text-white">Click a user to Manage/Kick/Ban:</h6>
                     <ul id="admin-user-list" class="user-select-list">
+                    </ul>
+                    
+                    <hr class="info-divider">
+                    <h6 class="text-white">Banned Users:</h6>
+                    <ul id="banned-user-list" class="user-select-list">
                     </ul>
                 </div>
             </div>
