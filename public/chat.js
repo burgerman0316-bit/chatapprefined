@@ -350,7 +350,7 @@ messageForm.addEventListener('submit', e => {
                 }
             } else {
                 // Old method for backwards compatibility
-                const match = args.match(/^(\S+)\s+(.*)/s);
+                const match = args.match(/^(\\S+)\\s+(.*)/s);
                 if (match) {
                     recipient = match[1];
                     dmContent = match[2];
@@ -430,30 +430,20 @@ messageForm.addEventListener('submit', e => {
             if (unbanMatch) {
                 const [, targetName] = unbanMatch;
                 
-                // Find user in the user list
-                const targetUserElement = Array.from(document.querySelectorAll('#user-list li'))
+                // Find user in the banned user list
+                const targetUserElement = Array.from(document.querySelectorAll('#banned-user-list li:not(#no-bans-message)'))
                     .find(li => li.textContent.toLowerCase().includes(targetName.toLowerCase()));
                 
                 if (targetUserElement) {
-                    // For now, we'll just show a message that the command is working
-                    appendMessage({ 
-                        username: 'System', 
-                        content: `Unbanning user ${targetName}.`, 
-                        timestamp: new Date(), 
-                        type: 'system' 
-                    });
-                    
-                    // Send to server to actually unban
-                    // Note: In a real implementation, we'd need to track Google IDs for banned users
-                    // For now, we'll just show a message
-                    appendMessage({ 
-                        username: 'System', 
-                        content: `Use the Admin Panel to unban users.`, 
-                        timestamp: new Date(), 
-                        type: 'system' 
-                    });
+                    // Get the Google ID from data attribute
+                    const googleId = targetUserElement.dataset.googleId;
+                    if (googleId) {
+                        socket.emit('admin:google_unban_user', { targetGoogleId: googleId });
+                    } else {
+                        appendMessage({ username: 'System', content: `Could not find Google ID for user '${targetName}'.`, timestamp: new Date(), type: 'system' });
+                    }
                 } else {
-                    appendMessage({ username: 'System', content: `User '${targetName}' not found.`, timestamp: new Date(), type: 'system' });
+                    appendMessage({ username: 'System', content: `User '${targetName}' not found in banned list.`, timestamp: new Date(), type: 'system' });
                 }
             } else {
                 appendMessage({ username: 'System', content: 'Invalid /unban command. Usage: /unban "username"', timestamp: new Date(), type: 'system' });
