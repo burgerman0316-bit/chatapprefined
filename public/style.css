@@ -472,20 +472,37 @@ body {
 }
 
 /* Banned user list styling */
+#banned-user-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
 #banned-user-list li {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px;
+    color: #fff;
+    border-bottom: 1px solid #444;
+}
+
+#banned-user-list li:not(#no-bans-message) {
+    cursor: pointer;
 }
 
 #banned-user-list li:not(#no-bans-message):hover {
     background-color: #555;
 }
 
+#no-bans-message {
+    color: #aaa !important;
+    cursor: default !important;
+}
+
 .ban-info {
     font-size: 0.85em;
-    color: #aaa;
+    color: #ccc;
 }
-​​​​
-
