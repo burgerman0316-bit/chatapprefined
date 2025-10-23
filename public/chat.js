@@ -1,3 +1,4 @@
+```javascript
 // chat.js - Complete updated version with all features
 
 // Import the Bootstrap namespace to use its functions
@@ -21,6 +22,7 @@ const charCountContainer = document.getElementById('charCountContainer');
 const userListEl = document.getElementById('user-list');
 const userCountEl = document.getElementById('user-count');
 const adminUserListEl = document.getElementById('admin-user-list'); 
+const bannedUserListEl = document.getElementById('banned-user-list');
 
 const adminPanelBtn = document.getElementById('adminPanelBtn');
 const adminModalEl = document.getElementById('adminPanelModal'); 
@@ -252,6 +254,47 @@ function updateAdminManagementList(adminUsersMap) {
     });
 }
 
+// Utility: Updates the banned users list
+function updateBannedUserList(banList) {
+    if (!isAdmin) return;
+    
+    bannedUserListEl.innerHTML = '';
+    
+    if (!banList || banList.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'text-muted text-center';
+        li.id = 'no-bans-message';
+        li.textContent = 'No banned users';
+        bannedUserListEl.appendChild(li);
+        return;
+    }
+    
+    banList.forEach(ban => {
+        const li = document.createElement('li');
+        li.style.cursor = 'pointer';
+        
+        const banUntil = new Date(ban.banUntil);
+        const timeRemaining = banUntil - new Date();
+        const hoursRemaining = Math.floor(timeRemaining / (1000 * 60 * 60));
+        const minutesRemaining = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+        
+        li.innerHTML = `
+            <span><strong>${ban.bannedName || 'Unknown'}</strong></span>
+            <span class="ban-info">${hoursRemaining}h ${minutesRemaining}m left</span>
+        `;
+        
+        li.title = `Reason: ${ban.reason}\nClick to unban`;
+        
+        li.addEventListener('click', () => {
+            if (confirm(`Unban ${ban.bannedName || 'this user'}?`)) {
+                socket.emit('admin:google_unban_user', { targetGoogleId: ban.googleId });
+            }
+        });
+        
+        bannedUserListEl.appendChild(li);
+    });
+}
+
 // Utility: Switches the chat window (Public vs Admin)
 function switchChatContext(contextId) {
     if (!isAdmin && contextId === ADMIN_CHAT_ID) return;
@@ -305,7 +348,7 @@ messageForm.addEventListener('submit', e => {
                 }
             } else {
                 // Old method for backwards compatibility
-                const match = args.match(/^(\\S+)\\s+(.*)/s);
+                const match = args.match(/^(\S+)\s+(.*)/s);
                 if (match) {
                     recipient = match[1];
                     dmContent = match[2];
@@ -336,7 +379,7 @@ messageForm.addEventListener('submit', e => {
             }
             
             // Parse ban command: /ban "username" 0d 0h 30m reason
-            const banMatch = args.match(/^\"([^\"]+)\"\\s+(\\d+)d\\s+(\\d+)h\\s+(\\d+)m\\s+(.+)$/);
+            const banMatch = args.match(/^\"([^\"]+)\"\s+(\d+)d\s+(\d+)h\s+(\d+)m\s+(.+)$/);
             if (banMatch) {
                 const [, targetName, days, hours, minutes, reason] = banMatch;
                 
@@ -643,6 +686,10 @@ socket.on('admin:history_cleared', data => {
 socket.on('system_error', msg => appendMessage({ username: 'System', content: `ERROR: ${msg}`, timestamp: new Date(), type: 'system' }));
 socket.on('system_alert', msg => appendMessage({ username: 'System', content: msg, timestamp: new Date(), type: 'system' }));
 
+// Ban List Update (Admin only)
+socket.on('ban_list_update', banList => {
+    updateBannedUserList(banList);
+});
 
 // IP Banned Modal (NEW)
 socket.on('banned_modal', data => {
@@ -682,7 +729,6 @@ socket.on('banned_modal', data => {
     
     socket.disconnect();
 });
-
 
 // User List Update
 socket.on('user count', data => updatePublicUserList(data)); 
