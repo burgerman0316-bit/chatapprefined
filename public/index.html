@@ -13,19 +13,26 @@
         <div id="user-info">
             <h2>Chat Info</h2>
             
-            <hr class="info-divider"> <p>Welcome, <span id="display-name">Guest</span>! <button id="renameBtn" class="btn btn-sm btn-outline-light ms-2" style="visibility: hidden; pointer-events: none; width: 1px; height: 1px; min-width: 1px; min-height: 1px; padding: 0; margin: 0; border: 0; overflow: hidden;">Rename</button></p>
+            <hr class="info-divider"> 
+            <p>Welcome, <span id="display-name">Guest</span>! <button id="renameBtn" class="btn btn-sm btn-outline-light ms-2" style="visibility: hidden; pointer-events: none; width: 1px; height: 1px; min-width: 1px; min-height: 1px; padding: 0; margin: 0; border: 0; overflow: hidden;">Rename</button></p>
+            
+            <hr class="info-divider">
+            
             <div class="chat-tabs">
-                <div id="publicChatTab" class="chat-tab active">Public</div>
-                <div id="adminChatTab" class="chat-tab" style="display: none;">Admin</div>
+                <button id="publicChatTab" class="chat-tab-btn active">Public</button>
+                <button id="adminChatTab" class="chat-tab-btn" style="display: none;">Admin</button>
             </div>
+            
             <p>Users Online: <span id="user-count">0</span></p>
             
-            <hr class="info-divider"> <div id="user-list-container">
+            <hr class="info-divider"> 
+            <div id="user-list-container">
                 <h4>Online Users:</h4>
                 <ul id="user-list"></ul>
             </div>
             
-            <hr class="info-divider"> <p class="commands">**Commands:**</p>
+            <hr class="info-divider"> 
+            <p class="commands">**Commands:**</p>
             <p class="commands">/msg [user] [message]</p>
             <p class="commands">/clear (Mod only)</p>
             <p class="commands">/machinegun (Mod only)</p>
@@ -52,6 +59,7 @@
         </div>
     </div>
 
+    <!-- All your modals remain the same -->
     <div class="modal fade" id="nameModal" tabindex="-1" aria-labelledby="nameModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-sm modal-dialog-centered">
             <div class="modal-content">
@@ -209,5 +217,3 @@
     <script src="chat.js"></script>
 </body>
 </html>
-
-
