@@ -516,6 +516,13 @@ document.getElementById('clearChatBtn').addEventListener('click', () => {
     if (adminModal) adminModal.hide();
 });
 
+// Request ban list when admin panel is opened
+adminPanelBtn.addEventListener('click', () => {
+    if (isAdmin) {
+        socket.emit('admin:request_ban_list');
+    }
+});
+
 // 4. Clear History Confirmation Click 
 clearConfirmBtn.addEventListener('click', () => {
     if (isAdmin) {
@@ -736,4 +743,3 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
-
