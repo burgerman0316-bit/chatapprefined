@@ -25,7 +25,10 @@ const STAFF_LIST = [
   { loginName: 'dnjsDkfjdsOfjdNsfjdOksfjVkdAsnfNjdsnfjkdkfd', displayName: 'Donovan Powell' },
   // Add Google admin names here
   { loginName: 'Liam Stern', displayName: 'Liam Stern' },
-  { loginName: 'Diesel Carter', displayName: 'Diesel Carter' }
+  { loginName: 'Diesel Carter', displayName: 'Diesel Carter' },
+  { loginName: 'Ricardo Martinez', displayName: 'Ricky Martinez' },
+  { loginName: 'Aaron Ortega', displayName: 'Aaron Ortega' },
+  { loginName: 'Donovan Powell', displayName: 'Donovan Powell' }
 ];
 
 const chatHistory = [];
@@ -745,3 +748,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
