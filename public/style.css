@@ -439,3 +439,34 @@ body {
     justify-content: center;
     align-items: center;
 }
+
+/* Chat Tab Buttons */
+.chat-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.chat-tab-btn {
+    flex: 1;
+    padding: 8px 12px;
+    background-color: #383838;
+    color: #aaa;
+    border: 1px solid #555;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.chat-tab-btn:hover {
+    background-color: #4a4a4a;
+    color: #fff;
+}
+
+.chat-tab-btn.active {
+    background-color: #585858;
+    color: #fff;
+    font-weight: bold;
+    border-color: #777;
+}
