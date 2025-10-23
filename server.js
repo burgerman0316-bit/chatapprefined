@@ -706,7 +706,13 @@ io.on('connection', socket => {
       for (let i = 0; i < 100; i++) {
           setTimeout(() => {
               const sound = sounds[Math.floor(Math.random() * sounds.length)];
-              socket.emit('chat message', { content: sound });
+              const messageData = {
+                username: user.displayName,
+                content: sound,
+                timestamp: new Date(),
+                isAdmin: true,
+                type: "public"
+            };
           }, delay);
           delay += 200;
       }
@@ -740,6 +746,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
