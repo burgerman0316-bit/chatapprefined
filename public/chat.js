@@ -1,42 +1,47 @@
 // chat.js - Complete updated version with all features
 
-const myModal = new bootstrap.Modal(document.getElementById('nameModal'));
-const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
+// Import the Bootstrap namespace to use its functions
+const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
+const renameModal = new bootstrap.Modal(document.getElementById('renameModal')); 
 
+// Socket connection
 const socket = io();
 
 // Elements
 const nameForm = document.getElementById('name-form');
-const container = document.getElementById('container');
+const container = document.getElementById('container'); 
 
 const displayNameEl = document.getElementById('display-name');
-const messagesDiv = document.getElementById('messages');
+const messagesDiv = document.getElementById('messages'); 
 const messageInputDiv = document.getElementById('messageInput');
 const messageForm = document.getElementById('messageForm');
-const charCountSpan = document.getElementById('char-count');
-const charCountContainer = document.getElementById('charCountContainer');
+const charCountSpan = document.getElementById('char-count'); 
+const charCountContainer = document.getElementById('charCountContainer'); 
 
 const userListEl = document.getElementById('user-list');
 const userCountEl = document.getElementById('user-count');
-const adminUserListEl = document.getElementById('admin-user-list');
-const bannedUserListEl = document.getElementById('banned-user-list'); // Added this line
+const adminUserListEl = document.getElementById('admin-user-list'); 
 
 const adminPanelBtn = document.getElementById('adminPanelBtn');
-const adminModalEl = document.getElementById('adminPanelModal');
+const adminModalEl = document.getElementById('adminPanelModal'); 
 const renameBtn = document.getElementById('renameBtn');
 
+// Chat Context Tabs
 const publicChatTab = document.getElementById('publicChatTab');
 const adminChatTab = document.getElementById('adminChatTab');
 
+// Modal Elements for Clear History
 const clearConfirmModalEl = document.getElementById('clearConfirmModal');
 const clearConfirmModal = new bootstrap.Modal(clearConfirmModalEl);
 const clearConfirmBtn = document.getElementById('clearConfirmBtn');
 const clearConfirmTargetName = document.getElementById('clearConfirmTargetName');
 
+// Modal Elements for Kick Confirmation (Manage User)
 const kickConfirmModalEl = document.getElementById('kickConfirmModal');
 const kickConfirmModal = new bootstrap.Modal(kickConfirmModalEl);
 const kickConfirmBody = document.getElementById('kickConfirmBody');
 
+// Modal Elements for IP Ban
 const banModalEl = document.getElementById('ipBanModal');
 const banModal = new bootstrap.Modal(banModalEl);
 const banConfirmBtn = document.getElementById('banConfirmBtn');
@@ -46,22 +51,15 @@ const banDurationHoursInput = document.getElementById('banDurationHours');
 const banDurationMinutesInput = document.getElementById('banDurationMinutes');
 const banReasonInput = document.getElementById('banReason');
 
-const unbanConfirmModalEl = document.getElementById('unbanConfirmModal');
-const unbanConfirmModal = new bootstrap.Modal(unbanConfirmModalEl);
-const unbanConfirmBtn = document.getElementById('unbanConfirmBtn');
-const unbanTargetName = document.getElementById('unbanTargetName');
-
 let displayName = '';
 let isAdmin = false;
-let userToKick = null;
-let userGoogleIdToBan = null;
-let googleIdToUnban = null;
-let currentChatContext = 'public';
-let myGoogleId = null;
+let userToKick = null; 
+let userGoogleIdToBan = null; 
+let currentChatContext = 'public'; 
 const MAX_CHARS = 500;
 const ADMIN_CHAT_ID = 'admin_chat';
 
-// — Initial Setup —
+// --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
     myModal.show();
     
@@ -74,7 +72,7 @@ function initializeGoogleSignIn() {
     // Check if Google Identity Services is loaded
     if (typeof google !== 'undefined' && google.accounts) {
         google.accounts.id.initialize({
-            client_id: "48828983321-bn7hjk3clua805bb54r7mk4tjs1mjsbm.apps.googleusercontent.com",
+            client_id: "48828983321-bn7hjk3clua805bb54r7mk4tjs1mjsbm.apps.googleusercontent.com", // Replace with your actual client ID
             callback: handleGoogleLogin
         });
         
@@ -100,8 +98,8 @@ function handleGoogleLogin(response) {
     const payload = parseJwt(response.credential);
     const name = payload.name;
     const email = payload.email;
-    const googleId = payload.sub;
-    const profilePic = payload.picture;
+    const googleId = payload.sub; // Google ID
+    const profilePic = payload.picture; // Profile picture
     
     // Send to server
     socket.emit('google_login', { name, email, googleId, profilePic });
@@ -174,8 +172,8 @@ function appendMessage(msg) {
 
 // Utility: Updates the online user list for ALL clients (Public list)
 function updatePublicUserList(data) {
-    const userList = data.userList;
-    const publicUserMap = data.usersMap;
+    const userList = data.userList; // Sorted list of display names
+    const publicUserMap = data.usersMap; // Map of displayName -> { isAdmin }
     
     // 1. Public Info Panel
     userCountEl.textContent = userList.length;
@@ -214,7 +212,7 @@ function updatePublicUserList(data) {
 
 // Utility: Updates the admin management list (Admin only)
 function updateAdminManagementList(adminUsersMap) {
-    if (!isAdmin) return;
+    if (!isAdmin) return; // Should only run for admins
 
     adminUserListEl.innerHTML = ''; 
     
@@ -254,48 +252,6 @@ function updateAdminManagementList(adminUsersMap) {
     });
 }
 
-// Utility: Updates banned users list
-function updateBannedUsersList(banList) {
-    if (!isAdmin) return;
-
-    bannedUserListEl.innerHTML = '';
-
-    if (banList.length === 0) {
-        const emptyLi = document.createElement('li');
-        emptyLi.textContent = 'No banned users';
-        emptyLi.style.fontStyle = 'italic';
-        emptyLi.style.color = '#888';
-        bannedUserListEl.appendChild(emptyLi);
-        return;
-    }
-
-    banList.forEach(ban => {
-        const li = document.createElement('li');
-        const banDate = new Date(ban.banUntil);
-        const timeLeft = banDate - new Date();
-        
-        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        
-        li.innerHTML = `<strong>${ban.bannedName}</strong><br>
-                        <small>Reason: ${ban.reason}</small><br>
-                        <small>Time left: ${days}d ${hours}h ${minutes}m</small>`;
-        li.style.cursor = 'pointer';
-        li.addEventListener('click', () => {
-            googleIdToUnban = ban.googleId;
-            unbanTargetName.textContent = ban.bannedName;
-            
-            const adminModal = bootstrap.Modal.getInstance(adminModalEl);
-            if (adminModal) adminModal.hide();
-            
-            unbanConfirmModal.show();
-        });
-        
-        bannedUserListEl.appendChild(li);
-    });
-}
-
 // Utility: Switches the chat window (Public vs Admin)
 function switchChatContext(contextId) {
     if (!isAdmin && contextId === ADMIN_CHAT_ID) return;
@@ -318,7 +274,7 @@ function switchChatContext(contextId) {
     socket.emit('admin:set_context', contextId);
 }
 
-// — Event Listeners —
+// --- Event Listeners ---
 
 // 1. Handle Message Form Submission 
 messageForm.addEventListener('submit', e => {
@@ -389,6 +345,11 @@ messageForm.addEventListener('submit', e => {
                     .find(li => li.textContent.toLowerCase().includes(targetName.toLowerCase()));
                 
                 if (targetUserElement) {
+                    // Get the user's Google ID from the user list
+                    const userDisplayName = targetUserElement.textContent.split(' ')[0];
+                    const userEntry = Array.from(document.querySelectorAll('#user-list li'))
+                        .find(li => li.textContent.includes(userDisplayName));
+                    
                     // For now, we'll just show a message that the command is working
                     appendMessage({ 
                         username: 'System', 
@@ -400,7 +361,7 @@ messageForm.addEventListener('submit', e => {
                     // Send to server to actually ban
                     socket.emit('admin:google_ban_user', { 
                         targetName: targetName,
-                        targetGoogleId: targetUserElement.textContent.split(' ')[1] || '', 
+                        targetGoogleId: userEntry.textContent.split(' ')[1] || '', 
                         days: parseInt(days), 
                         hours: parseInt(hours), 
                         minutes: parseInt(minutes),
@@ -467,25 +428,7 @@ messageForm.addEventListener('submit', e => {
                 return;
             }
             
-            const sounds = [
-                'BRRRRRRT',
-                'RAT-TAT-TAT-TAT',
-                'DAKKA DAKKA DAKKA',
-                'BRRRRRAP',
-                'TAT-TAT-TAT-TAT',
-                'RATATATATATAT',
-                'BRAP BRAP BRAP',
-                'TAKKA TAKKA TAKKA'
-            ];
-            
-            let delay = 0;
-            for (let i = 0; i < 8; i++) {
-                setTimeout(() => {
-                    const sound = sounds[Math.floor(Math.random() * sounds.length)];
-                    socket.emit('chat message', { content: sound });
-                }, delay);
-                delay += 200;
-            }
+            socket.emit('admin:machinegun');
         }
         else {
              appendMessage({ username: 'System', content: `Unknown command: ${command}`, timestamp: new Date(), type: 'system' });
@@ -597,27 +540,18 @@ banConfirmBtn.addEventListener('click', () => {
     userGoogleIdToBan = null;
 });
 
-// 8. Admin: Unban Confirmation
-unbanConfirmBtn.addEventListener('click', () => {
-    if (isAdmin && googleIdToUnban) {
-        socket.emit('admin:google_unban_user', { targetGoogleId: googleIdToUnban });
-    }
-    unbanConfirmModal.hide();
-    googleIdToUnban = null;
-});
-
-// 9. Admin: Log out (Go Anonymous)
+// 8. Admin: Log out (Go Anonymous)
 document.getElementById('adminLogoutBtn').addEventListener('click', () => {
     if (isAdmin) {
         socket.emit('admin:go_anonymous');
     }
 });
 
-// 10. Chat Tab Switches
+// 9. Chat Tab Switches
 publicChatTab.addEventListener('click', () => switchChatContext('public'));
 adminChatTab.addEventListener('click', () => switchChatContext(ADMIN_CHAT_ID));
 
-// 11. Rename form submission
+// 10. Rename form submission
 document.getElementById('rename-form').addEventListener('submit', e => {
     e.preventDefault();
     const newName = document.getElementById('new-name-input').value.trim();
@@ -627,7 +561,7 @@ document.getElementById('rename-form').addEventListener('submit', e => {
     renameModal.hide();
 });
 
-// 12. Enable rename button after successful login
+// 11. Enable rename button after successful login
 renameBtn.addEventListener('click', () => {
     document.getElementById('new-name-input').value = displayName;
     renameModal.show();
@@ -756,9 +690,4 @@ socket.on('user count', data => updatePublicUserList(data));
 // Admin User Map Update (for Admin Panel management list)
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
-});
-
-// Banned Users List Update
-socket.on('ban_list_update', banList => {
-    updateBannedUsersList(banList);
 });
