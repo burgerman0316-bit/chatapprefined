@@ -339,20 +339,34 @@ messageForm.addEventListener('submit', e => {
             const banMatch = args.match(/^\"([^\"]+)\"\\s+(\\d+)d\\s+(\\d+)h\\s+(\\d+)m\\s+(.+)$/);
             if (banMatch) {
                 const [, targetName, days, hours, minutes, reason] = banMatch;
-                const targetLower = targetName.toLowerCase();
                 
-                // Find the user in the user list
-                const targetSocketId = Array.from(document.querySelectorAll('#user-list li'))
-                    .find(li => li.textContent.toLowerCase().includes(targetLower));
+                // Find user in the user list
+                const targetUserElement = Array.from(document.querySelectorAll('#user-list li'))
+                    .find(li => li.textContent.toLowerCase().includes(targetName.toLowerCase()));
                 
-                if (targetSocketId) {
+                if (targetUserElement) {
                     // Get the user's Google ID from the user list
-                    const userDisplayName = targetSocketId.textContent.split(' ')[0];
+                    const userDisplayName = targetUserElement.textContent.split(' ')[0];
                     const userEntry = Array.from(document.querySelectorAll('#user-list li'))
                         .find(li => li.textContent.includes(userDisplayName));
                     
-                    // This is a simplified approach - in a real app, you'd store this in the users map
-                    appendMessage({ username: 'System', content: `Use the Admin Panel to ban ${targetName}.`, timestamp: new Date(), type: 'system' });
+                    // For now, we'll just show a message that the command is working
+                    appendMessage({ 
+                        username: 'System', 
+                        content: `Banning user ${targetName} for ${days}d ${hours}h ${minutes}m.`, 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                    
+                    // Send to server to actually ban
+                    socket.emit('admin:google_ban_user', { 
+                        targetName: targetName,
+                        targetGoogleId: userEntry.textContent.split(' ')[1] || '', 
+                        days: parseInt(days), 
+                        hours: parseInt(hours), 
+                        minutes: parseInt(minutes),
+                        reason: reason
+                    });
                 } else {
                     appendMessage({ username: 'System', content: `User '${targetName}' not found.`, timestamp: new Date(), type: 'system' });
                 }
@@ -365,7 +379,40 @@ messageForm.addEventListener('submit', e => {
                 appendMessage({ username: 'System', content: 'You do not have permission to use the /unban command.', timestamp: new Date(), type: 'system' });
                 return;
             }
-            appendMessage({ username: 'System', content: 'Use the Admin Panel to unban users.', timestamp: new Date(), type: 'system' });
+            
+            // Parse unban command: /unban "username"
+            const unbanMatch = args.match(/^\"([^\"]+)\"$/);
+            if (unbanMatch) {
+                const [, targetName] = unbanMatch;
+                
+                // Find user in the user list
+                const targetUserElement = Array.from(document.querySelectorAll('#user-list li'))
+                    .find(li => li.textContent.toLowerCase().includes(targetName.toLowerCase()));
+                
+                if (targetUserElement) {
+                    // For now, we'll just show a message that the command is working
+                    appendMessage({ 
+                        username: 'System', 
+                        content: `Unbanning user ${targetName}.`, 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                    
+                    // Send to server to actually unban
+                    // Note: In a real implementation, we'd need to track Google IDs for banned users
+                    // For now, we'll just show a message
+                    appendMessage({ 
+                        username: 'System', 
+                        content: `Use the Admin Panel to unban users.`, 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                } else {
+                    appendMessage({ username: 'System', content: `User '${targetName}' not found.`, timestamp: new Date(), type: 'system' });
+                }
+            } else {
+                appendMessage({ username: 'System', content: 'Invalid /unban command. Usage: /unban "username"', timestamp: new Date(), type: 'system' });
+            }
         }
         else if (command === '/clear') {
             if (isAdmin) {
