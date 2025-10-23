@@ -35,6 +35,17 @@ const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip,
 const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
 const googleBanList = new Map(); // googleId -> { banUntil: Date, reason: string }
 
+// Anonymous name generator
+const ADJECTIVES = ['Swift', 'Silent', 'Mystic', 'Shadow', 'Crimson', 'Azure', 'Phantom', 'Thunder', 'Frost', 'Cosmic'];
+const NOUNS = ['Tiger', 'Eagle', 'Wolf', 'Dragon', 'Phoenix', 'Raven', 'Falcon', 'Bear', 'Panther', 'Hawk'];
+
+function generateAnonName() {
+  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
+  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
+  const num = Math.floor(Math.random() * 100);
+  return `${adj}${noun}${num}`;
+}
+
 // --- STATIC FILE SERVING ---
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
@@ -93,8 +104,8 @@ function broadcastUserCount() {
         // FIX: Include isAdmin status for all clients to see who is a moderator
         userMap[user.displayName] = { 
             isAdmin: user.isAdmin,
-            googleId: user.googleId
-            // IP address removed from public broadcast for security
+            googleId: user.googleId,
+            profilePic: user.profilePic
         };
     }
   });
@@ -103,6 +114,21 @@ function broadcastUserCount() {
   
   // This event remains for admin-only tools (it includes IP and secureName)
   io.to(STAFF_ROOM).emit('admin_user_map', Object.fromEntries(users));
+}
+
+function getBanList() {
+  const banArray = [];
+  googleBanList.forEach((value, key) => {
+    if (value.banUntil > new Date()) {
+      banArray.push({
+        googleId: key,
+        bannedName: value.bannedName || 'Unknown',
+        reason: value.reason,
+        banUntil: value.banUntil.toISOString()
+      });
+    }
+  });
+  return banArray;
 }
 
 // --- SOCKET LOGIC ---
@@ -130,7 +156,7 @@ io.on('connection', socket => {
 
   // 1. Google Login
   socket.on('google_login', userData => {
-    const { name, email, googleId } = userData;
+    const { name, email, googleId, profilePic } = userData;
     const lower = name.toLowerCase();
     
     cleanUpUser(socket.id);
@@ -151,7 +177,8 @@ io.on('connection', socket => {
         isAdmin: true,
         ip: userIp,
         chatContext: 'public',
-        googleId: googleId
+        googleId: googleId,
+        profilePic: profilePic
       });
       usernamesMap.set(lower, socket.id);
       socket.join(STAFF_ROOM);
@@ -172,6 +199,7 @@ io.on('connection', socket => {
       };
       pushHistory(publicMsg, 'public');
       io.emit('chat message', publicMsg);
+      socket.emit('ban_list_update', getBanList());
       broadcastUserCount();
     } else {
       // Regular user login
@@ -202,7 +230,8 @@ io.on('connection', socket => {
         isAdmin: false,
         ip: userIp,
         chatContext: 'public',
-        googleId: googleId
+        googleId: googleId,
+        profilePic: profilePic
       });
       usernamesMap.set(lower, socket.id);
       socket.emit('name_accepted', name);
@@ -250,7 +279,8 @@ io.on('connection', socket => {
             isAdmin: true,
             ip: userIp,
             chatContext: 'public',
-            googleId: null
+            googleId: null,
+            profilePic: null
         });
         usernamesMap.set(staffLower, socket.id);
         socket.join(STAFF_ROOM); 
@@ -265,6 +295,7 @@ io.on('connection', socket => {
         };
         pushHistory(publicMsg, 'public');
         io.emit('chat message', publicMsg);
+        socket.emit('ban_list_update', getBanList());
         broadcastUserCount();
         return;
     }
@@ -289,7 +320,8 @@ io.on('connection', socket => {
         isAdmin: false,
         ip: userIp,
         chatContext: 'public',
-        googleId: null
+        googleId: null,
+        profilePic: null
     });
     usernamesMap.set(lower, socket.id);
     socket.emit('name_accepted', name);
@@ -340,6 +372,7 @@ io.on('connection', socket => {
       content: content,
       timestamp: new Date(),
       isAdmin: user.isAdmin,
+      profilePic: user.profilePic,
       type: 'public'
     };
     
@@ -418,7 +451,7 @@ io.on('connection', socket => {
       const oldAdminName = user.displayName;
       cleanUpUser(socket.id); 
       
-      const newAnonName = `Anon_${Math.floor(Math.random() * 1000)}`;
+      const newAnonName = generateAnonName();
 
       user.isAdmin = false;
       user.displayName = newAnonName;
@@ -463,7 +496,7 @@ io.on('connection', socket => {
     const recipient = (msg.recipient || '').trim();
     const content = (msg.content || '').trim();
     if (!recipient || !content || content.length > CONTENT_MAX_CHARS) {
-      socket.emit('system_error', 'Invalid /msg command. Usage: /msg [username] [message]');
+      socket.emit('system_error', 'Invalid /msg command. Usage: /msg "username" message');
       return;
     }
     if (isContentBanned(content)) {
@@ -486,6 +519,7 @@ io.on('connection', socket => {
         timestamp: new Date(),
         isPrivate: true,
         recipient: recipient,
+        profilePic: sender.profilePic,
         type: 'private'
       };
       io.to(recSocketId).emit('chat message', messageData); 
@@ -601,7 +635,7 @@ io.on('connection', socket => {
       banUntil.setHours(banUntil.getHours() + hours);
       banUntil.setMinutes(banUntil.getMinutes() + minutes);
 
-      googleBanList.set(targetGoogleId, { banUntil, reason });
+      googleBanList.set(targetGoogleId, { banUntil, reason, bannedName: targetName });
 
       if (targetSocketId) {
           io.to(targetSocketId).emit('system_error', `You have been BANNED by Moderator ${admin.displayName} for ${days}d ${hours}h ${minutes}m (${reason}).`);
@@ -619,6 +653,7 @@ io.on('connection', socket => {
       pushHistory(banMsg, admin.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public');
       io.emit('chat message', banMsg);
       
+      io.to(STAFF_ROOM).emit('ban_list_update', getBanList());
       broadcastUserCount();
   });
 
@@ -633,11 +668,12 @@ io.on('connection', socket => {
       }
       
       if (googleBanList.has(targetGoogleId)) {
+          const bannedUser = googleBanList.get(targetGoogleId);
           googleBanList.delete(targetGoogleId);
           
           const unbanMsg = {
             username: 'System',
-            content: `Moderator ${admin.displayName} has UNBANNED a user.`,
+            content: `Moderator ${admin.displayName} has UNBANNED ${bannedUser.bannedName || 'a user'}.`,
             timestamp: new Date(),
             isAdmin: true,
             type: 'system'
@@ -645,12 +681,43 @@ io.on('connection', socket => {
           
           io.emit('chat message', unbanMsg);
           socket.emit('system_alert', 'User successfully unbanned.');
+          
+          io.to(STAFF_ROOM).emit('ban_list_update', getBanList());
       } else {
           socket.emit('system_error', 'User is not currently banned.');
       }
   });
 
-  // 12. Disconnect 
+  // 12. Admin: Machine Gun Sound
+  socket.on('admin:machinegun', () => {
+      const user = users.get(socket.id);
+      if (!user || !user.isAdmin) {
+          socket.emit('system_error', 'Unauthorized: Admin privileges required.');
+          return;
+      }
+      
+      const sounds = [
+          'BRRRRRRT',
+          'RAT-TAT-TAT-TAT',
+          'DAKKA DAKKA DAKKA',
+          'BRRRRRAP',
+          'TAT-TAT-TAT-TAT',
+          'RATATATATATAT',
+          'BRAP BRAP BRAP',
+          'TAKKA TAKKA TAKKA'
+      ];
+      
+      let delay = 0;
+      for (let i = 0; i < 8; i++) {
+          setTimeout(() => {
+              const sound = sounds[Math.floor(Math.random() * sounds.length)];
+              socket.emit('chat message', { content: sound });
+          }, delay);
+          delay += 200;
+      }
+  });
+
+  // 13. Disconnect 
   socket.on('disconnect', () => {
     const user = users.get(socket.id);
     if (!user) return;
