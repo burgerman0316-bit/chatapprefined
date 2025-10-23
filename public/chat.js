@@ -1,4 +1,4 @@
-// chat.js - Complete fixed version
+// chat.js - Complete updated version with rename feature
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
@@ -453,6 +453,31 @@ messageForm.addEventListener('submit', e => {
                 }
             } else {
                 appendMessage({ username: 'System', content: 'Invalid /unban command. Usage: /unban "username"', timestamp: new Date(), type: 'system' });
+            }
+        }
+        else if (command === '/rename') {
+            if (!isAdmin) {
+                appendMessage({ username: 'System', content: 'You do not have permission to use the /rename command.', timestamp: new Date(), type: 'system' });
+                return;
+            }
+            
+            // Parse rename command: /rename "old_name" "new_name"
+            const renameMatch = args.match(/^\"([^\\\"]+)\"\\s+\"([^\\\"]+)\"$/);
+            if (renameMatch) {
+                const [, oldName, newName] = renameMatch;
+                
+                // Find user in the user list
+                const targetUserElement = Array.from(document.querySelectorAll('#user-list li'))
+                    .find(li => li.textContent.toLowerCase().includes(oldName.toLowerCase()));
+                
+                if (targetUserElement) {
+                    // Send to server to rename user
+                    socket.emit('admin:rename_user', { oldName: oldName, newName: newName });
+                } else {
+                    appendMessage({ username: 'System', content: `User '${oldName}' not found.`, timestamp: new Date(), type: 'system' });
+                }
+            } else {
+                appendMessage({ username: 'System', content: 'Invalid /rename command. Usage: /rename "old_name" "new_name"', timestamp: new Date(), type: 'system' });
             }
         }
         else if (command === '/clear') {
