@@ -1,48 +1,42 @@
 // chat.js - Complete updated version with all features
 
-// Import the Bootstrap namespace to use its functions
-const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
-const renameModal = new bootstrap.Modal(document.getElementById('renameModal')); 
+const myModal = new bootstrap.Modal(document.getElementById('nameModal'));
+const renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
 
-// Socket connection
 const socket = io();
 
 // Elements
 const nameForm = document.getElementById('name-form');
-const container = document.getElementById('container'); 
+const container = document.getElementById('container');
 
 const displayNameEl = document.getElementById('display-name');
-const messagesDiv = document.getElementById('messages'); 
+const messagesDiv = document.getElementById('messages');
 const messageInputDiv = document.getElementById('messageInput');
 const messageForm = document.getElementById('messageForm');
-const charCountSpan = document.getElementById('char-count'); 
-const charCountContainer = document.getElementById('charCountContainer'); 
+const charCountSpan = document.getElementById('char-count');
+const charCountContainer = document.getElementById('charCountContainer');
 
 const userListEl = document.getElementById('user-list');
 const userCountEl = document.getElementById('user-count');
-const adminUserListEl = document.getElementById('admin-user-list'); 
-const bannedUserListEl = document.getElementById('banned-user-list');
+const adminUserListEl = document.getElementById('admin-user-list');
+const bannedUserListEl = document.getElementById('banned-user-list'); // Added this line
 
 const adminPanelBtn = document.getElementById('adminPanelBtn');
-const adminModalEl = document.getElementById('adminPanelModal'); 
+const adminModalEl = document.getElementById('adminPanelModal');
 const renameBtn = document.getElementById('renameBtn');
 
-// Chat Context Tabs
 const publicChatTab = document.getElementById('publicChatTab');
 const adminChatTab = document.getElementById('adminChatTab');
 
-// Modal Elements for Clear History
 const clearConfirmModalEl = document.getElementById('clearConfirmModal');
 const clearConfirmModal = new bootstrap.Modal(clearConfirmModalEl);
 const clearConfirmBtn = document.getElementById('clearConfirmBtn');
 const clearConfirmTargetName = document.getElementById('clearConfirmTargetName');
 
-// Modal Elements for Kick Confirmation (Manage User)
 const kickConfirmModalEl = document.getElementById('kickConfirmModal');
 const kickConfirmModal = new bootstrap.Modal(kickConfirmModalEl);
 const kickConfirmBody = document.getElementById('kickConfirmBody');
 
-// Modal Elements for IP Ban
 const banModalEl = document.getElementById('ipBanModal');
 const banModal = new bootstrap.Modal(banModalEl);
 const banConfirmBtn = document.getElementById('banConfirmBtn');
@@ -52,7 +46,6 @@ const banDurationHoursInput = document.getElementById('banDurationHours');
 const banDurationMinutesInput = document.getElementById('banDurationMinutes');
 const banReasonInput = document.getElementById('banReason');
 
-// Modal Elements for Unban Confirmation
 const unbanConfirmModalEl = document.getElementById('unbanConfirmModal');
 const unbanConfirmModal = new bootstrap.Modal(unbanConfirmModalEl);
 const unbanConfirmBtn = document.getElementById('unbanConfirmBtn');
@@ -60,15 +53,15 @@ const unbanTargetName = document.getElementById('unbanTargetName');
 
 let displayName = '';
 let isAdmin = false;
-let userToKick = null; 
-let userGoogleIdToBan = null; 
+let userToKick = null;
+let userGoogleIdToBan = null;
 let googleIdToUnban = null;
-let currentChatContext = 'public'; 
+let currentChatContext = 'public';
 let myGoogleId = null;
 const MAX_CHARS = 500;
 const ADMIN_CHAT_ID = 'admin_chat';
 
-// --- Initial Setup ---
+// — Initial Setup —
 document.addEventListener('DOMContentLoaded', () => {
     myModal.show();
     
@@ -81,7 +74,7 @@ function initializeGoogleSignIn() {
     // Check if Google Identity Services is loaded
     if (typeof google !== 'undefined' && google.accounts) {
         google.accounts.id.initialize({
-            client_id: "48828983321-bn7hjk3clua805bb54r7mk4tjs1mjsbm.apps.googleusercontent.com", // Replace with your actual client ID
+            client_id: "48828983321-bn7hjk3clua805bb54r7mk4tjs1mjsbm.apps.googleusercontent.com",
             callback: handleGoogleLogin
         });
         
@@ -107,8 +100,8 @@ function handleGoogleLogin(response) {
     const payload = parseJwt(response.credential);
     const name = payload.name;
     const email = payload.email;
-    const googleId = payload.sub; // Google ID
-    const profilePic = payload.picture; // Profile picture
+    const googleId = payload.sub;
+    const profilePic = payload.picture;
     
     // Send to server
     socket.emit('google_login', { name, email, googleId, profilePic });
@@ -181,8 +174,8 @@ function appendMessage(msg) {
 
 // Utility: Updates the online user list for ALL clients (Public list)
 function updatePublicUserList(data) {
-    const userList = data.userList; // Sorted list of display names
-    const publicUserMap = data.usersMap; // Map of displayName -> { isAdmin }
+    const userList = data.userList;
+    const publicUserMap = data.usersMap;
     
     // 1. Public Info Panel
     userCountEl.textContent = userList.length;
@@ -221,7 +214,7 @@ function updatePublicUserList(data) {
 
 // Utility: Updates the admin management list (Admin only)
 function updateAdminManagementList(adminUsersMap) {
-    if (!isAdmin) return; // Should only run for admins
+    if (!isAdmin) return;
 
     adminUserListEl.innerHTML = ''; 
     
@@ -325,7 +318,7 @@ function switchChatContext(contextId) {
     socket.emit('admin:set_context', contextId);
 }
 
-// --- Event Listeners ---
+// — Event Listeners —
 
 // 1. Handle Message Form Submission 
 messageForm.addEventListener('submit', e => {
