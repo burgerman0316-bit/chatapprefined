@@ -302,7 +302,7 @@ function updateBannedUserList(banList) {
     li.addEventListener("click", () => {
       const name = ban.bannedName || "this user";
       if (confirm(`Unban ${name}?`)) {
-        socket.emit("admingoogleunbanuser", {
+        socket.emit("admin:google_unban_user", {
           targetGoogleId: li.dataset.googleId,
         });
       }
@@ -317,6 +317,17 @@ function updateBannedUserList(banList) {
 function switchChatContext(contextId) {
     if (contextId === currentChatContext) return;
     if (!isAdmin && contextId === ADMIN_CHAT_ID) return;
+    
+    // Check if user can access admin chat
+    if (contextId === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+        appendMessage({ 
+            username: 'System', 
+            content: 'You are not authorized to access admin chat.', 
+            timestamp: new Date(), 
+            type: 'system' 
+        });
+        return;
+    }
     
     currentChatContext = contextId;
     messagesDiv.innerHTML = ''; 
@@ -367,7 +378,7 @@ messageForm.addEventListener('submit', e => {
                 }
             } else {
                 // Old method for backwards compatibility
-                const match = args.match(/^(\\S+)\\s+(.*)/s);
+                const match = args.match(/^(\S+)\s+(.*)/s);
                 if (match) {
                     recipient = match[1];
                     dmContent = match[2];
@@ -385,6 +396,18 @@ messageForm.addEventListener('submit', e => {
                  appendMessage({ username: 'System', content: 'You do not have permission to use the /kick command.', timestamp: new Date(), type: 'system' });
                  return;
             }
+            
+            // Check if user can access admin chat
+            if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'You are not authorized to use /kick in admin chat.', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+                return;
+            }
+            
             if (args) {
                 socket.emit('admin:kick_user', { targetName: args });
             } else {
@@ -397,8 +420,19 @@ messageForm.addEventListener('submit', e => {
                 return;
             }
             
+            // Check if user can access admin chat
+            if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'You are not authorized to use /ban in admin chat.', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+                return;
+            }
+            
             // Parse ban command: /ban "username" 0d 0h 30m reason
-            const banMatch = args.match(/^\"([^\"]+)\"\\s+(\\d+)d\\s+(\\d+)h\\s+(\\d+)m\\s+(.+)$/);
+            const banMatch = args.match(/^\"([^\\\"]+)\"\\s+(\\d+)d\\s+(\\d+)h\\s+(\\d+)m\\s+(.+)$/);
             if (banMatch) {
                 const [, targetName, days, hours, minutes, reason] = banMatch;
                 
@@ -442,6 +476,17 @@ messageForm.addEventListener('submit', e => {
                 return;
             }
             
+            // Check if user can access admin chat
+            if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'You are not authorized to use /unban in admin chat.', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+                return;
+            }
+            
             // Parse unban command: /unban "username"
             const unbanMatch = args.match(/^\"([^\\\"]+)\"$/);
             if (unbanMatch) {
@@ -479,8 +524,19 @@ messageForm.addEventListener('submit', e => {
                 return;
             }
             
+            // Check if user can access admin chat
+            if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'You are not authorized to use /rename in admin chat.', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+                return;
+            }
+            
             // Parse rename command: /rename "old_name" "new_name"
-            const renameMatch = args.match(/^\"([^\"]+)\"\\s+\"([^\"]+)\"$/);
+            const renameMatch = args.match(/^\"([^\\\"]+)\"\\s+\"([^\\\"]+)\"$/);
             if (renameMatch) {
                 const [, oldName, newName] = renameMatch;
                 
@@ -500,8 +556,18 @@ messageForm.addEventListener('submit', e => {
         }
         else if (command === '/clear') {
             if (isAdmin) {
-                 clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';
-                 clearConfirmModal.show();
+                // Check if user can access admin chat
+                if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+                    appendMessage({ 
+                        username: 'System', 
+                        content: 'You are not authorized to clear admin chat.', 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                    return;
+                }
+                clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';
+                clearConfirmModal.show();
             } else {
                 appendMessage({ username: 'System', content: 'You do not have permission to use the /clear command.', timestamp: new Date(), type: 'system' });
             }
@@ -513,6 +579,17 @@ messageForm.addEventListener('submit', e => {
                 return;
             }
             
+            // Check if user can access admin chat
+            if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'You are not authorized to use /machinegun in admin chat.', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+                return;
+            }
+            
             socket.emit('admin:machinegun');
         }
         else {
@@ -520,6 +597,16 @@ messageForm.addEventListener('submit', e => {
         }
     } else {
         // Regular public/admin chat message
+        // Check if user can access admin chat
+        if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+            appendMessage({ 
+                username: 'System', 
+                content: 'You are not authorized to send messages in admin chat.', 
+                timestamp: new Date(), 
+                type: 'system' 
+            });
+            return;
+        }
         socket.emit('chat message', { content }); 
     }
 });
@@ -558,6 +645,16 @@ messageInputDiv.addEventListener('keydown', e => {
 
 // 3. Admin Panel Button Handlers
 document.getElementById('clearChatBtn').addEventListener('click', () => {
+    // Check if user can access admin chat
+    if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+        appendMessage({ 
+            username: 'System', 
+            content: 'You are not authorized to clear admin chat.', 
+            timestamp: new Date(), 
+            type: 'system' 
+        });
+        return;
+    }
     clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';
     clearConfirmModal.show();
     const adminModal = bootstrap.Modal.getInstance(adminModalEl);
@@ -786,4 +883,3 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
-
