@@ -398,7 +398,7 @@ messageForm.addEventListener('submit', e => {
             }
             
             // Parse ban command: /ban "username" 0d 0h 30m reason
-            const banMatch = args.match(/^\"([^\\\"]+)\"\\s+(\\d+)d\\s+(\\d+)h\\s+(\\d+)m\\s+(.+)$/);
+            const banMatch = args.match(/^"([^"]+)"\s+(\d+)d\s+(\d+)h\s+(\d+)m\s+(.+)$/);
             if (banMatch) {
                 const [, targetName, days, hours, minutes, reason] = banMatch;
                 
@@ -784,6 +784,7 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
 
 
 
