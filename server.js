@@ -14,10 +14,15 @@ const STAFF_ROOM = 'staff_room';
 const ADMIN_CHAT_ID = 'admin_chat'; 
 const MAX_HISTORY = 100;
 const CONTENT_MAX_CHARS = 10000; 
-const BANNED_WORDS = ['hitler', 'swear', 'badword', 'bannedword', 'adminchat', '67'];
+const BANNED_WORDS = ['hitler', 'swear', 'badword', 'bannedword', 'adminchat'];
 
 // Staff accounts - NOTE: LoginName is the SECURE password/key
 const STAFF_LIST = [
+  // { loginName: 'hfdskLshkdgdibIdsjfkbdAshfjhsfdshfjMdjsbfhd', displayName: 'Liam Stern' },
+  // { loginName: 'hfsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh', displayName: 'Diesel Carter' },
+  // { loginName: 'hbjrhfjRnjkfdvjkIfhdCnjfkdnjKjndksdjkfjdkdy', displayName: 'Ricky Martinez' },
+  // { loginName: 'hdufAhudsAifhudiRsfOuidsuNfdsmklfdskfdndsjk', displayName: 'Aaron Ortega' },
+  // { loginName: 'dnjsDkfjdsOfjdNsfjdOksfjVkdAsnfNjdsnfjkdkfd', displayName: 'Donovan Powell' },
   { loginName: 'Liam Stern', displayName: 'Liam Stern' },
   { loginName: 'Diesel Carter', displayName: 'Diesel Carter' },
   { loginName: 'Ricardo Martinez', displayName: 'Ricky Martinez' },
@@ -26,6 +31,12 @@ const STAFF_LIST = [
   { loginName: 'Blake Stanley', displayName: 'Blake Stanley' },
   { loginName: 'Ashaz Adil', displayName: 'Ashaz Adil' }
 ];
+
+// Add a special property to track which users can only ban one person
+const LIMITED_BAN_USERS = {
+  'Blake Stanley': 'Ashaz Adil',
+  'Ashaz Adil': 'Blake Stanley'
+};
 
 const chatHistory = [];
 const adminChatHistory = []; 
@@ -581,6 +592,15 @@ io.on('connection', socket => {
           return;
       }
       
+      // Check if user has limited ban permissions
+      if (LIMITED_BAN_USERS[admin.displayName]) {
+          const allowedTarget = LIMITED_BAN_USERS[admin.displayName];
+          if (targetName !== allowedTarget) {
+              socket.emit('system_error', `${admin.displayName} can only ban ${allowedTarget}.`);
+              return;
+          }
+      }
+      
       const targetLower = targetName.toLowerCase();
       const targetSocketId = usernamesMap.get(targetLower);
       const targetUser = users.get(targetSocketId);
@@ -626,6 +646,16 @@ io.on('connection', socket => {
           socket.emit('system_error', 'Ban failed: Unauthorized or missing Google ID.');
           return;
       }
+      
+      // Check if user has limited ban permissions
+      if (LIMITED_BAN_USERS[admin.displayName]) {
+          const allowedTarget = LIMITED_BAN_USERS[admin.displayName];
+          if (targetName !== allowedTarget) {
+              socket.emit('system_error', `${admin.displayName} can only ban ${allowedTarget}.`);
+              return;
+          }
+      }
+      
       if (days === 0 && hours === 0 && minutes === 0) {
           socket.emit('system_error', 'Ban duration must be greater than zero.');
           return;
@@ -779,13 +809,6 @@ io.on('connection', socket => {
       socket.emit('system_error', 'Unauthorized: Admin privileges required.');
       return;
     }
-    
-    // Check if user is Liam Stern or Diesel Carter
-    if (admin.displayName !== 'Liam Stern' && admin.displayName !== 'Diesel Carter') {
-        socket.emit('system_error', 'Unauthorized: Only Liam or Diesel can use this command.');
-        return;
-    }
-    
     if (!oldName || !newName) {
       socket.emit('system_error', 'Rename failed: Invalid parameters.');
       return;
@@ -843,12 +866,6 @@ io.on('connection', socket => {
         return;
     }
     
-    // Check if user is Liam Stern or Diesel Carter
-    if (user.displayName !== 'Liam Stern' && user.displayName !== 'Diesel Carter') {
-        socket.emit('system_error', 'Unauthorized: Only Liam or Diesel can use this command.');
-        return;
-    }
-    
     const sounds = [
         'BRRRRRR'
     ];
@@ -898,9 +915,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
-
-
-
-
-
