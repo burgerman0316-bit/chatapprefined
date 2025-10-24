@@ -38,15 +38,27 @@ const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
 const googleBanList = new Map(); // googleId -> { banUntil: Date, reason: string }
 
 // Anonymous name generator
-const ADJECTIVES = ['Swift', 'Silent', 'Mystic', 'Shadow', 'Crimson', 'Azure', 'Phantom', 'Thunder', 'Frost', 'Cosmic'];
-const NOUNS = ['Tiger', 'Eagle', 'Wolf', 'Dragon', 'Phoenix', 'Raven', 'Falcon', 'Bear', 'Panther', 'Hawk'];
+const FIRST_NAMES = [
+  "Ethan", "Olivia", "Noah", "Sophia", "Liam",
+  "Ava", "Mason", "Isabella", "Lucas", "Mia",
+  "Logan", "Harper", "Jackson", "Amelia", "Aiden",
+  "Evelyn", "Caleb", "Abigail", "Henry", "Ella"
+];
+
+const LAST_NAMES = [
+  "Smith", "Johnson", "Brown", "Garcia", "Martinez",
+  "Davis", "Lopez", "Wilson", "Anderson", "Clark",
+  "Taylor", "Lewis", "Walker", "Allen", "Young",
+  "King", "Wright", "Scott", "Torres", "Hill"
+];
 
 function generateAnonName() {
-  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
-  const noun = NOUNS[Math.floor(Math.random() * NOUNS.length)];
-  const num = Math.floor(Math.random() * 100);
-  return `${adj}${noun}${num}`;
+  const first = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+  const last = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+  const num = Math.floor(Math.random() * 1000); // optional to ensure uniqueness
+  return `${first} ${last}${num}`;
 }
+
 
 // --- STATIC FILE SERVING ---
 app.use(express.static(path.join(__dirname, 'public')));
@@ -747,5 +759,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
