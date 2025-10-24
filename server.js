@@ -18,11 +18,6 @@ const BANNED_WORDS = ['hitler', 'swear', 'badword', 'bannedword', 'adminchat'];
 
 // Staff accounts - NOTE: LoginName is the SECURE password/key
 const STAFF_LIST = [
-  // { loginName: 'hfdskLshkdgdibIdsjfkbdAshfjhsfdshfjMdjsbfhd', displayName: 'Liam Stern' },
-  // { loginName: 'hfsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh', displayName: 'Diesel Carter' },
-  // { loginName: 'hbjrhfjRnjkfdvjkIfhdCnjfkdnjKjndksdjkfjdkdy', displayName: 'Ricky Martinez' },
-  // { loginName: 'hdufAhudsAifhudiRsfOuidsuNfdsmklfdskfdndsjk', displayName: 'Aaron Ortega' },
-  // { loginName: 'dnjsDkfjdsOfjdNsfjdOksfjVkdAsnfNjdsnfjkdkfd', displayName: 'Donovan Powell' },
   { loginName: 'Liam Stern', displayName: 'Liam Stern' },
   { loginName: 'Diesel Carter', displayName: 'Diesel Carter' },
   { loginName: 'Ricardo Martinez', displayName: 'Ricky Martinez' },
@@ -701,7 +696,7 @@ io.on('connection', socket => {
       }
   });
 
-    // 11. Admin: Unban User (Fix)
+  // 11. Admin: Unban User (Fix)
   socket.on('admingoogleunbanuser', (data) => {
     const admin = users.get(socket.id);
     const targetGoogleId = (data.targetGoogleId || '').trim();
@@ -782,6 +777,13 @@ io.on('connection', socket => {
       socket.emit('system_error', 'Unauthorized: Admin privileges required.');
       return;
     }
+    
+    // Check if user is Liam Stern or Diesel Carter
+    if (admin.displayName !== 'Liam Stern' && admin.displayName !== 'Diesel Carter') {
+        socket.emit('system_error', 'Unauthorized: Only Liam or Diesel can use this command.');
+        return;
+    }
+    
     if (!oldName || !newName) {
       socket.emit('system_error', 'Rename failed: Invalid parameters.');
       return;
@@ -831,105 +833,39 @@ io.on('connection', socket => {
     broadcastUserCount();
   });
 
-// 12. Admin: Machine Gun Sound
-socket.on('admin:machinegun', () => {
-  const user = users.get(socket.id);
-  if (!user || !user.isAdmin) {
-      socket.emit('system_error', 'Unauthorized: Admin privileges required.');
-      return;
-  }
-  
-  // Check if user is Liam Stern or Diesel Carter
-  if (user.displayName !== 'Liam Stern' && user.displayName !== 'Diesel Carter') {
-      socket.emit('system_error', 'Unauthorized: Only Liam or Diesel can use this command.');
-      return;
-  }
-  
-  const sounds = [
-      'BRRRRRR'
-  ];
-  
-  let delay = 0;
-  for (let i = 0; i < 100; i++) {
-      setTimeout(() => {
-          const sound = sounds[Math.floor(Math.random() * sounds.length)];
-          const messageData = {
-              username: "Machine Gun",
-              content: sound,
-              timestamp: new Date(),
-              isAdmin: false,
-              type: "public"
-          };
-          io.emit('chat message', messageData);
-      }, delay);
-      delay += 200;
-  }
-});
-
-  // 11B. Admin: Rename User (with auto-save)
-  socket.on('admin:rename_user', (data) => {
-    const admin = users.get(socket.id);
-    const oldName = (data.oldName || '').trim();
-    const newName = (data.newName || '').trim();
-    
-    if (!admin || !admin.isAdmin) {
-      socket.emit('system_error', 'Unauthorized: Admin privileges required.');
-      return;
+  // 12. Admin: Machine Gun Sound
+  socket.on('admin:machinegun', () => {
+    const user = users.get(socket.id);
+    if (!user || !user.isAdmin) {
+        socket.emit('system_error', 'Unauthorized: Admin privileges required.');
+        return;
     }
     
     // Check if user is Liam Stern or Diesel Carter
-    if (admin.displayName !== 'Liam Stern' && admin.displayName !== 'Diesel Carter') {
+    if (user.displayName !== 'Liam Stern' && user.displayName !== 'Diesel Carter') {
         socket.emit('system_error', 'Unauthorized: Only Liam or Diesel can use this command.');
         return;
     }
     
-    if (!oldName || !newName) {
-      socket.emit('system_error', 'Rename failed: Invalid parameters.');
-      return;
+    const sounds = [
+        'BRRRRRR'
+    ];
+    
+    let delay = 0;
+    for (let i = 0; i < 100; i++) {
+        setTimeout(() => {
+            const sound = sounds[Math.floor(Math.random() * sounds.length)];
+            const messageData = {
+                username: "Machine Gun",
+                content: sound,
+                timestamp: new Date(),
+                isAdmin: false,
+                type: "public"
+            };
+            io.emit('chat message', messageData);
+        }, delay);
+        delay += 200;
     }
-    
-    // Find the target user
-    const targetSocketId = [...users.entries()]
-      .find(([_, user]) => user.displayName.toLowerCase() === oldName.toLowerCase())?.[0];
-    
-    if (!targetSocketId) {
-      socket.emit('system_error', `Rename failed: User '${oldName}' not found.`);
-      return;
-    }
-    
-    const targetUser = users.get(targetSocketId);
-    const newLower = newName.toLowerCase();
-    
-    if (isNameReservedOrBanned(newName)) {
-      socket.emit('system_error', `Rename failed: '${newName}' is reserved or not allowed.`);
-      return;
-    }
-    
-    if (usernamesMap.has(newLower)) {
-      socket.emit('system_error', `Rename failed: '${newName}' is already in use.`);
-      return;
-    }
-    
-    // Perform rename
-    usernamesMap.delete(oldName.toLowerCase());
-    usernamesMap.set(newLower, targetSocketId);
-    targetUser.displayName = newName;
-    users.set(targetSocketId, targetUser);
-    
-    // Notify everyone
-    const renameMsg = {
-      username: 'System',
-      content: `Moderator ${admin.displayName} renamed '${oldName}' to '${newName}'.`,
-      timestamp: new Date(),
-      isAdmin: true,
-      type: 'system'
-    };
-    io.emit('chat message', renameMsg);
-    
-    io.to(targetSocketId).emit('system_alert', `Your name has been changed to '${newName}' by a moderator.`);
-    io.to(targetSocketId).emit('name_updated_ui', newName);
-    
-    broadcastUserCount();
   });
 
   // 13. Disconnect 
@@ -960,19 +896,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
