@@ -121,7 +121,7 @@ function appendMessage(msg) {
     item.classList.add('msg');
     
     const time = new Date(msg.timestamp);
-    const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); 
     const timeHtml = `<span class="timestamp">${timeString}</span>`; 
 
     if (msg.type === 'system') {
@@ -398,7 +398,7 @@ messageForm.addEventListener('submit', e => {
             }
             
             // Parse ban command: /ban "username" 0d 0h 30m reason
-            const banMatch = args.match(/^"([^"]+)"\s+(\d+)d\s+(\d+)h\s+(\d+)m\s+(.+)$/);
+            const banMatch = args.match(/^\"([^\"]+)\"\\s+(\\d+)d\\s+(\\d+)h\\s+(\\d+)m\\s+(.+)$/);
             if (banMatch) {
                 const [, targetName, days, hours, minutes, reason] = banMatch;
                 
@@ -473,13 +473,14 @@ messageForm.addEventListener('submit', e => {
             }
         }
         else if (command === '/rename') {
-            if (!isAdmin) {
+            // Check if user is Liam Stern or Diesel Carter
+            if (!isAdmin || (displayName !== 'Liam Stern' && displayName !== 'Diesel Carter')) {
                 appendMessage({ username: 'System', content: 'You do not have permission to use the /rename command.', timestamp: new Date(), type: 'system' });
                 return;
             }
             
             // Parse rename command: /rename "old_name" "new_name"
-            const renameMatch = args.match(/^"([^"]+)"\s+"([^"]+)"$/);
+            const renameMatch = args.match(/^\"([^\"]+)\"\\s+\"([^\"]+)\"$/);
             if (renameMatch) {
                 const [, oldName, newName] = renameMatch;
                 
@@ -506,7 +507,8 @@ messageForm.addEventListener('submit', e => {
             }
         }
         else if (command === '/machinegun') {
-            if (!isAdmin) {
+            // Check if user is Liam Stern or Diesel Carter
+            if (!isAdmin || (displayName !== 'Liam Stern' && displayName !== 'Diesel Carter')) {
                 appendMessage({ username: 'System', content: 'You do not have permission to use the /machinegun command.', timestamp: new Date(), type: 'system' });
                 return;
             }
@@ -784,10 +786,3 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
-
-
-
-
-
-
-
