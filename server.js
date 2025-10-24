@@ -772,6 +772,71 @@ io.on('connection', socket => {
     }
   });
 
+  // 11B. Admin: Rename User
+  socket.on('admin:rename_user', (data) => {
+    const admin = users.get(socket.id);
+    const oldName = (data.oldName || '').trim();
+    const newName = (data.newName || '').trim();
+  
+    // Security checks
+    if (!admin || !admin.isAdmin) {
+      socket.emit('system_error', 'Unauthorized: Admin privileges required.');
+      return;
+    }
+    if (!oldName || !newName) {
+      socket.emit('system_error', 'Rename failed: Invalid parameters.');
+      return;
+    }
+  
+    // Find user by current display name
+    const targetSocketId = [...users.entries()]
+      .find(([_, user]) => user.displayName.toLowerCase() === oldName.toLowerCase())?.[0];
+  
+    if (!targetSocketId) {
+      socket.emit('system_error', `Rename failed: User '${oldName}' not found.`);
+      return;
+    }
+  
+    const targetUser = users.get(targetSocketId);
+    const newLower = newName.toLowerCase();
+  
+    // Validate if new name is allowed
+    if (isNameReservedOrBanned(newName)) {
+      socket.emit('system_error', `Rename failed: '${newName}' is reserved or not allowed.`);
+      return;
+    }
+  
+    if (usernamesMap.has(newLower)) {
+      socket.emit('system_error', `Rename failed: '${newName}' is already in use.`);
+      return;
+    }
+  
+    // Proceed with rename
+    usernamesMap.delete(oldName.toLowerCase());
+    usernamesMap.set(newLower, targetSocketId);
+    targetUser.displayName = newName;
+    users.set(targetSocketId, targetUser);
+  
+    // Notify all clients
+    const renameMsg = {
+      username: 'System',
+      content: `Moderator ${admin.displayName} renamed '${oldName}' to '${newName}'.`,
+      timestamp: new Date(),
+      isAdmin: true,
+      type: 'system',
+    };
+  
+    io.emit('chat message', renameMsg);
+  
+    // Notify rename target
+    io.to(targetSocketId).emit('system_alert', `Your name has been changed to '${newName}' by a moderator.`);
+    io.to(targetSocketId).emit('name_updated_ui', newName);
+  
+    // Refresh user counts/maps
+    broadcastUserCount();
+  });
+
+
   // 12. Admin: Machine Gun Sound
     socket.on('admin:machinegun', () => {
       const user = users.get(socket.id);
@@ -829,6 +894,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
