@@ -173,6 +173,13 @@ io.on('connection', socket => {
   socket.on('google_login', userData => {
     const { name, email, googleId, profilePic } = userData;
     const lower = name.toLowerCase();
+
+    // Rename check: if a user has been renamed before, apply their stored new name
+    const renameRecord = renamedUsersArray.find(r => r.oldName.toLowerCase() === name.toLowerCase());
+    if (renameRecord) {
+      console.log(`Auto-renaming returning user ${name} -> ${renameRecord.newName}`);
+      name = renameRecord.newName;
+    }
     
     cleanUpUser(socket.id);
     
@@ -774,13 +781,12 @@ io.on('connection', socket => {
     }
   });
 
-    // 11B. Admin: Rename User
+   // 11B. Admin: Rename User (with auto-save)
   socket.on('admin:rename_user', (data) => {
     const admin = users.get(socket.id);
     const oldName = (data.oldName || '').trim();
     const newName = (data.newName || '').trim();
   
-    // Safety / validation
     if (!admin || !admin.isAdmin) {
       socket.emit('system_error', 'Unauthorized: Admin privileges required.');
       return;
@@ -790,7 +796,7 @@ io.on('connection', socket => {
       return;
     }
   
-    // Find the target user by their display name
+    // Find the target user
     const targetSocketId = [...users.entries()]
       .find(([_, user]) => user.displayName.toLowerCase() === oldName.toLowerCase())?.[0];
   
@@ -812,27 +818,33 @@ io.on('connection', socket => {
       return;
     }
   
-    // Perform the rename in server memory
+    // Perform rename
     usernamesMap.delete(oldName.toLowerCase());
     usernamesMap.set(newLower, targetSocketId);
     targetUser.displayName = newName;
     users.set(targetSocketId, targetUser);
   
-    // Notify all users in chat
+    // Save rename to persistent array
+    const existing = renamedUsersArray.find(r => r.oldName.toLowerCase() === oldName.toLowerCase());
+    if (existing) {
+      existing.newName = newName;
+    } else {
+      renamedUsersArray.push({ oldName, newName });
+    }
+  
+    // Notify everyone
     const renameMsg = {
       username: 'System',
-      content: `Moderator ${admin.displayName} has renamed '${oldName}' to '${newName}'.`,
+      content: `Moderator ${admin.displayName} renamed '${oldName}' to '${newName}'.`,
       timestamp: new Date(),
       isAdmin: true,
       type: 'system'
     };
     io.emit('chat message', renameMsg);
   
-    // Notify the renamed user
     io.to(targetSocketId).emit('system_alert', `Your name has been changed to '${newName}' by a moderator.`);
     io.to(targetSocketId).emit('name_updated_ui', newName);
   
-    // Update the user list for everyone
     broadcastUserCount();
   });
 
@@ -893,6 +905,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
