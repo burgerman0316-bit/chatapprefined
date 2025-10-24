@@ -32,6 +32,7 @@ const STAFF_LIST = [
 
 const chatHistory = [];
 const adminChatHistory = []; 
+const renamedUsersArray = []; 
 
 const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext, googleId }
 const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
@@ -892,6 +893,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
