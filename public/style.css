@@ -454,6 +454,21 @@ body {
     justify-content: center;
     align-items: center;
 }
+/* Remove default Google button background but keep the logo */
+.google-login-icon iframe {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* Optional: make it circular like an icon */
+.google-login-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+}
 
 /* Chat Tab Buttons */
 .chat-tabs {
@@ -521,4 +536,5 @@ body {
     font-size: 0.85em;
     color: #ccc;
 }
+
 
