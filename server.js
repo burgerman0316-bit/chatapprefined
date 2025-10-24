@@ -691,38 +691,32 @@ io.on('connection', socket => {
   });
 
   // 12. Admin: Machine Gun Sound
-  socket.on("adminmachinegun", () => {
-  const user = users.get(socket.id);
-  if (!user || !user.isAdmin) {
-    socket.emit("systemerror", "Unauthorized Admin privileges required.");
-    return;
-  }
-
-  const sounds = ["BRRRRRR", "RATATAT", "TKTKTK", "BANG!", "PEW!"];
-  let delay = 0;
-
-  for (let i = 0; i < 30; i++) {
-    setTimeout(() => {
-      const sound = sounds[Math.floor(Math.random() * sounds.length)];
-      const messageData = {
-        username: user.displayName,
-        content: sound,
-        timestamp: new Date(),
-        isAdmin: user.isAdmin,
-        profilePic: user.profilePic,
-        type: "public"
-      };
-
-      // Save to chat history
-      pushHistory(messageData, "public");
-
-      // Broadcast publicly to everyone including sender
-      io.emit("chat message", messageData);
-    }, delay);
-    delay += 150;
-  }
-});
-
+  socket.on('admin:machinegun', () => {
+      const user = users.get(socket.id);
+      if (!user || !user.isAdmin) {
+          socket.emit('system_error', 'Unauthorized: Admin privileges required.');
+          return;
+      }
+      
+      const sounds = [
+          'BRRRRRR'
+      ];
+      
+      let delay = 0;
+      for (let i = 0; i < 100; i++) {
+          setTimeout(() => {
+              const sound = sounds[Math.floor(Math.random() * sounds.length)];
+              const messageData = {
+                username: user.displayName,
+                content: sound,
+                timestamp: new Date(),
+                isAdmin: true,
+                type: "public"
+            };
+          }, delay);
+          delay += 200;
+      }
+  });
 
   // 13. Disconnect 
   socket.on('disconnect', () => {
@@ -752,8 +746,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
-
-
-
-
