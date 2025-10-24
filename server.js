@@ -691,7 +691,7 @@ io.on('connection', socket => {
   });
 
   // 12. Admin: Machine Gun Sound
-  socket.on('admin:machinegun', () => {
+    socket.on('admin:machinegun', () => {
       const user = users.get(socket.id);
       if (!user || !user.isAdmin) {
           socket.emit('system_error', 'Unauthorized: Admin privileges required.');
@@ -707,12 +707,13 @@ io.on('connection', socket => {
           setTimeout(() => {
               const sound = sounds[Math.floor(Math.random() * sounds.length)];
               const messageData = {
-                username: user.displayName,
-                content: sound,
-                timestamp: new Date(),
-                isAdmin: true,
-                type: "public"
-            };
+                  username: user.displayName,
+                  content: sound,
+                  timestamp: new Date(),
+                  isAdmin: true,
+                  type: "public"
+              };
+              io.emit('chat message', messageData); // <-- This line sends the message
           }, delay);
           delay += 200;
       }
@@ -746,3 +747,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
