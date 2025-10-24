@@ -23,7 +23,7 @@ const STAFF_LIST = [
   { loginName: 'Ricardo Martinez', displayName: 'Ricky Martinez' },
   { loginName: 'Aaron Ortega', displayName: 'Aaron Ortega' },
   { loginName: 'Donovan Powell', displayName: 'Donovan Powell' },
-  { loginName: 'Blake Stanley', displayName: 'blake' }
+  { loginName: 'Blake Stanley', displayName: 'Blake Stanley' }
 ];
 
 const chatHistory = [];
@@ -897,4 +897,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
