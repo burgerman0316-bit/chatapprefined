@@ -179,6 +179,7 @@ io.on('connection', socket => {
     if (renameRecord) {
       console.log(`Auto-renaming returning user ${name} -> ${renameRecord.newName}`);
       name = renameRecord.newName;
+      lower = name.toLowerCase();
     }
     
     cleanUpUser(socket.id);
@@ -275,6 +276,13 @@ io.on('connection', socket => {
   socket.on('check_staff_status', enteredName => {
     const name = (enteredName || '').trim();
     const lower = name.toLowerCase();
+
+    const renameRecord = renamedUsersArray.find(r => r.oldName.toLowerCase() === name.toLowerCase());
+    if (renameRecord) {
+      console.log(`Auto-renaming returning user ${name} -> ${renameRecord.newName}`);
+      name = renameRecord.newName;
+      lower = name.toLowerCase();
+    }
 
     cleanUpUser(socket.id); 
 
@@ -905,6 +913,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
