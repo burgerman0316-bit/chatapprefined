@@ -255,38 +255,63 @@ function updateAdminManagementList(adminUsersMap) {
 
 // Utility: Updates the banned users list
 function updateBannedUserList(banList) {
-    bannedUserListEl.innerHTML = '';
-    if (!banList || banList.length === 0) {
-        const li = document.createElement('li');
-        li.id = 'no-bans-message';
-        li.textContent = 'No banned users';
-        li.classList.add('text-muted', 'text-center');
-        bannedUserListEl.appendChild(li);
-        return;
-    }
+  const bannedUserListEl = document.getElementById("banned-user-list");
+  if (!bannedUserListEl) return;
+  bannedUserListEl.innerHTML = "";
 
-    banList.forEach(ban => {
-        const li = document.createElement('li');
-        li.style.cursor = 'pointer';
-        const banUntil = new Date(ban.banUntil);
-        const timeRemaining = banUntil - new Date();
-        // Convert timeRemaining to hours and minutes if needed...
+  // No banned users message
+  if (!banList || banList.length === 0) {
+    const li = document.createElement("li");
+    li.id = "no-bans-message";
+    li.textContent = "No banned users";
+    li.className = "text-muted text-center";
+    bannedUserListEl.appendChild(li);
+    return;
+  }
 
-        li.innerHTML = `<strong>${ban.bannedName || 'Unknown'}</strong> <span class="ban-info">${/* display time left here */}</span>`;
-        li.title = `Reason: ${ban.reason}`;
-        li.dataset.googleId = ban.googleId;
+  // Loop over banned users
+  banList.forEach((ban) => {
+    const li = document.createElement("li");
+    li.className = "banned-user-item";
+    li.style.cursor = "pointer";
 
-        li.addEventListener('click', () => {
-            if (confirm(`Unban ${ban.bannedName || 'this user'}?`)) {
-                socket.emit('admingoogleunbanuser', {
-                    targetGoogleId: li.dataset.googleId
-                });
-            }
+    // Add display content
+    const banUntil = new Date(ban.banUntil);
+    const timeRemainingMs = banUntil - new Date();
+    const hours = Math.floor(timeRemainingMs / (1000 * 60 * 60));
+    const minutes = Math.floor(
+      (timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60)
+    );
+
+    li.innerHTML = `
+      <div>
+        <strong>${ban.bannedName || "Unknown"}</strong>
+        <div class="ban-info">
+          ${hours > 0 || minutes > 0
+            ? `${hours}h ${minutes}m left`
+            : "Expired or permanent"}
+        </div>
+        <div class="ban-reason">Reason: ${ban.reason || "No reason"}</div>
+      </div>
+    `;
+
+    // Store Google ID for server operation
+    li.dataset.googleId = ban.googleId;
+
+    // Add click unban handler
+    li.addEventListener("click", () => {
+      const name = ban.bannedName || "this user";
+      if (confirm(`Unban ${name}?`)) {
+        socket.emit("admingoogleunbanuser", {
+          targetGoogleId: li.dataset.googleId,
         });
-
-        bannedUserListEl.appendChild(li);
+      }
     });
+
+    bannedUserListEl.appendChild(li);
+  });
 }
+
 
 // Utility: Switches the chat window (Public vs Admin)
 function switchChatContext(contextId) {
@@ -754,5 +779,6 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
 
 
