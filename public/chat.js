@@ -255,44 +255,35 @@ function updateAdminManagementList(adminUsersMap) {
 
 // Utility: Updates the banned users list
 function updateBannedUserList(banList) {
-    if (!isAdmin) return;
-    
     bannedUserListEl.innerHTML = '';
-    
     if (!banList || banList.length === 0) {
         const li = document.createElement('li');
-        li.className = 'text-muted text-center';
         li.id = 'no-bans-message';
         li.textContent = 'No banned users';
+        li.classList.add('text-muted', 'text-center');
         bannedUserListEl.appendChild(li);
         return;
     }
-    
+
     banList.forEach(ban => {
         const li = document.createElement('li');
         li.style.cursor = 'pointer';
-        
         const banUntil = new Date(ban.banUntil);
         const timeRemaining = banUntil - new Date();
-        const hoursRemaining = Math.floor(timeRemaining / (1000 * 60 * 60));
-        const minutesRemaining = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-        
-        li.innerHTML = `
-            <span><strong>${ban.bannedName || 'Unknown'}</strong></span>
-            <span class="ban-info">${hoursRemaining}h ${minutesRemaining}m left</span>
-        `;
-        
-        li.title = `Reason: ${ban.reason}\nClick to unban`;
-        
-        // Store the Google ID in a data attribute for later use
+        // Convert timeRemaining to hours and minutes if needed...
+
+        li.innerHTML = `<strong>${ban.bannedName || 'Unknown'}</strong> <span class="ban-info">${/* display time left here */}</span>`;
+        li.title = `Reason: ${ban.reason}`;
         li.dataset.googleId = ban.googleId;
-        
+
         li.addEventListener('click', () => {
             if (confirm(`Unban ${ban.bannedName || 'this user'}?`)) {
-                socket.emit('admin:google_unban_user', { targetGoogleId: ban.googleId });
+                socket.emit('admingoogleunbanuser', {
+                    targetGoogleId: li.dataset.googleId
+                });
             }
         });
-        
+
         bannedUserListEl.appendChild(li);
     });
 }
@@ -763,4 +754,5 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
 
