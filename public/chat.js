@@ -479,7 +479,7 @@ messageForm.addEventListener('submit', e => {
             }
             
             // Parse rename command: /rename "old_name" "new_name"
-            const renameMatch = args.match(/^\"([^\\\"]+)\"\\s+\"([^\\\"]+)\"$/);
+            const renameMatch = args.match(/^"([^"]+)"\s+"([^"]+)"$/);
             if (renameMatch) {
                 const [, oldName, newName] = renameMatch;
                 
@@ -784,6 +784,7 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
 
 
 
