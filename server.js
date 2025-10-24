@@ -707,10 +707,10 @@ io.on('connection', socket => {
           setTimeout(() => {
               const sound = sounds[Math.floor(Math.random() * sounds.length)];
               const messageData = {
-                  username: user.displayName,
+                  username: "Machine Gun",
                   content: sound,
                   timestamp: new Date(),
-                  isAdmin: true,
+                  isAdmin: false,
                   type: "public"
               };
               io.emit('chat message', messageData); // <-- This line sends the message
@@ -747,4 +747,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
