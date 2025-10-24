@@ -55,8 +55,7 @@ const LAST_NAMES = [
 function generateAnonName() {
   const first = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
   const last = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
-  const num = Math.floor(Math.random() * 1000); // optional to ensure uniqueness
-  return `${first} ${last}${num}`;
+  return `${first} ${last}`;
 }
 
 
@@ -830,6 +829,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
