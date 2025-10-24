@@ -36,6 +36,7 @@ const adminChatHistory = [];
 const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext, googleId }
 const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
 const googleBanList = new Map(); // googleId -> { banUntil: Date, reason: string }
+const renamedUsers = new Map(); // map oldName(lowercase) -> newName
 
 // Anonymous name generator
 const FIRST_NAMES = [
@@ -772,13 +773,13 @@ io.on('connection', socket => {
     }
   });
 
-  // 11B. Admin: Rename User
+    // 11B. Admin: Rename User
   socket.on('admin:rename_user', (data) => {
     const admin = users.get(socket.id);
     const oldName = (data.oldName || '').trim();
     const newName = (data.newName || '').trim();
   
-    // Security checks
+    // Safety / validation
     if (!admin || !admin.isAdmin) {
       socket.emit('system_error', 'Unauthorized: Admin privileges required.');
       return;
@@ -788,7 +789,7 @@ io.on('connection', socket => {
       return;
     }
   
-    // Find user by current display name
+    // Find the target user by their display name
     const targetSocketId = [...users.entries()]
       .find(([_, user]) => user.displayName.toLowerCase() === oldName.toLowerCase())?.[0];
   
@@ -800,7 +801,6 @@ io.on('connection', socket => {
     const targetUser = users.get(targetSocketId);
     const newLower = newName.toLowerCase();
   
-    // Validate if new name is allowed
     if (isNameReservedOrBanned(newName)) {
       socket.emit('system_error', `Rename failed: '${newName}' is reserved or not allowed.`);
       return;
@@ -811,31 +811,29 @@ io.on('connection', socket => {
       return;
     }
   
-    // Proceed with rename
+    // Perform the rename in server memory
     usernamesMap.delete(oldName.toLowerCase());
     usernamesMap.set(newLower, targetSocketId);
     targetUser.displayName = newName;
     users.set(targetSocketId, targetUser);
   
-    // Notify all clients
+    // Notify all users in chat
     const renameMsg = {
       username: 'System',
-      content: `Moderator ${admin.displayName} renamed '${oldName}' to '${newName}'.`,
+      content: `Moderator ${admin.displayName} has renamed '${oldName}' to '${newName}'.`,
       timestamp: new Date(),
       isAdmin: true,
-      type: 'system',
+      type: 'system'
     };
-  
     io.emit('chat message', renameMsg);
   
-    // Notify rename target
+    // Notify the renamed user
     io.to(targetSocketId).emit('system_alert', `Your name has been changed to '${newName}' by a moderator.`);
     io.to(targetSocketId).emit('name_updated_ui', newName);
   
-    // Refresh user counts/maps
+    // Update the user list for everyone
     broadcastUserCount();
   });
-
 
   // 12. Admin: Machine Gun Sound
     socket.on('admin:machinegun', () => {
@@ -894,6 +892,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
