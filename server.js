@@ -815,14 +815,6 @@ io.on('connection', socket => {
     targetUser.displayName = newName;
     users.set(targetSocketId, targetUser);
   
-    // Save rename to persistent array
-    const existing = renamedUsersArray.find(r => r.oldName.toLowerCase() === oldName.toLowerCase());
-    if (existing) {
-      existing.newName = newName;
-    } else {
-      renamedUsersArray.push({ oldName, newName });
-    }
-  
     // Notify everyone
     const renameMsg = {
       username: 'System',
@@ -896,6 +888,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
