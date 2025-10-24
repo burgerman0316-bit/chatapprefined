@@ -36,7 +36,6 @@ const adminChatHistory = [];
 const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext, googleId }
 const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
 const googleBanList = new Map(); // googleId -> { banUntil: Date, reason: string }
-const renamedUsers = new Map(); // map oldName(lowercase) -> newName
 
 // Anonymous name generator
 const FIRST_NAMES = [
@@ -172,14 +171,6 @@ io.on('connection', socket => {
   socket.on('google_login', userData => {
     const { name, email, googleId, profilePic } = userData;
     const lower = name.toLowerCase();
-
-    // Rename check: if a user has been renamed before, apply their stored new name
-    const renameRecord = renamedUsersArray.find(r => r.oldName.toLowerCase() === name.toLowerCase());
-    if (renameRecord) {
-      console.log(`Auto-renaming returning user ${name} -> ${renameRecord.newName}`);
-      name = renameRecord.newName;
-      lower = name.toLowerCase();
-    }
     
     cleanUpUser(socket.id);
     
@@ -275,13 +266,6 @@ io.on('connection', socket => {
   socket.on('check_staff_status', enteredName => {
     const name = (enteredName || '').trim();
     const lower = name.toLowerCase();
-
-    const renameRecord = renamedUsersArray.find(r => r.oldName.toLowerCase() === name.toLowerCase());
-    if (renameRecord) {
-      console.log(`Auto-renaming returning user ${name} -> ${renameRecord.newName}`);
-      name = renameRecord.newName;
-      lower = name.toLowerCase();
-    }
 
     cleanUpUser(socket.id); 
 
@@ -788,73 +772,6 @@ io.on('connection', socket => {
     }
   });
 
-   // 11B. Admin: Rename User (with auto-save)
-  socket.on('admin:rename_user', (data) => {
-    const admin = users.get(socket.id);
-    const oldName = (data.oldName || '').trim();
-    const newName = (data.newName || '').trim();
-  
-    if (!admin || !admin.isAdmin) {
-      socket.emit('system_error', 'Unauthorized: Admin privileges required.');
-      return;
-    }
-    if (!oldName || !newName) {
-      socket.emit('system_error', 'Rename failed: Invalid parameters.');
-      return;
-    }
-  
-    // Find the target user
-    const targetSocketId = [...users.entries()]
-      .find(([_, user]) => user.displayName.toLowerCase() === oldName.toLowerCase())?.[0];
-  
-    if (!targetSocketId) {
-      socket.emit('system_error', `Rename failed: User '${oldName}' not found.`);
-      return;
-    }
-  
-    const targetUser = users.get(targetSocketId);
-    const newLower = newName.toLowerCase();
-  
-    if (isNameReservedOrBanned(newName)) {
-      socket.emit('system_error', `Rename failed: '${newName}' is reserved or not allowed.`);
-      return;
-    }
-  
-    if (usernamesMap.has(newLower)) {
-      socket.emit('system_error', `Rename failed: '${newName}' is already in use.`);
-      return;
-    }
-  
-    // Perform rename
-    usernamesMap.delete(oldName.toLowerCase());
-    usernamesMap.set(newLower, targetSocketId);
-    targetUser.displayName = newName;
-    users.set(targetSocketId, targetUser);
-  
-    // Save rename to persistent array
-    const existing = renamedUsersArray.find(r => r.oldName.toLowerCase() === oldName.toLowerCase());
-    if (existing) {
-      existing.newName = newName;
-    } else {
-      renamedUsersArray.push({ oldName, newName });
-    }
-  
-    // Notify everyone
-    const renameMsg = {
-      username: 'System',
-      content: `Moderator ${admin.displayName} renamed '${oldName}' to '${newName}'.`,
-      timestamp: new Date(),
-      isAdmin: true,
-      type: 'system'
-    };
-    io.emit('chat message', renameMsg);
-  
-    io.to(targetSocketId).emit('system_alert', `Your name has been changed to '${newName}' by a moderator.`);
-    io.to(targetSocketId).emit('name_updated_ui', newName);
-  
-    broadcastUserCount();
-  });
-
   // 12. Admin: Machine Gun Sound
     socket.on('admin:machinegun', () => {
       const user = users.get(socket.id);
@@ -912,6 +829,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
