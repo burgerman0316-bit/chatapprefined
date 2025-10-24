@@ -524,21 +524,26 @@ messageForm.addEventListener('submit', e => {
 
 // 2. Input Character Counter (Visibility improved via CSS)
 messageInputDiv.addEventListener('input', () => {
-    const currentLength = messageInputDiv.innerText.length;
-    
-    if (currentLength > MAX_CHARS) {
-        messageInputDiv.innerText = messageInputDiv.innerText.substring(0, MAX_CHARS);
-        charCountSpan.textContent = `${MAX_CHARS}/${MAX_CHARS}`;
-    } else {
-        charCountSpan.textContent = `${currentLength}/${MAX_CHARS}`;
-    }
-    
-    // Style change
-    if (currentLength >= MAX_CHARS * 0.9) {
-        charCountContainer.style.color = '#ff4d4d'; 
-    } else {
-        charCountContainer.style.color = '#ccc'; 
-    }
+  const text = messageInputDiv.innerText.trim(); // Trim invisible newline & spaces
+  const currentLength = text.length;
+
+  if (currentLength > MAX_CHARS) {
+    // Limit to max
+    messageInputDiv.innerText = text.substring(0, MAX_CHARS);
+    charCountSpan.textContent = `${MAX_CHARS}/${MAX_CHARS}`;
+  } else if (currentLength === 0) {
+    // Properly show 0 when blank
+    charCountSpan.textContent = `0/${MAX_CHARS}`;
+  } else {
+    charCountSpan.textContent = `${currentLength}/${MAX_CHARS}`;
+  }
+
+  // Style color near limit
+  if (currentLength >= MAX_CHARS * 0.9) {
+    charCountContainer.style.color = "#ff4d4d";
+  } else {
+    charCountContainer.style.color = "#ccc";
+  }
 });
 
 // Ensure Enter sends message
@@ -779,6 +784,7 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
 
 
 
