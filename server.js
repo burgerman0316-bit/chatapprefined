@@ -741,6 +741,37 @@ io.on('connection', socket => {
     }
   });
 
+  // 11. Admin: Google Unban User (Fixed)
+  socket.on("admin:google_unban_user", (data) => {
+    const admin = users.get(socket.id);
+    const targetGoogleId = (data.targetGoogleId || "").trim();
+  
+    if (!admin || !admin.isAdmin || !targetGoogleId) {
+      socket.emit("system_error", "Unban failed: Unauthorized or missing Google ID.");
+      return;
+    }
+  
+    if (googleBanList.has(targetGoogleId)) {
+      const bannedUser = googleBanList.get(targetGoogleId);
+      googleBanList.delete(targetGoogleId);
+  
+      const unbanMsg = {
+        username: "System",
+        content: `Moderator ${admin.displayName} has UNBANNED ${bannedUser.bannedName || "a user"}.`,
+        timestamp: new Date(),
+        isAdmin: true,
+        type: "system"
+      };
+  
+      io.emit("chat message", unbanMsg);
+      socket.emit("system_alert", "User successfully unbanned.");
+  
+      // Send updated banlist to all admins
+      io.to(STAFF_ROOM).emit("ban_list_update", getBanList());
+    } else {
+      socket.emit("system_error", "User is not currently banned.");
+    }
+  });
 
   // 12. Admin: Machine Gun Sound
     socket.on('admin:machinegun', () => {
@@ -799,6 +830,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
