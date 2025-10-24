@@ -18,11 +18,6 @@ const BANNED_WORDS = ['hitler', 'swear', 'badword', 'bannedword', 'adminchat'];
 
 // Staff accounts - NOTE: LoginName is the SECURE password/key
 const STAFF_LIST = [
-  // { loginName: 'hfdskLshkdgdibIdsjfkbdAshfjhsfdshfjMdjsbfhd', displayName: 'Liam Stern' },
-  // { loginName: 'hfsdjDfhukdshjfkdIsjfhdsjEkfhdjSjkshjEdkfLh', displayName: 'Diesel Carter' },
-  // { loginName: 'hbjrhfjRnjkfdvjkIfhdCnjfkdnjKjndksdjkfjdkdy', displayName: 'Ricky Martinez' },
-  // { loginName: 'hdufAhudsAifhudiRsfOuidsuNfdsmklfdskfdndsjk', displayName: 'Aaron Ortega' },
-  // { loginName: 'dnjsDkfjdsOfjdNsfjdOksfjVkdAsnfNjdsnfjkdkfd', displayName: 'Donovan Powell' },
   { loginName: 'Liam Stern', displayName: 'Liam Stern' },
   { loginName: 'Diesel Carter', displayName: 'Diesel Carter' },
   { loginName: 'Ricardo Martinez', displayName: 'Ricky Martinez' },
@@ -192,6 +187,12 @@ io.on('connection', socket => {
         return;
       }
       
+      // Check if user is restricted from admin chat
+      if (staffMember.displayName === 'Blake Stanley' || staffMember.displayName === 'Ashaz Adil') {
+        socket.emit('name_rejected', 'You are not authorized to access admin chat.');
+        return;
+      }
+      
       users.set(socket.id, {
         displayName: staffMember.displayName,
         secureName: staffMember.loginName,
@@ -288,6 +289,12 @@ io.on('connection', socket => {
         const staffName = staffLoginAttempt.displayName;
         const staffLower = staffName.toLowerCase();
 
+        // Check if user is restricted from admin chat
+        if (staffName === 'Blake Stanley' || staffName === 'Ashaz Adil') {
+          socket.emit('name_rejected', 'You are not authorized to access admin chat.');
+          return;
+        }
+
         if (usernamesMap.has(staffLower)) {
             socket.emit('name_rejected', `The staff display name '${staffName}' is already in use.`);
             return;
@@ -365,6 +372,13 @@ io.on('connection', socket => {
       if (!user || !user.isAdmin || (newContext !== 'public' && newContext !== ADMIN_CHAT_ID)) {
           return;
       }
+      
+      // Check if user can access admin chat
+      if (newContext === ADMIN_CHAT_ID && (user.displayName === 'Blake Stanley' || user.displayName === 'Ashaz Adil')) {
+          socket.emit('system_error', 'You are not authorized to access admin chat.');
+          return;
+      }
+      
       user.chatContext = newContext;
       users.set(socket.id, user);
 
@@ -381,10 +395,17 @@ io.on('connection', socket => {
         socket.emit('system_error', 'You must set a name first.');
         return;
     }
+    
     const content = (msg.content || '').trim();
     if (!content || content.length > CONTENT_MAX_CHARS) return;
     if (isContentBanned(content)) {
         socket.emit('system_alert', 'Your message contains banned language and was not sent.');
+        return;
+    }
+    
+    // Check if user can access admin chat
+    if (user.chatContext === ADMIN_CHAT_ID && (user.displayName === 'Blake Stanley' || user.displayName === 'Ashaz Adil')) {
+        socket.emit('system_error', 'You are not authorized to send messages in admin chat.');
         return;
     }
     
@@ -670,6 +691,12 @@ io.on('connection', socket => {
           return;
       }
       
+      // Check if target user is restricted from admin chat
+      if (targetName === 'Blake Stanley' || targetName === 'Ashaz Adil') {
+          socket.emit('system_error', 'Cannot ban restricted users from admin chat.');
+          return;
+      }
+      
       const banUntil = new Date();
       banUntil.setDate(banUntil.getDate() + days);
       banUntil.setHours(banUntil.getHours() + hours);
@@ -697,77 +724,7 @@ io.on('connection', socket => {
       broadcastUserCount();
   });
 
-  // 11. Admin: Unban User
-  socket.on('admin:google_unban_user', data => {
-      const admin = users.get(socket.id);
-      const targetGoogleId = (data.targetGoogleId || '').trim();
-      
-      if (!admin || !admin.isAdmin || !targetGoogleId) {
-          socket.emit('system_error', 'Unban failed: Unauthorized or missing Google ID.');
-          return;
-      }
-      
-      if (googleBanList.has(targetGoogleId)) {
-          const bannedUser = googleBanList.get(targetGoogleId);
-          googleBanList.delete(targetGoogleId);
-          
-          const unbanMsg = {
-            username: 'System',
-            content: `Moderator ${admin.displayName} has UNBANNED ${bannedUser.bannedName || 'a user'}.`,
-            timestamp: new Date(),
-            isAdmin: true,
-            type: 'system'
-          };
-          
-          io.emit('chat message', unbanMsg);
-          socket.emit('system_alert', 'User successfully unbanned.');
-          
-          io.to(STAFF_ROOM).emit('ban_list_update', getBanList());
-      } else {
-          socket.emit('system_error', 'User is not currently banned.');
-      }
-  });
-
-  // 11. Admin: Unban User (Fix)
-  socket.on('admingoogleunbanuser', (data) => {
-    const admin = users.get(socket.id);
-    const targetGoogleId = (data.targetGoogleId || '').trim();
-  
-    // Safety checks
-    if (!admin || !admin.isAdmin || !targetGoogleId) {
-        socket.emit('system_error', 'Unban failed: unauthorized or missing Google ID.');
-        return;
-    }
-  
-    // Check if the user is actually banned
-    if (googleBanList.has(targetGoogleId)) {
-        const bannedUser = googleBanList.get(targetGoogleId);
-  
-        // Remove user from ban list
-        googleBanList.delete(targetGoogleId);
-  
-        // Notify chat and staff room
-        const unbanMsg = {
-            username: 'System',
-            content: `Moderator ${admin.displayName} has UNBANNED ${bannedUser.bannedName || 'a user'}.`,
-            timestamp: new Date(),
-            isAdmin: true,
-            type: 'system'
-        };
-  
-        io.emit('chat message', unbanMsg);
-  
-        // Send a confirmation popup to admin
-        socket.emit('system_alert', `User '${bannedUser.bannedName || targetGoogleId}' has been successfully unbanned.`);
-  
-        // Refresh the admin ban list for all moderators
-        io.to(STAFF_ROOM).emit('ban_list_update', getBanList());
-    } else {
-        socket.emit('system_error', 'Unban failed: user is not currently banned.');
-    }
-  });
-
-  // 11. Admin: Google Unban User (Fixed)
+  // 11. Admin: Unban User (Fixed)
   socket.on("admin:google_unban_user", (data) => {
     const admin = users.get(socket.id);
     const targetGoogleId = (data.targetGoogleId || "").trim();
@@ -915,4 +872,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
