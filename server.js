@@ -187,12 +187,7 @@ io.on('connection', socket => {
         return;
       }
       
-      // Check if user is restricted from admin chat
-      if (staffMember.displayName === 'Blake Stanley' || staffMember.displayName === 'Ashaz Adil') {
-        socket.emit('name_rejected', 'You are not authorized to access admin chat.');
-        return;
-      }
-      
+      // SUCCESSFUL ADMIN LOGIN - Removed the restriction that blocked Blake and Ashaz
       users.set(socket.id, {
         displayName: staffMember.displayName,
         secureName: staffMember.loginName,
@@ -289,12 +284,7 @@ io.on('connection', socket => {
         const staffName = staffLoginAttempt.displayName;
         const staffLower = staffName.toLowerCase();
 
-        // Check if user is restricted from admin chat
-        if (staffName === 'Blake Stanley' || staffName === 'Ashaz Adil') {
-          socket.emit('name_rejected', 'You are not authorized to access admin chat.');
-          return;
-        }
-
+        // SUCCESSFUL ADMIN LOGIN - Removed the restriction that blocked Blake and Ashaz
         if (usernamesMap.has(staffLower)) {
             socket.emit('name_rejected', `The staff display name '${staffName}' is already in use.`);
             return;
@@ -373,12 +363,6 @@ io.on('connection', socket => {
           return;
       }
       
-      // Check if user can access admin chat
-      if (newContext === ADMIN_CHAT_ID && (user.displayName === 'Blake Stanley' || user.displayName === 'Ashaz Adil')) {
-          socket.emit('system_error', 'You are not authorized to access admin chat.');
-          return;
-      }
-      
       user.chatContext = newContext;
       users.set(socket.id, user);
 
@@ -400,12 +384,6 @@ io.on('connection', socket => {
     if (!content || content.length > CONTENT_MAX_CHARS) return;
     if (isContentBanned(content)) {
         socket.emit('system_alert', 'Your message contains banned language and was not sent.');
-        return;
-    }
-    
-    // Check if user can access admin chat
-    if (user.chatContext === ADMIN_CHAT_ID && (user.displayName === 'Blake Stanley' || user.displayName === 'Ashaz Adil')) {
-        socket.emit('system_error', 'You are not authorized to send messages in admin chat.');
         return;
     }
     
@@ -688,12 +666,6 @@ io.on('connection', socket => {
 
       if (targetUser && targetUser.isAdmin) {
           socket.emit('system_error', `Cannot ban Admin '${targetName}'.`);
-          return;
-      }
-      
-      // Check if target user is restricted from admin chat
-      if (targetName === 'Blake Stanley' || targetName === 'Ashaz Adil') {
-          socket.emit('system_error', 'Cannot ban restricted users from admin chat.');
           return;
       }
       
