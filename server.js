@@ -22,9 +22,7 @@ const STAFF_LIST = [
   { loginName: 'Diesel Carter', displayName: 'Diesel Carter' },
   { loginName: 'Ricardo Martinez', displayName: 'Ricky Martinez' },
   { loginName: 'Aaron Ortega', displayName: 'Aaron Ortega' },
-  { loginName: 'Donovan Powell', displayName: 'Donovan Powell' },
-  { loginName: 'Blake Stanley', displayName: 'Blake Stanley' },
-  { loginName: 'Ashaz Adil', displayName: 'Ashaz Adil' }
+  { loginName: 'Donovan Powell', displayName: 'Donovan Powell' }
 ];
 
 // Add a special property to track which users can only ban one person
@@ -844,3 +842,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
