@@ -432,7 +432,7 @@ messageForm.addEventListener('submit', e => {
             }
             
             // Parse ban command: /ban "username" 0d 0h 30m reason
-            const banMatch = args.match(/^\"([^\\\"]+)\"\\s+(\\d+)d\\s+(\\d+)h\\s+(\\d+)m\\s+(.+)$/);
+            const banMatch = args.match(/^\"([^\\\"]+)\"\\s+(\d+)d\\s+(\d+)h\\s+(\d+)m\\s+(.+)$/);
             if (banMatch) {
                 const [, targetName, days, hours, minutes, reason] = banMatch;
                 
@@ -607,7 +607,7 @@ messageForm.addEventListener('submit', e => {
             });
             return;
         }
-        socket.emit('chat message', { content }); 
+        socket.emit('chat message', { content, isPrivate: false }); 
     }
 });
 
@@ -818,7 +818,14 @@ socket.on('chat message', msg => {
     if (currentChatContext === 'public' || msg.isPrivate) {
         appendMessage(msg);
     }
-}); 
+});
+
+// Handle admin chat messages
+socket.on('admin chat message', msg => {
+    if (currentChatContext === ADMIN_CHAT_ID || msg.isPrivate) {
+        appendMessage(msg);
+    }
+});
 
 // Admin Events 
 socket.on('admin:history_cleared', data => {
