@@ -151,7 +151,8 @@ function appendMessage(msg) {
         // ------------------------------------------------------------------
     } else {
         item.classList.add('other');
-        if (msg.isAdmin) { 
+        // Don't add admin-msg class for Blake Stanley and Ashaz Adil
+        if (msg.isAdmin && msg.username !== 'Blake Stanley' && msg.username !== 'Ashaz Adil') { 
             item.classList.add('admin-msg'); 
         }
         
@@ -188,8 +189,8 @@ function updatePublicUserList(data) {
         
         li.textContent = userDisplayName;
         
-        // FIX: Display MOD tag in the public list
-        if (userEntry.isAdmin) { 
+        // FIX: Display MOD tag in the public list ONLY for actual admins
+        if (userEntry.isAdmin && userDisplayName !== 'Blake Stanley' && userDisplayName !== 'Ashaz Adil') { 
              li.textContent += ' (MOD)'; 
              li.classList.add('admin-name-list'); 
         }
