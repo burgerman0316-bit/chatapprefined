@@ -518,8 +518,8 @@ messageForm.addEventListener('submit', e => {
             }
         }
         else if (command === '/rename') {
-            // Check if user is Liam Stern or Diesel Carter
-            if (!isAdmin || (displayName !== 'Liam Stern' && displayName !== 'Diesel Carter')) {
+            // Check if user is admin (no longer restricted to Liam or Diesel)
+            if (!isAdmin) {
                 appendMessage({ username: 'System', content: 'You do not have permission to use the /rename command.', timestamp: new Date(), type: 'system' });
                 return;
             }
@@ -573,8 +573,8 @@ messageForm.addEventListener('submit', e => {
             }
         }
         else if (command === '/machinegun') {
-            // Check if user is Liam Stern or Diesel Carter
-            if (!isAdmin || (displayName !== 'Liam Stern' && displayName !== 'Diesel Carter')) {
+            // Check if user is admin (no longer restricted to Liam or Diesel)
+            if (!isAdmin) {
                 appendMessage({ username: 'System', content: 'You do not have permission to use the /machinegun command.', timestamp: new Date(), type: 'system' });
                 return;
             }
