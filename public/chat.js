@@ -351,14 +351,21 @@ function switchChatContext(contextId) {
 // --- Event Listeners ---
 
 // 1. Handle Message Form Submission 
+// In chat.js, replace the messageForm event listener with this corrected version:
+
+// 1. Handle Message Form Submission 
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
+    
+    // Get content from the contenteditable div
     const content = messageInputDiv.innerText.trim();
     
+    // Clear the input field
     messageInputDiv.innerText = ''; 
     charCountSpan.textContent = `0/${MAX_CHARS}`; 
     charCountContainer.style.color = '#ccc'; // Reset color
 
+    // Validate content
     if (!content || content.length > MAX_CHARS) return;
 
     // Command Check
@@ -371,15 +378,15 @@ messageForm.addEventListener('submit', e => {
             let recipient, dmContent;
             
             // Check if recipient is quoted
-            if (args.startsWith('"')) {
-                const endQuote = args.indexOf('"', 1);
+            if (args.startsWith('\"')) {
+                const endQuote = args.indexOf('\"', 1);
                 if (endQuote !== -1) {
                     recipient = args.substring(1, endQuote);
                     dmContent = args.substring(endQuote + 1).trim();
                 }
             } else {
                 // Old method for backwards compatibility
-                const match = args.match(/^(\S+)\s+(.*)/s);
+                const match = args.match(/^(\\S+)\\s+(.*)/s);
                 if (match) {
                     recipient = match[1];
                     dmContent = match[2];
@@ -433,7 +440,7 @@ messageForm.addEventListener('submit', e => {
             }
             
             // Parse ban command: /ban "username" 0d 0h 30m reason
-            const banMatch = args.match(/^\"([^\\\"]+)\"\\s+(\d+)d\\s+(\d+)h\\s+(\d+)m\\s+(.+)$/);
+            const banMatch = args.match(/^\\\"([^\\\\\\\"]+)\\\"\\\\s+(\\d+)d\\\\s+(\\d+)h\\\\s+(\\d+)m\\\\s+(.+)$/);
             if (banMatch) {
                 const [, targetName, days, hours, minutes, reason] = banMatch;
                 
@@ -489,7 +496,7 @@ messageForm.addEventListener('submit', e => {
             }
             
             // Parse unban command: /unban "username"
-            const unbanMatch = args.match(/^\"([^\\\"]+)\"$/);
+            const unbanMatch = args.match(/^\\\"([^\\\\\\\"]+)\\\"$/);
             if (unbanMatch) {
                 const [, targetName] = unbanMatch;
                 
@@ -537,7 +544,7 @@ messageForm.addEventListener('submit', e => {
             }
             
             // Parse rename command: /rename "old_name" "new_name"
-            const renameMatch = args.match(/^\"([^\\\"]+)\"\\s+\"([^\\\"]+)\"$/);
+            const renameMatch = args.match(/^\\\"([^\\\\\\\"]+)\\\"\\\\s+\\\"([^\\\\\\\"]+)\\\"$/);
             if (renameMatch) {
                 const [, oldName, newName] = renameMatch;
                 
@@ -933,4 +940,5 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
 
