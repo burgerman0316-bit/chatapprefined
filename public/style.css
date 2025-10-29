@@ -165,8 +165,8 @@ body {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    /* Keep layout stable while letting text wrap inside .msg-text */
-    flex-wrap: nowrap; /* text wrapping handled by .msg-text */
+    /* Allow media to wrap under text when needed */
+    flex-wrap: wrap;
 }
 
 /* The text container inside the bubble */
@@ -188,6 +188,25 @@ body {
     border-radius: 50%;
     flex-shrink: 0;
     object-fit: cover;
+}
+
+/* Ensure images and media inside messages are responsive */
+.msg img,
+.msg .attachment img,
+.msg-content img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    flex-shrink: 1;
+    min-width: 0;
+}
+
+/* If you wrap images in a container (picture/attachment) */
+.msg .image-wrapper,
+.msg .attachment {
+    max-width: 100%;
+    overflow: hidden;
 }
 
 /* --- OWN MESSAGES (Right Side) --- */
@@ -527,6 +546,3 @@ body {
     font-size: 0.85em;
     color: #ccc;
 }
-
-
-
