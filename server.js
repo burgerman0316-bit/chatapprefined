@@ -372,6 +372,7 @@ io.on('connection', socket => {
 
   // 4. Normal Chat Messages
   // In server.js, in the 'chat message' socket handler, add HTML sanitization:
+  // In server.js, in the 'chat message' socket handler, add HTML sanitization:
   socket.on('chat message', msg => {
       const user = users.get(socket.id);
       if (!user) {
@@ -420,6 +421,7 @@ io.on('connection', socket => {
       
       broadcastUserCount();
   });
+
     
     const targetHistory = user.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public';
     const targetRoom = user.chatContext === ADMIN_CHAT_ID ? STAFF_ROOM : 'public'; 
@@ -869,5 +871,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
