@@ -864,10 +864,54 @@ socket.on('chat history', history => {
     messagesDiv.innerHTML = ''; 
     history.forEach(msg => appendMessage(msg));
 });
+// In server.js, in the 'chat message' socket handler, add HTML sanitization:
 socket.on('chat message', msg => {
-    if (currentChatContext === 'public' || msg.isPrivate) {
-        appendMessage(msg);
+    const user = users.get(socket.id);
+    if (!user) {
+        socket.emit('system_error', 'You must set a name first.');
+        return;
     }
+    
+    // Sanitize HTML content to prevent XSS
+    const content = (msg.content || '').trim();
+    if (!content || content.length > CONTENT_MAX_CHARS) return;
+    
+    // Simple HTML sanitization - only allow basic tags
+    const allowedTags = ['img'];
+    let sanitizedContent = content;
+    
+    // Remove any script tags
+    sanitizedContent = sanitizedContent.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    
+    // Allow only img tags with src attribute
+    sanitizedContent = sanitizedContent.replace(/<img[^>]*src=["']([^"']*)["'][^>]*>/gi, '<img src="$1">');
+    
+    if (isContentBanned(sanitizedContent)) {
+        socket.emit('system_alert', 'Your message contains banned language and was not sent.');
+        return;
+    }
+    
+    const messageData = {
+        username: user.displayName,
+        content: sanitizedContent,
+        timestamp: new Date(),
+        isAdmin: user.isAdmin,
+        profilePic: user.profilePic,
+        type: 'public'
+    };
+    
+    const targetHistory = user.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public';
+    const targetRoom = user.chatContext === ADMIN_CHAT_ID ? STAFF_ROOM : 'public'; 
+
+    pushHistory(messageData, targetHistory);
+    
+    if (targetRoom === STAFF_ROOM) {
+        io.to(STAFF_ROOM).emit('admin chat message', messageData);
+    } else {
+        io.emit('chat message', messageData);
+    }
+    
+    broadcastUserCount();
 });
 
 // Handle admin chat messages
@@ -940,5 +984,6 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
 
 
