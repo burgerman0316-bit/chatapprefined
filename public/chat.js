@@ -636,6 +636,48 @@ messageInputDiv.addEventListener('input', () => {
   }
 });
 
+// Add this to chat.js after the existing event listeners
+
+// Handle pasted images
+messageInputDiv.addEventListener('paste', function(e) {
+    // Check if clipboard has image data
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file' && items[i].type.indexOf('image') !== -1) {
+            e.preventDefault();
+            
+            const file = items[i].getAsFile();
+            const reader = new FileReader();
+            
+            reader.onload = function(event) {
+                // Insert image as HTML at cursor position
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    range.deleteContents();
+                    
+                    const img = document.createElement('img');
+                    img.src = event.target.result;
+                    img.style.maxWidth = '300px';
+                    img.style.maxHeight = '300px';
+                    img.style.margin = '5px 0';
+                    
+                    range.insertNode(img);
+                    range.collapse(false);
+                    
+                    // Update the content and character count
+                    messageInputDiv.dispatchEvent(new Event('input'));
+                }
+            };
+            
+            reader.readAsDataURL(file);
+            return;
+        }
+    }
+});
+
+
 // Ensure Enter sends message
 messageInputDiv.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -891,3 +933,4 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
