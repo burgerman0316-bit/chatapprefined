@@ -371,28 +371,55 @@ io.on('connection', socket => {
   });
 
   // 4. Normal Chat Messages
+  // In server.js, in the 'chat message' socket handler, add HTML sanitization:
   socket.on('chat message', msg => {
-    const user = users.get(socket.id);
-    if (!user) {
-        socket.emit('system_error', 'You must set a name first.');
-        return;
-    }
-    
-    const content = (msg.content || '').trim();
-    if (!content || content.length > CONTENT_MAX_CHARS) return;
-    if (isContentBanned(content)) {
-        socket.emit('system_alert', 'Your message contains banned language and was not sent.');
-        return;
-    }
-    
-    const messageData = {
-      username: user.displayName,
-      content: content,
-      timestamp: new Date(),
-      isAdmin: user.isAdmin,
-      profilePic: user.profilePic,
-      type: 'public'
-    };
+      const user = users.get(socket.id);
+      if (!user) {
+          socket.emit('system_error', 'You must set a name first.');
+          return;
+      }
+      
+      // Sanitize HTML content to prevent XSS
+      const content = (msg.content || '').trim();
+      if (!content || content.length > CONTENT_MAX_CHARS) return;
+      
+      // Simple HTML sanitization - only allow basic tags
+      const allowedTags = ['img'];
+      let sanitizedContent = content;
+      
+      // Remove any script tags
+      sanitizedContent = sanitizedContent.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+      
+      // Allow only img tags with src attribute
+      sanitizedContent = sanitizedContent.replace(/<img[^>]*src=["']([^"']*)["'][^>]*>/gi, '<img src="$1">');
+      
+      if (isContentBanned(sanitizedContent)) {
+          socket.emit('system_alert', 'Your message contains banned language and was not sent.');
+          return;
+      }
+      
+      const messageData = {
+          username: user.displayName,
+          content: sanitizedContent,
+          timestamp: new Date(),
+          isAdmin: user.isAdmin,
+          profilePic: user.profilePic,
+          type: 'public'
+      };
+      
+      const targetHistory = user.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public';
+      const targetRoom = user.chatContext === ADMIN_CHAT_ID ? STAFF_ROOM : 'public'; 
+  
+      pushHistory(messageData, targetHistory);
+      
+      if (targetRoom === STAFF_ROOM) {
+          io.to(STAFF_ROOM).emit('admin chat message', messageData);
+      } else {
+          io.emit('chat message', messageData);
+      }
+      
+      broadcastUserCount();
+  });
     
     const targetHistory = user.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public';
     const targetRoom = user.chatContext === ADMIN_CHAT_ID ? STAFF_ROOM : 'public'; 
@@ -842,4 +869,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
