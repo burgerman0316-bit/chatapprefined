@@ -50,7 +50,22 @@
             <ul id="messages"></ul>
             <form id="messageForm" action="">
                 <div class="input-container">
-                    <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message or command..."></div>
+                    <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message or command..." style="position: relative; padding-right: 40px;">
+                        <input type="file" id="fileUpload" style="display: none;">
+                        <button 
+                            type="button"
+                            onclick="document.getElementById('fileUpload').click()" 
+                            contenteditable="false"
+                            style="position: absolute; right: 8px; top: 8px; background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; pointer-events: auto; color: #888;"
+                        >
+                            <!-- Upload icon SVG -->
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                        </button>
+                    </div>
                     <button type="submit">Send</button>
                 </div>
                 <div id="charCountContainer" class="char-count-display">
