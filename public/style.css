@@ -546,3 +546,32 @@ body {
     font-size: 0.85em;
     color: #ccc;
 }
+
+.file-preview {
+    position: relative;
+    display: inline-block;
+    margin: 5px;
+    padding: 5px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    max-width: 200px;
+}
+
+.file-preview div {
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.file-preview button {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: red;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    font-size: 12px;
+}
