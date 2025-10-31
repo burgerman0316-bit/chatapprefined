@@ -1,5 +1,5 @@
+
 // chat.js - Complete fixed version with working /unban and /rename commands
-// And file upload functionality
 
 // Import the Bootstrap namespace to use its functions
 const myModal = new bootstrap.Modal(document.getElementById('nameModal')); 
@@ -349,83 +349,6 @@ function switchChatContext(contextId) {
     socket.emit('admin:set_context', contextId);
 }
 
-// --- File Upload Handling ---
-const fileUploadInput = document.getElementById('fileUpload');
-
-fileUploadInput.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    // Create a preview element
-    const preview = document.createElement('div');
-    preview.className = 'file-preview';
-    preview.style.cssText = `
-        display: inline-block;
-        position: relative;
-        margin: 5px;
-        padding: 5px;
-        background: #f0f0f0;
-        border-radius: 4px;
-        max-width: 200px;
-    `;
-    
-    // Add filename
-    const fileName = document.createElement('div');
-    fileName.textContent = file.name;
-    fileName.style.cssText = 'font-size: 12px; word-break: break-all;';
-    
-    // Add remove button
-    const removeBtn = document.createElement('button');
-    removeBtn.textContent = '×';
-    removeBtn.style.cssText = `
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        background: red;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        width: 16px;
-        height: 16px;
-        cursor: pointer;
-        font-size: 12px;
-    `;
-    
-    removeBtn.onclick = () => {
-        preview.remove();
-        // Clear the file input
-        fileUploadInput.value = '';
-    };
-    
-    preview.appendChild(fileName);
-    preview.appendChild(removeBtn);
-    
-    // Insert before the cursor position
-    const selection = window.getSelection();
-    if (selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const start = range.startOffset;
-        
-        // Insert at cursor position
-        const content = messageInputDiv.innerHTML;
-        messageInputDiv.innerHTML = content.substring(0, start) + 
-                                   preview.outerHTML + 
-                                   content.substring(start);
-        
-        // Move cursor after the inserted element
-        const newRange = document.createRange();
-        newRange.setStartAfter(preview);
-        selection.removeAllRanges();
-        selection.addRange(newRange);
-    } else {
-        // If no selection, append to end
-        messageInputDiv.appendChild(preview);
-    }
-    
-    // Clear the file input
-    fileUploadInput.value = '';
-});
-
 // --- Event Listeners ---
 
 // 1. Handle Message Form Submission 
@@ -433,36 +356,261 @@ messageForm.addEventListener('submit', e => {
     e.preventDefault();
     const content = messageInputDiv.innerText.trim();
     
-    // Check if there are file previews
-    const filePreviews = messageInputDiv.querySelectorAll('.file-preview');
-    const hasFiles = filePreviews.length > 0;
-    
     messageInputDiv.innerText = ''; 
     charCountSpan.textContent = `0/${MAX_CHARS}`; 
     charCountContainer.style.color = '#ccc'; // Reset color
 
-    if (!content && !hasFiles) return;
+    if (!content || content.length > MAX_CHARS) return;
 
-    // Prepare message data
-    const messageData = {
-        content: content,
-        isPrivate: false,
-        files: []
-    };
-    
-    // Process file previews
-    filePreviews.forEach(preview => {
-        const fileName = preview.querySelector('div').textContent;
-        // In a real implementation, you would upload the file to server here
-        // and get a URL to include in the message
-        messageData.files.push({
-            name: fileName,
-            url: '#' // Placeholder - replace with actual file URL
-        });
-    });
-    
-    // Send message with files
-    socket.emit('chat message', messageData);
+    // Command Check
+    if (content.startsWith('/')) {
+        const parts = content.split(' ');
+        const command = parts[0].toLowerCase();
+        const args = content.substring(command.length).trim();
+
+        if (command === '/msg') {
+            let recipient, dmContent;
+            
+            // Check if recipient is quoted
+            if (args.startsWith('"')) {
+                const endQuote = args.indexOf('"', 1);
+                if (endQuote !== -1) {
+                    recipient = args.substring(1, endQuote);
+                    dmContent = args.substring(endQuote + 1).trim();
+                }
+            } else {
+                // Old method for backwards compatibility
+                const match = args.match(/^(\S+)\s+(.*)/s);
+                if (match) {
+                    recipient = match[1];
+                    dmContent = match[2];
+                }
+            }
+            
+            if (recipient && dmContent && currentChatContext === 'public') {
+                socket.emit('private message', { recipient: recipient, content: dmContent });
+            } else {
+                appendMessage({ username: 'System', content: 'Invalid /msg command. Usage: /msg "username" message', timestamp: new Date(), type: 'system' });
+            }
+        } 
+        else if (command === '/kick') { 
+            if (!isAdmin) {
+                 appendMessage({ username: 'System', content: 'You do not have permission to use the /kick command.', timestamp: new Date(), type: 'system' });
+                 return;
+            }
+            
+            // Check if user can access admin chat
+            if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'You are not authorized to use /kick in admin chat.', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+                return;
+            }
+            
+            if (args) {
+                socket.emit('admin:kick_user', { targetName: args });
+            } else {
+                appendMessage({ username: 'System', content: 'Invalid /kick command. Usage: /kick username', timestamp: new Date(), type: 'system' });
+            }
+        }
+        else if (command === '/ban') {
+            if (!isAdmin) {
+                appendMessage({ username: 'System', content: 'You do not have permission to use the /ban command.', timestamp: new Date(), type: 'system' });
+                return;
+            }
+            
+            // Check if user can access admin chat
+            if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'You are not authorized to use /ban in admin chat.', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+                return;
+            }
+            
+            // Parse ban command: /ban "username" 0d 0h 30m reason
+            const banMatch = args.match(/^\"([^\\\"]+)\"\\s+(\d+)d\\s+(\d+)h\\s+(\d+)m\\s+(.+)$/);
+            if (banMatch) {
+                const [, targetName, days, hours, minutes, reason] = banMatch;
+                
+                // Find user in the user list
+                const targetUserElement = Array.from(document.querySelectorAll('#user-list li'))
+                    .find(li => li.textContent.toLowerCase().includes(targetName.toLowerCase()));
+                
+                if (targetUserElement) {
+                    // Get the user's Google ID from the user list
+                    const userDisplayName = targetUserElement.textContent.split(' ')[0];
+                    const userEntry = Array.from(document.querySelectorAll('#user-list li'))
+                        .find(li => li.textContent.includes(userDisplayName));
+                    
+                    // For now, we'll just show a message that the command is working
+                    appendMessage({ 
+                        username: 'System', 
+                        content: `Banning user ${targetName} for ${days}d ${hours}h ${minutes}m.`, 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                    
+                    // Send to server to actually ban
+                    socket.emit('admin:google_ban_user', { 
+                        targetName: targetName,
+                        targetGoogleId: userEntry.textContent.split(' ')[1] || '', 
+                        days: parseInt(days), 
+                        hours: parseInt(hours), 
+                        minutes: parseInt(minutes),
+                        reason: reason
+                    });
+                } else {
+                    appendMessage({ username: 'System', content: `User '${targetName}' not found.`, timestamp: new Date(), type: 'system' });
+                }
+            } else {
+                appendMessage({ username: 'System', content: 'Invalid /ban command. Usage: /ban "username" 0d 0h 30m reason', timestamp: new Date(), type: 'system' });
+            }
+        }
+        else if (command === '/unban') {
+            if (!isAdmin) {
+                appendMessage({ username: 'System', content: 'You do not have permission to use the /unban command.', timestamp: new Date(), type: 'system' });
+                return;
+            }
+            
+            // Check if user can access admin chat
+            if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'You are not authorized to use /unban in admin chat.', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+                return;
+            }
+            
+            // Parse unban command: /unban "username"
+            const unbanMatch = args.match(/^\"([^\\\"]+)\"$/);
+            if (unbanMatch) {
+                const [, targetName] = unbanMatch;
+                
+                // Find user in the banned user list by display name
+                const targetUserElement = Array.from(document.querySelectorAll('#banned-user-list li:not(#no-bans-message)'))
+                    .find(li => li.textContent.toLowerCase().includes(targetName.toLowerCase()));
+                
+                if (targetUserElement) {
+                    // Get the Google ID from data attribute
+                    const googleId = targetUserElement.dataset.googleId;
+                    if (googleId) {
+                        socket.emit('admin:google_unban_user', { targetGoogleId: googleId });
+                        appendMessage({ 
+                            username: 'System', 
+                            content: `Unbanning user ${targetName}.`, 
+                            timestamp: new Date(), 
+                            type: 'system' 
+                        });
+                    } else {
+                        appendMessage({ username: 'System', content: `Could not find Google ID for user '${targetName}'.`, timestamp: new Date(), type: 'system' });
+                    }
+                } else {
+                    appendMessage({ username: 'System', content: `User '${targetName}' not found in banned list.`, timestamp: new Date(), type: 'system' });
+                }
+            } else {
+                appendMessage({ username: 'System', content: 'Invalid /unban command. Usage: /unban "username"', timestamp: new Date(), type: 'system' });
+            }
+        }
+        else if (command === '/rename') {
+            // Check if user is admin (no longer restricted to Liam or Diesel)
+            if (!isAdmin) {
+                appendMessage({ username: 'System', content: 'You do not have permission to use the /rename command.', timestamp: new Date(), type: 'system' });
+                return;
+            }
+            
+            // Check if user can access admin chat
+            if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'You are not authorized to use /rename in admin chat.', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+                return;
+            }
+            
+            // Parse rename command: /rename "old_name" "new_name"
+            const renameMatch = args.match(/^\"([^\\\"]+)\"\\s+\"([^\\\"]+)\"$/);
+            if (renameMatch) {
+                const [, oldName, newName] = renameMatch;
+                
+                // Find user in the user list
+                const targetUserElement = Array.from(document.querySelectorAll('#user-list li'))
+                    .find(li => li.textContent.toLowerCase().includes(oldName.toLowerCase()));
+                
+                if (targetUserElement) {
+                    // Send to server to rename user
+                    socket.emit('admin:rename_user', { oldName: oldName, newName: newName });
+                } else {
+                    appendMessage({ username: 'System', content: `User '${oldName}' not found.`, timestamp: new Date(), type: 'system' });
+                }
+            } else {
+                appendMessage({ username: 'System', content: 'Invalid /rename command. Usage: /rename "old_name" "new_name"', timestamp: new Date(), type: 'system' });
+            }
+        }
+        else if (command === '/clear') {
+            if (isAdmin) {
+                // Check if user can access admin chat
+                if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+                    appendMessage({ 
+                        username: 'System', 
+                        content: 'You are not authorized to clear admin chat.', 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                    return;
+                }
+                clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';
+                clearConfirmModal.show();
+            } else {
+                appendMessage({ username: 'System', content: 'You do not have permission to use the /clear command.', timestamp: new Date(), type: 'system' });
+            }
+        }
+        else if (command === '/machinegun') {
+            // Check if user is admin (no longer restricted to Liam or Diesel)
+            if (!isAdmin) {
+                appendMessage({ username: 'System', content: 'You do not have permission to use the /machinegun command.', timestamp: new Date(), type: 'system' });
+                return;
+            }
+            
+            // Check if user can access admin chat
+            if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'You are not authorized to use /machinegun in admin chat.', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+                return;
+            }
+            
+            socket.emit('admin:machinegun');
+        }
+        else {
+             appendMessage({ username: 'System', content: `Unknown command: ${command}`, timestamp: new Date(), type: 'system' });
+        }
+    } else {
+        // Regular public/admin chat message
+        // Check if user can access admin chat
+        if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
+            appendMessage({ 
+                username: 'System', 
+                content: 'You are not authorized to send messages in admin chat.', 
+                timestamp: new Date(), 
+                type: 'system' 
+            });
+            return;
+        }
+        socket.emit('chat message', { content, isPrivate: false }); 
+    }
 });
 
 // 2. Input Character Counter (Visibility improved via CSS)
