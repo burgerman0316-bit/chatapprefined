@@ -548,7 +548,7 @@ body {
     color: #ccc;
 }
 
-/* Image Preview */
+/* Image Preview Styles */
 .image-preview {
     background: #232323;
     border-radius: 18px 18px 18px 5px;
@@ -557,6 +557,7 @@ body {
     padding: 7px 12px;
     margin: 5px 0;
     max-width: 200px;
+    position: relative;
 }
 
 .image-preview img {
@@ -581,6 +582,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: absolute;
+    top: -5px;
+    right: -5px;
 }
 
 .image-preview button:hover {
