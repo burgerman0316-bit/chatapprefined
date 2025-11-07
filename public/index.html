@@ -45,16 +45,18 @@
             <button id="adminLogoutBtn" class="btn btn-sm btn-outline-danger mt-3" style="display: none;">Go Anonymous</button>
         </div>
 
+        <!-- Only relevant snippet shown; replace your chat UI block (inside #chat-area) -->
+
         <div id="chat-area">
             <h3 id="chatTitle">Public Chat</h3>
             <ul id="messages"></ul>
             <form id="messageForm" action="">
                 <div class="input-container" style="position: relative;">
                     <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message or command..." style="padding-left: 40px; padding-right: 70px;"></div>
-                    <input type="file" id="fileUpload" style="display: none;">
+                    <input type="file" id="fileUpload" accept="image/*" style="display: none;">
                     <button 
                         type="button"
-                        onclick="document.getElementById('fileUpload').click()" 
+                        onclick="document.getElementById('fileUpload').click()"
                         style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; color: #888; z-index: 10;"
                     >
                         <!-- Upload icon SVG -->
@@ -65,6 +67,8 @@
                         </svg>
                     </button>
                     <button type="submit" style="padding: 10px 20px;">Send</button>
+                    <!-- Image preview below input -->
+                    <div id="imagePreviewContainer" style="position: absolute; bottom: 110%; left: 0; background: none;"></div>
                 </div>
                 <div id="charCountContainer" class="char-count-display">
                     <span id="char-count">0/2000</span>
@@ -235,3 +239,4 @@
     <script src="chat.js"></script>
 </body>
 </html>
+
