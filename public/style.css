@@ -575,3 +575,24 @@ body {
     cursor: pointer;
     font-size: 12px;
 }
+
+/* Add at bottom, or extend if you already have similar */
+
+.chat-bubble.image-preview {
+    background: #232323;
+    border-radius: 18px 18px 18px 5px;
+    display: flex;
+    align-items: center;
+    padding: 7px 12px;
+    margin: 5px 0;
+}
+.chat-bubble img {
+    background: #222;
+    border-radius: 10px;
+    margin-right: 10px;
+    object-fit: cover;
+}
+#imagePreviewContainer .chat-bubble button {
+    margin-left: 10px;
+    font-size: 1rem;
+}
