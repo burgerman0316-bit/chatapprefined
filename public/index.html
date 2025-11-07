@@ -9,28 +9,21 @@
 </head>
 <body>
     <div id="container" style="display: none;"> 
-        
         <div id="user-info">
             <h2>Chat Info</h2>
-            
             <hr class="info-divider"> 
             <p>Welcome, <span id="display-name">Guest</span>! <button id="renameBtn" class="btn btn-sm btn-outline-light ms-2" style="visibility: hidden; pointer-events: none; width: 1px; height: 1px; min-width: 1px; min-height: 1px; padding: 0; margin: 0; border: 0; overflow: hidden;">Rename</button></p>
-            
             <hr class="info-divider">
-            
             <div class="chat-tabs">
                 <button id="publicChatTab" class="chat-tab-btn active">Public</button>
                 <button id="adminChatTab" class="chat-tab-btn" style="display: none;">Admin</button>
             </div>
-            
             <p>Users Online: <span id="user-count">0</span></p>
-            
             <hr class="info-divider"> 
             <div id="user-list-container">
                 <h4>Online Users:</h4>
                 <ul id="user-list"></ul>
             </div>
-            
             <hr class="info-divider"> 
             <p class="commands">**Commands:**</p>
             <p class="commands">/msg [user] [message]</p>
@@ -40,12 +33,9 @@
             <p class="commands">/ban [user] [duration] [reason] (Mod only)</p>
             <p class="commands">/unban [user] (Mod only)</p>
             <p class="commands">/rename [user] [new user] (Mod only)</p>
-            
             <button id="adminPanelBtn" class="btn btn-secondary mt-3" style="display: none;" data-bs-toggle="modal" data-bs-target="#adminPanelModal">Admin Panel</button>
             <button id="adminLogoutBtn" class="btn btn-sm btn-outline-danger mt-3" style="display: none;">Go Anonymous</button>
         </div>
-
-        <!-- Only relevant snippet shown; replace your chat UI block (inside #chat-area) -->
 
         <div id="chat-area">
             <h3 id="chatTitle">Public Chat</h3>
@@ -59,7 +49,6 @@
                         onclick="document.getElementById('fileUpload').click()"
                         style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; color: #888; z-index: 10;"
                     >
-                        <!-- Upload icon SVG -->
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="17 8 12 3 7 8"></polyline>
@@ -67,7 +56,6 @@
                         </svg>
                     </button>
                     <button type="submit" style="padding: 10px 20px;">Send</button>
-                    <!-- Image preview below input -->
                     <div id="imagePreviewContainer" style="position: absolute; bottom: 110%; left: 0; background: none;"></div>
                 </div>
                 <div id="charCountContainer" class="char-count-display">
@@ -239,4 +227,3 @@
     <script src="chat.js"></script>
 </body>
 </html>
-
