@@ -61,45 +61,6 @@ let currentChatContext = 'public';
 const MAX_CHARS = 2000;
 const ADMIN_CHAT_ID = 'admin_chat';
 
-const fileInput = document.getElementById('fileUpload');
-const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-let selectedImageDataUrl = null; // Stores the previewed image
-
-const fileInput = document.getElementById('fileUpload');
-const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-let selectedImageDataUrl = null; // Stores the previewed image
-
-fileInput && fileInput.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-        alert('Only images allowed!');
-        fileInput.value = '';
-        return;
-    }
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        selectedImageDataUrl = event.target.result;
-        showImagePreview(selectedImageDataUrl);
-    };
-    reader.readAsDataURL(file);
-});
-
-function showImagePreview(src) {
-    if (!imagePreviewContainer) return;
-    imagePreviewContainer.innerHTML = `
-      <div class="chat-bubble image-preview" style="margin-bottom:8px;">
-        <img src="${src}" alt="preview"
-        style="width:55px;height:55px;border-radius:10px;margin-right:6px;vertical-align:middle;object-fit:cover;"/>
-        <button onclick="removeImagePreview()" style="border:none;background:#222;color:#fff;border-radius:6px;padding:2px 6px;cursor:pointer;">X</button>
-      </div>
-    `;
-}
-window.removeImagePreview = function removeImagePreview() {
-    selectedImageDataUrl = null;
-    if (imagePreviewContainer) imagePreviewContainer.innerHTML = "";
-    if (fileInput) fileInput.value = '';
-};
 // --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
     myModal.show();
@@ -164,18 +125,7 @@ function appendMessage(msg) {
     const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); 
     const timeHtml = `<span class="timestamp">${timeString}</span>`; 
 
-    // IMAGE SUPPORT (add this at the start!)
-    if (msg.image) {
-        item.innerHTML = `
-            <div class="chat-bubble" style="background: #232323; border-radius: 18px 18px 18px 5px; display: flex; align-items: flex-start; padding: 10px; gap:10px; max-width: 340px;">
-                <img src="${msg.image}" alt="image" style="width:55px;height:55px;border-radius:10px;object-fit:cover;">
-                <div>
-                    <div style="color:#fff;font-weight:500;word-break:break-word;">${msg.content ? msg.content : ''}</div>
-                    ${timeHtml}
-                </div>
-            </div>
-        `;
-    } else if (msg.type === 'system') {
+    if (msg.type === 'system') {
         item.classList.add('system');
         item.textContent = msg.content;
     } else if (msg.username === displayName || (msg.username === 'You' && msg.isPrivate)) {
@@ -659,12 +609,7 @@ messageForm.addEventListener('submit', e => {
             });
             return;
         }
-        socket.emit('chat message', { 
-            content, 
-            isPrivate: false,
-            image: selectedImageDataUrl ? selectedImageDataUrl : null
-        }); 
-        removeImagePreview();
+        socket.emit('chat message', { content, isPrivate: false }); 
     }
 });
 
@@ -947,4 +892,3 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
-
