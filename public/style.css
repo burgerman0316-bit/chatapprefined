@@ -473,6 +473,7 @@ body {
     justify-content: center;
     align-items: center;
 }
+
 /* Remove default Google button background but keep the logo */
 .google-login-icon iframe {
     background: transparent !important;
@@ -547,52 +548,41 @@ body {
     color: #ccc;
 }
 
-.file-preview {
-    position: relative;
-    display: inline-block;
-    margin: 5px;
-    padding: 5px;
-    background: #f0f0f0;
-    border-radius: 4px;
-    max-width: 200px;
-}
-
-.file-preview div {
-    font-size: 12px;
-    word-break: break-all;
-}
-
-.file-preview button {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: red;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-    font-size: 12px;
-}
-
-/* Add at bottom, or extend if you already have similar */
-
-.chat-bubble.image-preview {
+/* Image Preview */
+.image-preview {
     background: #232323;
     border-radius: 18px 18px 18px 5px;
     display: flex;
     align-items: center;
     padding: 7px 12px;
     margin: 5px 0;
+    max-width: 200px;
 }
-.chat-bubble img {
+
+.image-preview img {
     background: #222;
     border-radius: 10px;
     margin-right: 10px;
     object-fit: cover;
+    max-width: 150px;
+    max-height: 150px;
 }
-#imagePreviewContainer .chat-bubble button {
+
+.image-preview button {
     margin-left: 10px;
     font-size: 1rem;
+    background: none;
+    border: none;
+    color: #ff6b6b;
+    cursor: pointer;
+    font-weight: bold;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-preview button:hover {
+    color: #ff5252;
 }
