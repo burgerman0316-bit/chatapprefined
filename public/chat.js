@@ -52,6 +52,11 @@ const banDurationHoursInput = document.getElementById('banDurationHours');
 const banDurationMinutesInput = document.getElementById('banDurationMinutes');
 const banReasonInput = document.getElementById('banReason');
 
+// File upload variables
+let selectedImageDataUrl = null;
+const fileInput = document.getElementById('fileUpload');
+const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+
 let displayName = '';
 let isAdmin = false;
 let userToKick = null; 
@@ -59,11 +64,6 @@ let userGoogleIdToBan = null;
 let currentChatContext = 'public'; 
 const MAX_CHARS = 2000;
 const ADMIN_CHAT_ID = 'admin_chat';
-
-// File upload variables
-let selectedImageDataUrl = null;
-const fileInput = document.getElementById('fileUpload');
-const imagePreviewContainer = document.getElementById('imagePreviewContainer');
 
 // --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
