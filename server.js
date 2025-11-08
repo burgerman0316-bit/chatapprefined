@@ -379,7 +379,8 @@ io.on('connection', socket => {
     }
     
     const content = (msg.content || '').trim();
-    if (!content || content.length > CONTENT_MAX_CHARS) return;
+    if (!content && !msg.image) return;
+    if (content.length > CONTENT_MAX_CHARS) return;
     if (isContentBanned(content)) {
         socket.emit('system_alert', 'Your message contains banned language and was not sent.');
         return;
@@ -393,6 +394,11 @@ io.on('connection', socket => {
       profilePic: user.profilePic,
       type: 'public'
     };
+    
+    // If there's an image, include it in the message
+    if (msg.image) {
+      messageData.image = msg.image;
+    }
     
     const targetHistory = user.chatContext === ADMIN_CHAT_ID ? 'admin' : 'public';
     const targetRoom = user.chatContext === ADMIN_CHAT_ID ? STAFF_ROOM : 'public'; 
@@ -842,4 +848,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
