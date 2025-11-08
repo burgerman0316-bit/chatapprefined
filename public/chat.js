@@ -387,38 +387,28 @@ fileInput.addEventListener('change', function(e) {
 
 // Function to display image preview
 function displayImagePreview(imageUrl) {
-    // Clear previous previews if needed
-    if (imagePreviewContainer.children.length >= 3) {
-        imagePreviewContainer.removeChild(imagePreviewContainer.firstChild);
-    }
+    // Clear previous previews
+    imagePreviewContainer.innerHTML = '';
     
-    const previewContainer = document.createElement('div');
-    previewContainer.className = 'image-preview-container';
+    const previewDiv = document.createElement('div');
+    previewDiv.className = 'image-preview';
+    previewDiv.innerHTML = `
+        <img src="${imageUrl}" alt="Preview" style="max-width: 200px; max-height: 200px;">
+        <button type="button" onclick="removeImagePreview()">×</button>
+    `;
     
-    const img = document.createElement('img');
-    img.src = imageUrl;
-    img.alt = 'Preview';
-    
-    const overlay = document.createElement('div');
-    overlay.className = 'image-preview-overlay';
-    
-    const removeBtn = document.createElement('button');
-    removeBtn.innerHTML = '&times;';
-    removeBtn.onclick = function(e) {
-        e.stopPropagation();
-        imagePreviewContainer.removeChild(previewContainer);
-        selectedImageDataUrl = null;
-        fileInput.value = '';
-    };
-    
-    overlay.appendChild(removeBtn);
-    previewContainer.appendChild(img);
-    previewContainer.appendChild(overlay);
-    imagePreviewContainer.appendChild(previewContainer);
+    imagePreviewContainer.appendChild(previewDiv);
 }
 
 // Function to remove image preview
 function removeImagePreview() {
+    selectedImageDataUrl = null;
+    imagePreviewContainer.innerHTML = '';
+    fileInput.value = '';
+}
+
+// Function to clear image preview
+function clearImagePreview() {
     selectedImageDataUrl = null;
     imagePreviewContainer.innerHTML = '';
     fileInput.value = '';
