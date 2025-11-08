@@ -371,7 +371,8 @@ io.on('connection', socket => {
   });
 
   // 4. Normal Chat Messages
-  socket.on('chat message', msg => {
+  // 4. Normal Chat Messages
+socket.on('chat message', msg => {
     const user = users.get(socket.id);
     if (!user) {
         socket.emit('system_error', 'You must set a name first.');
@@ -412,7 +413,7 @@ io.on('connection', socket => {
     }
     
     broadcastUserCount();
-  });
+});
   
   // 5. Name Change (All Users)
   socket.on('name_change', newName => {
@@ -848,3 +849,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
