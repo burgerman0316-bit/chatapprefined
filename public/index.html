@@ -47,7 +47,7 @@
                     <button 
                         type="button"
                         onclick="document.getElementById('fileUpload').click()"
-                        class="file-upload-btn"
+                        style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; color: #888; z-index: 10;"
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -57,7 +57,7 @@
                     </button>
                     <button type="submit" style="padding: 10px 20px;">Send</button>
                     <!-- Image preview container -->
-                    <div id="imagePreviewContainer"></div>
+                    <div id="imagePreviewContainer" style="position: absolute; bottom: 110%; left: 0; background: none;"></div>
                 </div>
                 <div id="charCountContainer" class="char-count-display">
                     <span id="char-count">0/2000</span>
