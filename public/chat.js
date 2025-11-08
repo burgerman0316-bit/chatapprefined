@@ -65,6 +65,32 @@ let currentChatContext = 'public';
 const MAX_CHARS = 2000;
 const ADMIN_CHAT_ID = 'admin_chat';
 
+let selectedImageDataUrl = null;
+const fileInput = document.getElementById('fileUpload');
+const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+
+// Add this function to clear image preview
+function clearImagePreview() {
+    selectedImageDataUrl = null;
+    imagePreviewContainer.innerHTML = '';
+    fileInput.value = '';
+}
+
+// Add this function to display image preview
+function displayImagePreview(imageUrl) {
+    // Clear previous previews
+    imagePreviewContainer.innerHTML = '';
+    
+    const previewDiv = document.createElement('div');
+    previewDiv.className = 'image-preview';
+    previewDiv.innerHTML = `
+        <img src="${imageUrl}" alt="Preview" style="max-width: 200px; max-height: 200px;">
+        <button type="button" onclick="removeImagePreview()">×</button>
+    `;
+    
+    imagePreviewContainer.appendChild(previewDiv);
+}
+
 // --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
     myModal.show();
@@ -731,3 +757,20 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
+// Add file input change handler
+fileInput.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            selectedImageDataUrl = event.target.result;
+            displayImagePreview(selectedImageDataUrl);
+        }
+        reader.readAsDataURL(file);
+    } else {
+        // Clear preview if invalid file type
+        clearImagePreview();
+    }
+});
+
