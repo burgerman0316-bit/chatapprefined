@@ -65,10 +65,6 @@ let currentChatContext = 'public';
 const MAX_CHARS = 2000;
 const ADMIN_CHAT_ID = 'admin_chat';
 
-let selectedImageDataUrl = null;
-const fileInput = document.getElementById('fileUpload');
-const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-
 // --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
     myModal.show();
@@ -446,7 +442,105 @@ messageForm.addEventListener('submit', e => {
         
         // Command Check
         if (content.startsWith('/')) {
-            // ... existing command handling code ...
+            // Handle commands
+            if (content.startsWith('/msg')) {
+                const parts = content.split(' ');
+                if (parts.length < 3) {
+                    appendMessage({ 
+                        username: 'System', 
+                        content: 'Usage: /msg "username" message', 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                    return;
+                }
+                
+                const recipient = parts[1].replace(/"/g, '');
+                const message = parts.slice(2).join(' ');
+                socket.emit('private message', { recipient, content: message });
+            } else if (content === '/clear' && isAdmin) {
+                socket.emit('admin:clear_history', currentChatContext);
+            } else if (content === '/machinegun' && isAdmin) {
+                socket.emit('admin:machinegun');
+            } else if (content.startsWith('/kick') && isAdmin) {
+                const target = content.split(' ')[1];
+                if (target) {
+                    socket.emit('admin:kick_user', { targetName: target });
+                } else {
+                    appendMessage({ 
+                        username: 'System', 
+                        content: 'Usage: /kick username', 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                }
+            } else if (content.startsWith('/ban') && isAdmin) {
+                const parts = content.split(' ');
+                if (parts.length < 4) {
+                    appendMessage({ 
+                        username: 'System', 
+                        content: 'Usage: /ban username duration reason', 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                    return;
+                }
+                
+                const target = parts[1];
+                const duration = parts[2];
+                const reason = parts.slice(3).join(' ');
+                
+                // For simplicity, we'll just send the command as-is
+                socket.emit('admin:google_ban_user', { 
+                    targetName: target,
+                    targetGoogleId: null, 
+                    days: 0, 
+                    hours: 0, 
+                    minutes: parseInt(duration) || 30,
+                    reason: reason
+                });
+            } else if (content.startsWith('/unban') && isAdmin) {
+                const target = content.split(' ')[1];
+                if (target) {
+                    // Note: This would need server-side implementation to work properly
+                    appendMessage({ 
+                        username: 'System', 
+                        content: 'Use the admin panel to unban users', 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                } else {
+                    appendMessage({ 
+                        username: 'System', 
+                        content: 'Usage: /unban username', 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                }
+            } else if (content.startsWith('/rename') && isAdmin) {
+                const parts = content.split(' ');
+                if (parts.length < 3) {
+                    appendMessage({ 
+                        username: 'System', 
+                        content: 'Usage: /rename username newname', 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                    return;
+                }
+                
+                const oldName = parts[1];
+                const newName = parts[2];
+                socket.emit('admin:rename_user', { oldName, newName });
+            } else {
+                // Unknown command
+                appendMessage({ 
+                    username: 'System', 
+                    content: `Unknown command: ${content}`, 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+            }
         } else {
             socket.emit('chat message', { content, isPrivate: false });
         }
@@ -734,41 +828,4 @@ socket.on('user count', data => updatePublicUserList(data));
 // Admin User Map Update (for Admin Panel management list)
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
-});
-
-function clearImagePreview() {
-    selectedImageDataUrl = null;
-    imagePreviewContainer.innerHTML = '';
-    fileInput.value = '';
-}
-
-// Add this function to display image preview
-function displayImagePreview(imageUrl) {
-    // Clear previous previews
-    imagePreviewContainer.innerHTML = '';
-    
-    const previewDiv = document.createElement('div');
-    previewDiv.className = 'image-preview';
-    previewDiv.innerHTML = `
-        <img src="${imageUrl}" alt="Preview" style="max-width: 200px; max-height: 200px;">
-        <button type="button" onclick="removeImagePreview()">×</button>
-    `;
-    
-    imagePreviewContainer.appendChild(previewDiv);
-}
-
-// Add file input change handler
-fileInput.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            selectedImageDataUrl = event.target.result;
-            displayImagePreview(selectedImageDataUrl);
-        }
-        reader.readAsDataURL(file);
-    } else {
-        // Clear preview if invalid file type
-        clearImagePreview();
-    }
 });
