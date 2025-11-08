@@ -548,96 +548,45 @@ body {
     color: #ccc;
 }
 
-/* Gemini-style Image Preview */
-#imagePreviewContainer {
+/* Image Preview Styles */
+.image-preview {
+    background: #232323;
+    border-radius: 18px 18px 18px 5px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 10px;
-    min-height: 20px;
-}
-
-.image-preview-container {
-    position: relative;
-    display: inline-block;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    transition: all 0.2s ease;
+    align-items: center;
+    padding: 7px 12px;
+    margin: 5px 0;
     max-width: 200px;
-    max-height: 200px;
-    width: 200px;
-    height: 200px;
+    position: relative;
 }
 
-.image-preview-container:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transform: translateY(-2px);
-}
-
-.image-preview-container img {
-    width: 100%;
-    height: 100%;
+.image-preview img {
+    background: #222;
+    border-radius: 10px;
+    margin-right: 10px;
     object-fit: cover;
-    border-radius: 8px;
-    display: block;
+    max-width: 150px;
+    max-height: 150px;
 }
 
-.image-preview-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.5);
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.image-preview-container:hover .image-preview-overlay {
-    opacity: 1;
-}
-
-.image-preview-overlay button {
-    background: rgba(255,255,255,0.9);
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-weight: bold;
-    color: #333;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-
-.image-preview-overlay button:hover {
-    background: rgba(255,255,255,1);
-}
-
-/* File Upload Button */
-.file-upload-btn {
-    position: absolute;
-    left: 20px;
-    top: 50%;
-    transform: translateY(-50%);
+.image-preview button {
+    margin-left: 10px;
+    font-size: 1rem;
     background: none;
     border: none;
+    color: #ff6b6b;
     cursor: pointer;
-    padding: 4px;
+    font-weight: bold;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #888;
-    z-index: 10;
-    transition: color 0.2s ease;
+    position: absolute;
+    top: -5px;
+    right: -5px;
 }
 
-.file-upload-btn:hover {
-    color: #fff;
+.image-preview button:hover {
+    color: #ff5252;
 }
