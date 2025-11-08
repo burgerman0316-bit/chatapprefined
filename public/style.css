@@ -590,3 +590,47 @@ body {
 .image-preview button:hover {
     color: #ff5252;
 }
+
+/* Image Preview Styles */
+.image-preview {
+    background: #232323;
+    border-radius: 18px 18px 18px 5px;
+    display: flex;
+    align-items: center;
+    padding: 7px 12px;
+    margin: 5px 0;
+    max-width: 200px;
+    position: relative;
+}
+
+.image-preview img {
+    background: #222;
+    border-radius: 10px;
+    margin-right: 10px;
+    object-fit: cover;
+    max-width: 150px;
+    max-height: 150px;
+}
+
+.image-preview button {
+    margin-left: 10px;
+    font-size: 1rem;
+    background: none;
+    border: none;
+    color: #ff6b6b;
+    cursor: pointer;
+    font-weight: bold;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: -5px;
+    right: -5px;
+}
+
+.image-preview button:hover {
+    color: #ff5252;
+}
+
