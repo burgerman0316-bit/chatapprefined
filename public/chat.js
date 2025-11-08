@@ -410,7 +410,6 @@ function removeImagePreview() {
 // --- Event Listeners ---
 
 // 1. Handle Message Form Submission 
-// In the messageForm submit handler, replace the entire section with this:
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
     const content = messageInputDiv.innerText.trim();
@@ -830,4 +829,3 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
-
