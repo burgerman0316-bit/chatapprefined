@@ -69,28 +69,6 @@ let selectedImageDataUrl = null;
 const fileInput = document.getElementById('fileUpload');
 const imagePreviewContainer = document.getElementById('imagePreviewContainer');
 
-// Add this function to clear image preview
-function clearImagePreview() {
-    selectedImageDataUrl = null;
-    imagePreviewContainer.innerHTML = '';
-    fileInput.value = '';
-}
-
-// Add this function to display image preview
-function displayImagePreview(imageUrl) {
-    // Clear previous previews
-    imagePreviewContainer.innerHTML = '';
-    
-    const previewDiv = document.createElement('div');
-    previewDiv.className = 'image-preview';
-    previewDiv.innerHTML = `
-        <img src="${imageUrl}" alt="Preview" style="max-width: 200px; max-height: 200px;">
-        <button type="button" onclick="removeImagePreview()">×</button>
-    `;
-    
-    imagePreviewContainer.appendChild(previewDiv);
-}
-
 // --- Initial Setup ---
 document.addEventListener('DOMContentLoaded', () => {
     myModal.show();
@@ -758,6 +736,27 @@ socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
 
+function clearImagePreview() {
+    selectedImageDataUrl = null;
+    imagePreviewContainer.innerHTML = '';
+    fileInput.value = '';
+}
+
+// Add this function to display image preview
+function displayImagePreview(imageUrl) {
+    // Clear previous previews
+    imagePreviewContainer.innerHTML = '';
+    
+    const previewDiv = document.createElement('div');
+    previewDiv.className = 'image-preview';
+    previewDiv.innerHTML = `
+        <img src="${imageUrl}" alt="Preview" style="max-width: 200px; max-height: 200px;">
+        <button type="button" onclick="removeImagePreview()">×</button>
+    `;
+    
+    imagePreviewContainer.appendChild(previewDiv);
+}
+
 // Add file input change handler
 fileInput.addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -773,4 +772,3 @@ fileInput.addEventListener('change', function(e) {
         clearImagePreview();
     }
 });
-
