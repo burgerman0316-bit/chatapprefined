@@ -534,6 +534,7 @@ messageForm.addEventListener('submit', e => {
     charCountContainer.style.color = '#ccc';
     clearImagePreview();
 });
+
 // 2. Input Character Counter (Visibility improved via CSS)
 messageInputDiv.addEventListener('input', () => {
   const text = messageInputDiv.innerText.trim(); // Trim invisible newline & spaces
@@ -813,6 +814,3 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
-
-
-
