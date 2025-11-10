@@ -305,7 +305,7 @@ function updateBannedUserList(banList) {
       (timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60)
     );
 
-    li.innerHTML = 
+    li.innerHTML = `
       <div>
         <strong>${ban.bannedName || "Unknown"}</strong>
         <div class="ban-info">
@@ -315,7 +315,7 @@ function updateBannedUserList(banList) {
         </div>
         <div class="ban-reason">Reason: ${ban.reason || "No reason"}</div>
       </div>
-;
+    `;
 
     // Store Google ID for server operation
     li.dataset.googleId = ban.googleId;
@@ -417,7 +417,6 @@ function clearImagePreview() {
 // --- Event Listeners ---
 
 // 1. Handle Message Form Submission 
-// 1. Handle Message Form Submission 
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
     const content = messageInputDiv.innerText.trim();
@@ -502,6 +501,7 @@ messageForm.addEventListener('submit', e => {
             const duration = parts[2];
             const reason = parts.slice(3).join(' ');
             
+            // For simplicity, we'll just send the command as-is
             socket.emit('admin:google_ban_user', { 
                 targetName: target,
                 targetGoogleId: null, 
@@ -513,6 +513,7 @@ messageForm.addEventListener('submit', e => {
         } else if (content.startsWith('/unban') && isAdmin) {
             const target = content.split(' ')[1];
             if (target) {
+                // Note: This would need server-side implementation to work properly
                 appendMessage({ 
                     username: 'System', 
                     content: 'Use the admin panel to unban users', 
@@ -527,7 +528,34 @@ messageForm.addEventListener('submit', e => {
                     type: 'system' 
                 });
             }
-        } else if (content.startsWit
+        } else if (content.startsWith('/rename') && isAdmin) {
+            const parts = content.split(' ');
+            if (parts.length < 3) {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'Usage: /rename username newname', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+                return;
+            }
+            
+            const oldName = parts[1];
+            const newName = parts[2];
+            socket.emit('admin:rename_user', { oldName, newName });
+        } else {
+            // Unknown command
+            appendMessage({ 
+                username: 'System', 
+                content: `Unknown command: ${content}`, 
+                timestamp: new Date(), 
+                type: 'system' 
+            });
+        }
+    } else {
+        socket.emit('chat message', { content, isPrivate: false });
+    }
+});
 
 // 2. Input Character Counter (Visibility improved via CSS)
 messageInputDiv.addEventListener('input', () => {
@@ -808,4 +836,3 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
-
