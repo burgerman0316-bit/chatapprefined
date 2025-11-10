@@ -548,45 +548,82 @@ body {
     color: #ccc;
 }
 
-/* Image Preview Styles */
+/* Image Preview Styles - Gemini Inspired */
 .image-preview {
-    background: #232323;
-    border-radius: 18px 18px 18px 5px;
-    display: flex;
+    background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    display: inline-flex;
     align-items: center;
-    padding: 7px 12px;
-    margin: 5px 0;
-    max-width: 200px;
+    padding: 8px;
+    margin: 8px 0;
+    max-width: fit-content;
     position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 
+                0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.image-preview:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 
+                0 2px 4px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
 .image-preview img {
-    background: #222;
-    border-radius: 10px;
-    margin-right: 10px;
+    background: #1a1a1a;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
     object-fit: cover;
-    max-width: 150px;
-    max-height: 150px;
+    max-width: 160px;
+    max-height: 160px;
+    min-width: 80px;
+    min-height: 80px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+}
+
+.image-preview:hover img {
+    transform: scale(1.02);
 }
 
 .image-preview button {
-    margin-left: 10px;
-    font-size: 1rem;
-    background: none;
-    border: none;
-    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.9);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    color: #fff;
     cursor: pointer;
-    font-weight: bold;
-    width: 20px;
-    height: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     position: absolute;
-    top: -5px;
-    right: -5px;
+    top: -8px;
+    right: -8px;
+    box-shadow: 0 2px 6px rgba(255, 107, 107, 0.4),
+                0 1px 3px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    transform: scale(0.8);
+}
+
+.image-preview:hover button {
+    opacity: 1;
+    transform: scale(1);
 }
 
 .image-preview button:hover {
-    color: #ff5252;
+    background: rgba(255, 82, 82, 1);
+    transform: scale(1.1);
+    box-shadow: 0 3px 8px rgba(255, 82, 82, 0.5),
+                0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.image-preview button:active {
+    transform: scale(0.95);
 }
