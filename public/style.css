@@ -294,11 +294,10 @@ body {
     border-top: 1px solid #444;
 }
 
+/* FIX: input-container reset for new flex layout */
 .input-container {
-    display: flex; 
-    padding: 10px;
-    max-width: 100% !important;
-    align-items: flex-start; 
+    padding: 0; 
+    /* The rest of the layout is handled by inline styles in the HTML */
 }
 
 .custom-input {
@@ -310,7 +309,7 @@ body {
     background-color: #383838;
     color: #f0f0f0;
     border: 1px solid #555;
-    margin-right: 8px;
+    /* margin-right: 8px; (Moved to HTML inline style to control spacing with send button) */
     min-height: 40px;
     max-height: 80px;
     overflow-y: auto;
@@ -337,13 +336,23 @@ body {
     background-color: #585858;
     color: white;
     cursor: pointer;
-    height: 40px; 
+    /* height: 40px; (Moved to HTML inline style) */
     align-self: flex-end; 
     flex-shrink: 0; 
 }
 
 .input-container button:hover {
     background-color: #4a4a4a;
+}
+
+/* FIX: Adjust the absolute positioning of the upload button icon */
+.input-container > button[type="button"] {
+    position: absolute; 
+    left: 20px; 
+    /* bottom: 18px; (Moved to HTML inline style) */
+    transform: none;
+    height: 36px;
+    width: 36px;
 }
 
 /* Word Count Display */
@@ -548,6 +557,12 @@ body {
     color: #ccc;
 }
 
+/* FIX: New Wrapper for image preview inside the input area */
+.image-preview-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
 /* Image Preview Styles - Gemini Inspired */
 .image-preview {
     background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
@@ -634,4 +649,3 @@ body {
 .image-preview button:active {
     transform: translate(-50%, -50%) scale(0.95);
 }
-
