@@ -481,7 +481,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding-top: 20px;
+    padding-top: 25px;
     padding-bottom: 1px;
 }
 
@@ -651,5 +651,6 @@ body {
 .image-preview button:active {
     transform: translate(-50%, -50%) scale(0.95);
 }
+
 
 
