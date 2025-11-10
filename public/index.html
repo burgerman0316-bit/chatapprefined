@@ -44,13 +44,24 @@
             <h3 id="chatTitle">Public Chat</h3>
             <ul id="messages"></ul>
             <form id="messageForm" action="">
-                <div class="input-container" style="position: relative;">
-                    <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message or command..." style="padding-left: 10px; padding-right: 70px;"></div>
+                
+                <div class="input-container" style="position: relative; display: flex; flex-direction: column; padding: 0;">
+                    
+                    <div id="imagePreviewContainer" style="padding: 5px 10px; min-height: 0px; display: flex; align-items: flex-start; gap: 10px;"></div>
+                    
+                    <div style="display: flex; align-items: flex-end; width: 100%; padding: 0 10px 10px 10px;">
+                        
+                        <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message or command..." style="padding-left: 50px; padding-right: 10px; margin-right: 8px; min-height: 40px; max-height: 80px; margin-bottom: 0;"></div>
+                        
+                        <button type="submit" style="padding: 10px 20px; height: 40px; align-self: flex-end;">Send</button>
+                    </div>
+                    
                     <input type="file" id="fileUpload" accept="image/*" style="display: none;">
+                    
                     <button 
                         type="button"
                         onclick="document.getElementById('fileUpload').click()"
-                        style="position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; color: #888; z-index: 10;"
+                        style="position: absolute; left: 20px; bottom: 18px; background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; color: #888; z-index: 10;"
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -58,10 +69,8 @@
                             <line x1="12" y1="3" x2="12" y2="15"></line>
                         </svg>
                     </button>
-                    <button type="submit" style="padding: 10px 20px;">Send</button>
-                    <!-- Image preview container -->
-                    <div id="imagePreviewContainer" style="position: absolute; bottom: 110%; left: 0; background: none;"></div>
                 </div>
+                
                 <div id="charCountContainer" class="char-count-display">
                     <span id="char-count">0/2000</span>
                 </div>
@@ -231,8 +240,3 @@
     <script src="chat.js"></script>
 </body>
 </html>
-
-
-
-
-
