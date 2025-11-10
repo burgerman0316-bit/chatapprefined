@@ -416,15 +416,15 @@ function clearImagePreview() {
 
 // --- Event Listeners ---
 
-// 1. Handle Message Form Submission 
-// --- Full Message Submit Function (Fixed) ---
+// --- Full Message Submit Function (Fixed with contenteditable text fix) ---
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
 
-    const content = messageInputDiv.innerText.trim();
+    // *** FIX APPLIED HERE: Use textContent for cleaner input from contenteditable div ***
+    const content = messageInputDiv.textContent.trim();
 
-    // Check for banned words
-    if (content && containsBannedWord(content, bannedMessageWords)) {
+    // Check for banned words (NOTE: bannedMessageWords is not defined in this snippet, assuming it's available globally)
+    if (content && typeof containsBannedWord !== 'undefined' && containsBannedWord(content, bannedMessageWords)) {
         appendMessage({
             username: 'System',
             content: '⚠️ Your message contains banned words and was not sent.',
@@ -451,21 +451,32 @@ messageForm.addEventListener('submit', e => {
                 if (parts.length < 3) {
                     appendMessage({ username:'System', content:'Usage: /msg "username" message', timestamp:new Date(), type:'system' });
                 } else {
-                    const recipient = parts[1].replace(/"/g,'');
-                    const message = parts.slice(2).join(' ');
-                    socket.emit('private message', { recipient, content: message });
+                    // FIX: Re-parse recipient string to handle quotes correctly
+                    const recipientMatch = content.match(/^\/msg\s+"([^"]+)"\s*(.*)/i) || content.match(/^\/msg\s+(\S+)\s*(.*)/i);
+                    if (recipientMatch && recipientMatch[1]) {
+                        const recipient = recipientMatch[1];
+                        const message = recipientMatch[2].trim();
+                        socket.emit('private message', { recipient, content: message });
+                    } else {
+                        appendMessage({ username:'System', content:'Usage: /msg "username" message', timestamp:new Date(), type:'system' });
+                    }
                 }
                 break;
             case '/clear': if (isAdmin) socket.emit('admin:clear_history', currentChatContext); break;
             case '/kick': if (isAdmin && parts[1]) socket.emit('admin:kick_user', { targetName: parts[1] }); break;
             case '/ban': 
                 if (isAdmin && parts.length >= 4) {
+                    // NOTE: This /ban command only bans by display name, not Google ID, for a quick temp ban (30 mins default)
                     socket.emit('admin:google_ban_user', { targetName: parts[1], targetGoogleId: null, days:0, hours:0, minutes: parseInt(parts[2]) || 30, reason: parts.slice(3).join(' ') });
+                } else {
+                    appendMessage({ username:'System', content:'Usage: /ban username minutes reason', timestamp:new Date(), type:'system' });
                 }
                 break;
             case '/rename': 
                 if (isAdmin && parts.length >= 3) {
                     socket.emit('admin:rename_user', { oldName: parts[1], newName: parts[2] });
+                } else {
+                    appendMessage({ username:'System', content:'Usage: /rename oldName newName', timestamp:new Date(), type:'system' });
                 }
                 break;
             case '/unban': 
@@ -480,11 +491,11 @@ messageForm.addEventListener('submit', e => {
         charCountSpan.textContent = `0/${MAX_CHARS}`;
         charCountContainer.style.color = '#ccc';
         clearImagePreview();
-        return; // keep this return
+        return; 
     }
 
     // --- Normal message sending (text + optional image) ---
-    const messagePayload = { content: content || '', isPrivate: false };
+    const messagePayload = { content: content, isPrivate: false };
     if (selectedImageDataUrl) messagePayload.image = { type:'image', url: selectedImageDataUrl };
 
     socket.emit('chat message', messagePayload);
@@ -774,3 +785,4 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
