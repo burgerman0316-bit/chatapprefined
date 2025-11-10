@@ -425,15 +425,13 @@ function clearImagePreview() {
 
 // --- Event Listeners ---
 
-// 1. Handle Message Form Submission 
-// --- Full Message Submit Function (Final Version) ---
-// --- Full Message Submit Function (Fixed) ---
+// --- Fixed Full Message Submit Function ---
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
 
     const content = messageInputDiv.innerText.trim();
 
-    // --- Check for banned words in message ---
+    // --- Banned word check for messages ---
     if (content && containsBannedWord(content, bannedMessageWords)) {
         appendMessage({
             username: 'System',
@@ -442,7 +440,6 @@ messageForm.addEventListener('submit', e => {
             type: 'system'
         });
 
-        // Reset input
         messageInputDiv.innerText = '';
         charCountSpan.textContent = `0/${MAX_CHARS}`;
         charCountContainer.style.color = '#ccc';
@@ -450,103 +447,71 @@ messageForm.addEventListener('submit', e => {
         return;
     }
 
-    // --- If message is empty and no image, cancel ---
+    // --- Cancel if empty and no image ---
     if (!content && !selectedImageDataUrl) return;
 
-    // --- Handle commands ---
+    // --- Command handling ---
     if (content.startsWith('/')) {
         const parts = content.split(' ');
+        const command = parts[0].toLowerCase();
 
-        // Private message
-        if (content.startsWith('/msg')) {
-            if (parts.length < 3) {
-                appendMessage({
-                    username: 'System',
-                    content: 'Usage: /msg "username" message',
-                    timestamp: new Date(),
-                    type: 'system'
-                });
-            } else {
-                const recipient = parts[1].replace(/"/g, '');
-                const message = parts.slice(2).join(' ');
-                socket.emit('private message', { recipient, content: message });
-            }
+        switch(command){
+            case '/msg':
+                if (parts.length < 3) {
+                    appendMessage({ username:'System', content:'Usage: /msg "username" message', timestamp:new Date(), type:'system' });
+                } else {
+                    const recipient = parts[1].replace(/"/g, '');
+                    const message = parts.slice(2).join(' ');
+                    socket.emit('private message', { recipient, content: message });
+                }
+                break;
 
-        // Clear chat
-        } else if (content === '/clear' && isAdmin) {
-            socket.emit('admin:clear_history', currentChatContext);
+            case '/clear':
+                if (isAdmin) socket.emit('admin:clear_history', currentChatContext);
+                break;
 
-        // Admin commands
-        } else if (content === '/machinegun' && isAdmin) {
-            socket.emit('admin:machinegun');
+            case '/machinegun':
+                if (isAdmin) socket.emit('admin:machinegun');
+                break;
 
-        } else if (content.startsWith('/kick') && isAdmin) {
-            const target = parts[1];
-            if (target) {
-                socket.emit('admin:kick_user', { targetName: target });
-            } else {
-                appendMessage({
-                    username: 'System',
-                    content: 'Usage: /kick username',
-                    timestamp: new Date(),
-                    type: 'system'
-                });
-            }
+            case '/kick':
+                if (isAdmin) {
+                    const target = parts[1];
+                    if (target) socket.emit('admin:kick_user', { targetName: target });
+                    else appendMessage({ username:'System', content:'Usage: /kick username', timestamp:new Date(), type:'system' });
+                }
+                break;
 
-        } else if (content.startsWith('/ban') && isAdmin) {
-            if (parts.length < 4) {
-                appendMessage({
-                    username: 'System',
-                    content: 'Usage: /ban username duration reason',
-                    timestamp: new Date(),
-                    type: 'system'
-                });
-            } else {
-                const target = parts[1];
-                const duration = parts[2];
-                const reason = parts.slice(3).join(' ');
-                socket.emit('admin:google_ban_user', {
-                    targetName: target,
-                    targetGoogleId: null,
-                    days: 0,
-                    hours: 0,
-                    minutes: parseInt(duration) || 30,
-                    reason: reason
-                });
-            }
+            case '/ban':
+                if (isAdmin && parts.length >= 4) {
+                    const target = parts[1];
+                    const duration = parts[2];
+                    const reason = parts.slice(3).join(' ');
+                    socket.emit('admin:google_ban_user', { targetName: target, targetGoogleId: null, days:0, hours:0, minutes:parseInt(duration)||30, reason });
+                } else {
+                    appendMessage({ username:'System', content:'Usage: /ban username duration reason', timestamp:new Date(), type:'system' });
+                }
+                break;
 
-        } else if (content.startsWith('/unban') && isAdmin) {
-            appendMessage({
-                username: 'System',
-                content: 'Use the admin panel to unban users',
-                timestamp: new Date(),
-                type: 'system'
-            });
+            case '/unban':
+                if (isAdmin) appendMessage({ username:'System', content:'Use the admin panel to unban users', timestamp:new Date(), type:'system' });
+                break;
 
-        } else if (content.startsWith('/rename') && isAdmin) {
-            if (parts.length < 3) {
-                appendMessage({
-                    username: 'System',
-                    content: 'Usage: /rename username newname',
-                    timestamp: new Date(),
-                    type: 'system'
-                });
-            } else {
-                const oldName = parts[1];
-                const newName = parts[2];
-                socket.emit('admin:rename_user', { oldName, newName });
-            }
+            case '/rename':
+                if (isAdmin && parts.length >= 3) {
+                    const oldName = parts[1];
+                    const newName = parts[2];
+                    socket.emit('admin:rename_user', { oldName, newName });
+                } else {
+                    appendMessage({ username:'System', content:'Usage: /rename username newname', timestamp:new Date(), type:'system' });
+                }
+                break;
 
-        } else {
-            appendMessage({
-                username: 'System',
-                content: `Unknown command: ${content}`,
-                timestamp: new Date(),
-                type: 'system'
-            });
+            default:
+                appendMessage({ username:'System', content:`Unknown command: ${content}`, timestamp:new Date(), type:'system' });
         }
 
-        // Clear input & preview after command
+        // Clear input and image preview
         messageInputDiv.innerText = '';
         charCountSpan.textContent = `0/${MAX_CHARS}`;
         charCountContainer.style.color = '#ccc';
@@ -554,28 +519,21 @@ messageForm.addEventListener('submit', e => {
         return;
     }
 
-    // --- Handle sending regular messages (text + optional image) ---
-    const messagePayload = {
-        content: content || '',
-        isPrivate: false
-    };
+    // --- Normal message (text + optional image) ---
+    const messagePayload = { content: content || '', isPrivate: false };
 
     if (selectedImageDataUrl) {
-        messagePayload.image = {
-            type: 'image',
-            url: selectedImageDataUrl
-        };
+        messagePayload.image = { type: 'image', url: selectedImageDataUrl };
     }
 
     socket.emit('chat message', messagePayload);
 
-    // --- Reset input + preview ---
+    // --- Reset input and preview ---
     messageInputDiv.innerText = '';
     charCountSpan.textContent = `0/${MAX_CHARS}`;
     charCountContainer.style.color = '#ccc';
     clearImagePreview();
 });
-
 // 2. Input Character Counter (Visibility improved via CSS)
 messageInputDiv.addEventListener('input', () => {
   const text = messageInputDiv.innerText.trim(); // Trim invisible newline & spaces
@@ -855,5 +813,6 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
 
 
