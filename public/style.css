@@ -481,8 +481,8 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding-top: 12px;
-    padding-bottom: 5px;
+    padding-top: 20px;
+    padding-bottom: 1px;
 }
 
 /* Remove default Google button background but keep the logo */
@@ -651,4 +651,5 @@ body {
 .image-preview button:active {
     transform: translate(-50%, -50%) scale(0.95);
 }
+
 
