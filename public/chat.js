@@ -423,7 +423,7 @@ messageForm.addEventListener('submit', e => {
 
     const content = messageInputDiv.innerText.trim();
 
-    // --- Check for banned words in message ---
+    // Check for banned words
     if (content && containsBannedWord(content, bannedMessageWords)) {
         appendMessage({
             username: 'System',
@@ -431,8 +431,6 @@ messageForm.addEventListener('submit', e => {
             timestamp: new Date(),
             type: 'system'
         });
-
-        // Reset input
         messageInputDiv.innerText = '';
         charCountSpan.textContent = `0/${MAX_CHARS}`;
         charCountContainer.style.color = '#ccc';
@@ -440,126 +438,57 @@ messageForm.addEventListener('submit', e => {
         return;
     }
 
-    // --- If message is empty and no image, cancel ---
+    // Cancel if empty AND no image
     if (!content && !selectedImageDataUrl) return;
 
-    // --- Handle commands ---
+    // --- Command handling ---
     if (content.startsWith('/')) {
         const parts = content.split(' ');
+        const cmd = parts[0].toLowerCase();
 
-        // Private message
-        if (content.startsWith('/msg')) {
-            if (parts.length < 3) {
-                appendMessage({
-                    username: 'System',
-                    content: 'Usage: /msg "username" message',
-                    timestamp: new Date(),
-                    type: 'system'
-                });
-            } else {
-                const recipient = parts[1].replace(/"/g, '');
-                const message = parts.slice(2).join(' ');
-                socket.emit('private message', { recipient, content: message });
-            }
-
-        // Clear chat
-        } else if (content === '/clear' && isAdmin) {
-            socket.emit('admin:clear_history', currentChatContext);
-
-        // Admin commands
-        } else if (content === '/machinegun' && isAdmin) {
-            socket.emit('admin:machinegun');
-
-        } else if (content.startsWith('/kick') && isAdmin) {
-            const target = parts[1];
-            if (target) {
-                socket.emit('admin:kick_user', { targetName: target });
-            } else {
-                appendMessage({
-                    username: 'System',
-                    content: 'Usage: /kick username',
-                    timestamp: new Date(),
-                    type: 'system'
-                });
-            }
-
-        } else if (content.startsWith('/ban') && isAdmin) {
-            if (parts.length < 4) {
-                appendMessage({
-                    username: 'System',
-                    content: 'Usage: /ban username duration reason',
-                    timestamp: new Date(),
-                    type: 'system'
-                });
-            } else {
-                const target = parts[1];
-                const duration = parts[2];
-                const reason = parts.slice(3).join(' ');
-                socket.emit('admin:google_ban_user', {
-                    targetName: target,
-                    targetGoogleId: null,
-                    days: 0,
-                    hours: 0,
-                    minutes: parseInt(duration) || 30,
-                    reason: reason
-                });
-            }
-
-        } else if (content.startsWith('/unban') && isAdmin) {
-            appendMessage({
-                username: 'System',
-                content: 'Use the admin panel to unban users',
-                timestamp: new Date(),
-                type: 'system'
-            });
-
-        } else if (content.startsWith('/rename') && isAdmin) {
-            if (parts.length < 3) {
-                appendMessage({
-                    username: 'System',
-                    content: 'Usage: /rename username newname',
-                    timestamp: new Date(),
-                    type: 'system'
-                });
-            } else {
-                const oldName = parts[1];
-                const newName = parts[2];
-                socket.emit('admin:rename_user', { oldName, newName });
-            }
-
-        } else {
-            appendMessage({
-                username: 'System',
-                content: `Unknown command: ${content}`,
-                timestamp: new Date(),
-                type: 'system'
-            });
+        switch(cmd) {
+            case '/msg':
+                if (parts.length < 3) {
+                    appendMessage({ username:'System', content:'Usage: /msg "username" message', timestamp:new Date(), type:'system' });
+                } else {
+                    const recipient = parts[1].replace(/"/g,'');
+                    const message = parts.slice(2).join(' ');
+                    socket.emit('private message', { recipient, content: message });
+                }
+                break;
+            case '/clear': if (isAdmin) socket.emit('admin:clear_history', currentChatContext); break;
+            case '/kick': if (isAdmin && parts[1]) socket.emit('admin:kick_user', { targetName: parts[1] }); break;
+            case '/ban': 
+                if (isAdmin && parts.length >= 4) {
+                    socket.emit('admin:google_ban_user', { targetName: parts[1], targetGoogleId: null, days:0, hours:0, minutes: parseInt(parts[2]) || 30, reason: parts.slice(3).join(' ') });
+                }
+                break;
+            case '/rename': 
+                if (isAdmin && parts.length >= 3) {
+                    socket.emit('admin:rename_user', { oldName: parts[1], newName: parts[2] });
+                }
+                break;
+            case '/unban': 
+                if (isAdmin) appendMessage({ username:'System', content:'Use the admin panel to unban users', timestamp:new Date(), type:'system' });
+                break;
+            default:
+                appendMessage({ username:'System', content:`Unknown command: ${content}`, timestamp:new Date(), type:'system' });
         }
 
-        // Clear input & preview after command
+        // Clear input after command
         messageInputDiv.innerText = '';
         charCountSpan.textContent = `0/${MAX_CHARS}`;
         charCountContainer.style.color = '#ccc';
         clearImagePreview();
-        return;
+        return; // keep this return
     }
 
-    // --- Handle sending regular messages (text + optional image) ---
-    const messagePayload = {
-        content: content || '',
-        isPrivate: false
-    };
-
-    if (selectedImageDataUrl) {
-        messagePayload.image = {
-            type: 'image',
-            url: selectedImageDataUrl
-        };
-    }
+    // --- Normal message sending (text + optional image) ---
+    const messagePayload = { content: content || '', isPrivate: false };
+    if (selectedImageDataUrl) messagePayload.image = { type:'image', url: selectedImageDataUrl };
 
     socket.emit('chat message', messagePayload);
 
-    // --- Reset input + preview ---
     messageInputDiv.innerText = '';
     charCountSpan.textContent = `0/${MAX_CHARS}`;
     charCountContainer.style.color = '#ccc';
@@ -845,4 +774,5 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
+
 
