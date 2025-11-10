@@ -581,49 +581,52 @@ body {
     min-width: 80px;
     min-height: 80px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Dark overlay on hover */
 .image-preview:hover img {
-    transform: scale(1.02);
+    filter: brightness(0.4);
 }
 
+/* X button centered */
 .image-preview button {
-    background: rgba(255, 107, 107, 0.9);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    backdrop-filter: none;
+    border: 2px solid rgba(255, 255, 255, 0.8);
     border-radius: 50%;
-    color: #fff;
+    color: rgba(255, 255, 255, 0.8);
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.9rem;
-    width: 24px;
-    height: 24px;
+    font-size: 1.2rem;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
     position: absolute;
-    top: -8px;
-    right: -8px;
-    box-shadow: 0 2px 6px rgba(255, 107, 107, 0.4),
-                0 1px 3px rgba(0, 0, 0, 0.3);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    box-shadow: none;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0;
-    transform: scale(0.8);
+    pointer-events: none;
 }
 
 .image-preview:hover button {
     opacity: 1;
-    transform: scale(1);
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
 }
 
 .image-preview button:hover {
-    background: rgba(255, 82, 82, 1);
-    transform: scale(1.1);
-    box-shadow: 0 3px 8px rgba(255, 82, 82, 0.5),
-                0 2px 4px rgba(0, 0, 0, 0.4);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 1);
+    color: rgba(255, 255, 255, 1);
+    transform: translate(-50%, -50%) scale(1.1);
 }
 
 .image-preview button:active {
-    transform: scale(0.95);
+    transform: translate(-50%, -50%) scale(0.95);
 }
