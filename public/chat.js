@@ -416,14 +416,14 @@ function clearImagePreview() {
 
 // --- Event Listeners ---
 
-// --- Full Message Submit Function (Fixed with contenteditable text fix) ---
+// --- Full Message Submit Function (Fixed for Image + Text) ---
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
 
-    // *** FIX APPLIED HERE: Use textContent for cleaner input from contenteditable div ***
+    // 1. Get the content (using textContent for cleaner input)
     const content = messageInputDiv.textContent.trim();
 
-    // Check for banned words (NOTE: bannedMessageWords is not defined in this snippet, assuming it's available globally)
+    // Check for banned words (assuming containsBannedWord and bannedMessageWords exist)
     if (content && typeof containsBannedWord !== 'undefined' && containsBannedWord(content, bannedMessageWords)) {
         appendMessage({
             username: 'System',
@@ -431,27 +431,27 @@ messageForm.addEventListener('submit', e => {
             timestamp: new Date(),
             type: 'system'
         });
-        messageInputDiv.innerText = '';
+        messageInputDiv.textContent = ''; // Use textContent for clearing to match retrieval
         charCountSpan.textContent = `0/${MAX_CHARS}`;
         charCountContainer.style.color = '#ccc';
-        clearImagePreview();
+        clearImagePreview(); // Clear any attached image
         return;
     }
 
-    // Cancel if empty AND no image
+    // 2. Cancel if empty AND no image
     if (!content && !selectedImageDataUrl) return;
 
     // --- Command handling ---
     if (content.startsWith('/')) {
         const parts = content.split(' ');
         const cmd = parts[0].toLowerCase();
-
+        
+        // ... (All existing command switch cases remain here) ...
         switch(cmd) {
             case '/msg':
                 if (parts.length < 3) {
                     appendMessage({ username:'System', content:'Usage: /msg "username" message', timestamp:new Date(), type:'system' });
                 } else {
-                    // FIX: Re-parse recipient string to handle quotes correctly
                     const recipientMatch = content.match(/^\/msg\s+"([^"]+)"\s*(.*)/i) || content.match(/^\/msg\s+(\S+)\s*(.*)/i);
                     if (recipientMatch && recipientMatch[1]) {
                         const recipient = recipientMatch[1];
@@ -466,7 +466,6 @@ messageForm.addEventListener('submit', e => {
             case '/kick': if (isAdmin && parts[1]) socket.emit('admin:kick_user', { targetName: parts[1] }); break;
             case '/ban': 
                 if (isAdmin && parts.length >= 4) {
-                    // NOTE: This /ban command only bans by display name, not Google ID, for a quick temp ban (30 mins default)
                     socket.emit('admin:google_ban_user', { targetName: parts[1], targetGoogleId: null, days:0, hours:0, minutes: parseInt(parts[2]) || 30, reason: parts.slice(3).join(' ') });
                 } else {
                     appendMessage({ username:'System', content:'Usage: /ban username minutes reason', timestamp:new Date(), type:'system' });
@@ -487,20 +486,22 @@ messageForm.addEventListener('submit', e => {
         }
 
         // Clear input after command
-        messageInputDiv.innerText = '';
+        messageInputDiv.textContent = ''; // Use textContent for clearing
         charCountSpan.textContent = `0/${MAX_CHARS}`;
         charCountContainer.style.color = '#ccc';
         clearImagePreview();
         return; 
     }
 
-    // --- Normal message sending (text + optional image) ---
+    // 3. --- Normal message sending (text + optional image) ---
     const messagePayload = { content: content, isPrivate: false };
     if (selectedImageDataUrl) messagePayload.image = { type:'image', url: selectedImageDataUrl };
 
     socket.emit('chat message', messagePayload);
 
-    messageInputDiv.innerText = '';
+    // 4. *** INPUT CLEARING MOVED HERE TO ENSURE PAYLOAD IS SENT ***
+    // We clear the visible text box only after the message content has been secured in the payload
+    messageInputDiv.textContent = ''; // Use textContent for clearing
     charCountSpan.textContent = `0/${MAX_CHARS}`;
     charCountContainer.style.color = '#ccc';
     clearImagePreview();
@@ -785,4 +786,3 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
-
