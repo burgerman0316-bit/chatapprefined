@@ -599,8 +599,11 @@ body {
     cursor: pointer;
     font-weight: 600;
     font-size: 1.2rem;
-    width: 40px;
-    height: 40px;
+    line-height: 1;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -612,6 +615,7 @@ body {
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0;
     pointer-events: none;
+    padding: 0;
 }
 
 .image-preview:hover button {
@@ -630,3 +634,4 @@ body {
 .image-preview button:active {
     transform: translate(-50%, -50%) scale(0.95);
 }
+
