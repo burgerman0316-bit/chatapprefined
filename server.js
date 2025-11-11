@@ -711,36 +711,35 @@ io.on('connection', socket => {
       }
       
       // If no Google ID provided, try to find it by name
-      if (!targetGoogleId && targetName) {
+      let finalGoogleId = targetGoogleId;
+      
+      if (!finalGoogleId && targetName) {
           // Look through the ban list for a matching name
-          let foundGoogleId = null;
           googleBanList.forEach((banInfo, googleId) => {
               if (banInfo.bannedName && banInfo.bannedName.toLowerCase() === targetName.toLowerCase()) {
-                  foundGoogleId = googleId;
+                  finalGoogleId = googleId;
               }
           });
           
-          if (foundGoogleId) {
-              targetGoogleId = foundGoogleId;
-          } else {
+          if (!finalGoogleId) {
               // Also try to find user by name in current session
               const targetUser = [...users.values()]
                   .find(user => user.displayName.toLowerCase() === targetName.toLowerCase());
               
               if (targetUser) {
-                  targetGoogleId = targetUser.googleId;
+                  finalGoogleId = targetUser.googleId;
               }
           }
       }
       
-      if (!targetGoogleId) {
+      if (!finalGoogleId) {
           socket.emit("system_error", "Unban failed: Could not find user by name or Google ID.");
           return;
       }
       
-      if (googleBanList.has(targetGoogleId)) {
-          const bannedUser = googleBanList.get(targetGoogleId);
-          googleBanList.delete(targetGoogleId);
+      if (googleBanList.has(finalGoogleId)) {
+          const bannedUser = googleBanList.get(finalGoogleId);
+          googleBanList.delete(finalGoogleId);
           
           const unbanMsg = {
               username: "System",
@@ -759,6 +758,7 @@ io.on('connection', socket => {
           socket.emit("system_error", "User is not currently banned.");
       }
   });
+
 
 
   // 11B. Admin: Rename User (with auto-save)
@@ -877,4 +877,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
