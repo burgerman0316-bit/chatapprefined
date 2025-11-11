@@ -20,7 +20,7 @@ const BANNED_WORDS = ['hitler', 'Albert'];
 const STAFF_LIST = [
   { loginName: 'Liam Stern', displayName: 'Liam Stern' },
   { loginName: 'Diesel Carter', displayName: 'Diesel Carter' },
-  //{ loginName: 'Ricardo Martinez', displayName: 'Ricky Martinez' },
+  { loginName: 'Ricardo Martinez', displayName: 'Ricky Martinez' },
   { loginName: 'Aaron Ortega', displayName: 'Aaron Ortega' },
   { loginName: 'Donovan Powell', displayName: 'Donovan Powell' }
 ];
@@ -867,6 +867,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
