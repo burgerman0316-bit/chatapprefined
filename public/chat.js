@@ -494,14 +494,14 @@ messageForm.addEventListener('submit', e => {
         } else if (content.startsWith('/unban') && isAdmin) {
             const target = content.split(' ')[1];
             if (target) {
-                // Now properly implement the unban command
+                // Now properly implement the unban command - pass the target name
                 socket.emit('admin:google_unban_user', { 
-                    targetName: target 
+                    targetName: target.replace(/"/g, '') // Remove quotes if present
                 });
             } else {
                 appendMessage({ 
                     username: 'System', 
-                    content: 'Usage: /unban username', 
+                    content: 'Usage: /unban "username"', 
                     timestamp: new Date(), 
                     type: 'system' 
                 });
