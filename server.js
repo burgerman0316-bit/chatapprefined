@@ -702,36 +702,54 @@ socket.on('chat message', msg => {
   });
 
   // 11. Admin: Unban User (Fixed)
+  // In the admin:google_unban_user handler, add the target name lookup:
   socket.on("admin:google_unban_user", (data) => {
-    const admin = users.get(socket.id);
-    const targetGoogleId = (data.targetGoogleId || "").trim();
-  
-    if (!admin || !admin.isAdmin || !targetGoogleId) {
-      socket.emit("system_error", "Unban failed: Unauthorized or missing Google ID.");
-      return;
-    }
-  
-    if (googleBanList.has(targetGoogleId)) {
-      const bannedUser = googleBanList.get(targetGoogleId);
-      googleBanList.delete(targetGoogleId);
-  
-      const unbanMsg = {
-        username: "System",
-        content: `Moderator ${admin.displayName} has UNBANNED ${bannedUser.bannedName || "a user"}.`,
-        timestamp: new Date(),
-        isAdmin: true,
-        type: "system"
-      };
-  
-      io.emit("chat message", unbanMsg);
-      socket.emit("system_alert", "User successfully unbanned.");
-  
-      // Send updated banlist to all admins
-      io.to(STAFF_ROOM).emit("ban_list_update", getBanList());
-    } else {
-      socket.emit("system_error", "User is not currently banned.");
-    }
+      const admin = users.get(socket.id);
+      const targetName = (data.targetName || "").trim();
+      const targetGoogleId = (data.targetGoogleId || "").trim();
+    
+      if (!admin || !admin.isAdmin) {
+          socket.emit("system_error", "Unban failed: Unauthorized.");
+          return;
+      }
+    
+      // If no Google ID provided, try to find it by name
+      if (!targetGoogleId && targetName) {
+          const targetUser = [...users.values()]
+              .find(user => user.displayName.toLowerCase() === targetName.toLowerCase());
+          
+          if (targetUser) {
+              targetGoogleId = targetUser.googleId;
+          }
+      }
+      
+      if (!targetGoogleId) {
+          socket.emit("system_error", "Unban failed: Could not find user by name or Google ID.");
+          return;
+      }
+    
+      if (googleBanList.has(targetGoogleId)) {
+          const bannedUser = googleBanList.get(targetGoogleId);
+          googleBanList.delete(targetGoogleId);
+      
+          const unbanMsg = {
+              username: "System",
+              content: `Moderator ${admin.displayName} has UNBANNED ${bannedUser.bannedName || "a user"}.`,
+              timestamp: new Date(),
+              isAdmin: true,
+              type: "system"
+          };
+      
+          io.emit("chat message", unbanMsg);
+          socket.emit("system_alert", "User successfully unbanned.");
+      
+          // Send updated banlist to all admins
+          io.to(STAFF_ROOM).emit("ban_list_update", getBanList());
+      } else {
+          socket.emit("system_error", "User is not currently banned.");
+      }
   });
+
 
   // 11B. Admin: Rename User (with auto-save)
   socket.on('admin:rename_user', (data) => {
@@ -849,5 +867,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
