@@ -27,8 +27,7 @@ const STAFF_LIST = [
 
 // Add a special property to track which users can only ban one person
 const LIMITED_BAN_USERS = {
-  'Blake Stanley': 'Ashaz Adil',
-  'Ashaz Adil': 'Blake Stanley'
+  
 };
 
 const chatHistory = [];
@@ -371,8 +370,7 @@ io.on('connection', socket => {
   });
 
   // 4. Normal Chat Messages
-  // 4. Normal Chat Messages
-socket.on('chat message', msg => {
+  socket.on('chat message', msg => {
     const user = users.get(socket.id);
     if (!user) {
         socket.emit('system_error', 'You must set a name first.');
@@ -413,7 +411,7 @@ socket.on('chat message', msg => {
     }
     
     broadcastUserCount();
-});
+  });
   
   // 5. Name Change (All Users)
   socket.on('name_change', newName => {
@@ -701,8 +699,7 @@ socket.on('chat message', msg => {
       broadcastUserCount();
   });
 
-  // 11. Admin: Unban User (Fixed)
-  // In the admin:google_unban_user handler, add the target name lookup:
+  // 11. Admin: Unban User (FIXED)
   socket.on("admin:google_unban_user", (data) => {
       const admin = users.get(socket.id);
       const targetName = (data.targetName || "").trim();
@@ -715,14 +712,27 @@ socket.on('chat message', msg => {
     
       // If no Google ID provided, try to find it by name
       if (!targetGoogleId && targetName) {
-          const targetUser = [...users.values()]
-              .find(user => user.displayName.toLowerCase() === targetName.toLowerCase());
+          // Look through the ban list for a matching name
+          let foundGoogleId = null;
+          googleBanList.forEach((banInfo, googleId) => {
+              if (banInfo.bannedName && banInfo.bannedName.toLowerCase() === targetName.toLowerCase()) {
+                  foundGoogleId = googleId;
+              }
+          });
           
-          if (targetUser) {
-              targetGoogleId = targetUser.googleId;
+          if (foundGoogleId) {
+              targetGoogleId = foundGoogleId;
+          } else {
+              // Also try to find user by name in current session
+              const targetUser = [...users.values()]
+                  .find(user => user.displayName.toLowerCase() === targetName.toLowerCase());
+              
+              if (targetUser) {
+                  targetGoogleId = targetUser.googleId;
+              }
           }
       }
-      
+    
       if (!targetGoogleId) {
           socket.emit("system_error", "Unban failed: Could not find user by name or Google ID.");
           return;
@@ -867,8 +877,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
-
-
-
-
