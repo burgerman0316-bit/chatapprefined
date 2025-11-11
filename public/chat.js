@@ -449,7 +449,9 @@ messageForm.addEventListener('submit', e => {
             const message = parts.slice(2).join(' ');
             socket.emit('private message', { recipient, content: message });
         } else if (content === '/clear' && isAdmin) {
-            socket.emit('admin:clear_history', currentChatContext);
+            // Show confirmation modal for clear command
+            clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';
+            clearConfirmModal.show();
         } else if (content === '/machinegun' && isAdmin) {
             socket.emit('admin:machinegun');
         } else if (content.startsWith('/kick') && isAdmin) {
@@ -489,59 +491,21 @@ messageForm.addEventListener('submit', e => {
                 minutes: parseInt(duration) || 30,
                 reason: reason
             });
-        } // In the messageForm submit handler, replace the /unban section:
-            else if (content.startsWith('/unban') && isAdmin) {
-                const target = content.split(' ')[1];
-                if (target) {
-                    socket.emit('admin:google_unban_user', { 
-                        targetName: target 
-                    });
-                } else {
-                    appendMessage({ 
-                        username: 'System', 
-                        content: 'Usage: /unban username', 
-                        timestamp: new Date(), 
-                        type: 'system' 
-                    });
-                }
+        } else if (content.startsWith('/unban') && isAdmin) {
+            const target = content.split(' ')[1];
+            if (target) {
+                // Now properly implement the unban command
+                socket.emit('admin:google_unban_user', { 
+                    targetName: target 
+                });
+            } else {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'Usage: /unban username', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
             }
-            
-            // In the clearChatBtn click handler, add the admin check:
-            document.getElementById('clearChatBtn').addEventListener('click', () => {
-                // Check if user can access admin chat
-                if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
-                    appendMessage({ 
-                        username: 'System', 
-                        content: 'You are not authorized to clear admin chat.', 
-                        timestamp: new Date(), 
-                        type: 'system' 
-                    });
-                    return;
-                }
-                
-                if (isAdmin) {
-                    clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';
-                    clearConfirmModal.show();
-                    const adminModal = bootstrap.Modal.getInstance(adminModalEl);
-                    if (adminModal) adminModal.hide();
-                } else {
-                    appendMessage({ 
-                        username: 'System', 
-                        content: 'You do not have permission to clear chat history.', 
-                        timestamp: new Date(), 
-                        type: 'system' 
-                    });
-                }
-            });
-            
-            // In the clearConfirmBtn click handler:
-            clearConfirmBtn.addEventListener('click', () => {
-                if (isAdmin) {
-                    socket.emit('admin:clear_history', currentChatContext); 
-                }
-                clearConfirmModal.hide(); 
-            });
-
         } else if (content.startsWith('/rename') && isAdmin) {
             const parts = content.split(' ');
             if (parts.length < 3) {
@@ -869,4 +833,3 @@ socket.on('user count', data => updatePublicUserList(data));
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
-
