@@ -873,9 +873,47 @@ io.on('connection', socket => {
   });
 });
 
+// Request Full Ban List (Diesel Carter only)
+socket.on('admin:request_full_ban_list', () => {
+    const user = users.get(socket.id);
+    if (!user || !user.isAdmin || user.displayName !== 'Diesel Carter') {
+        socket.emit('system_error', 'Unauthorized: This feature is restricted.');
+        return;
+    }
+    
+    const banListArray = [];
+    googleBanList.forEach((value, key) => {
+        banListArray.push({
+            googleId: key,
+            bannedName: value.bannedName || 'Unknown',
+            reason: value.reason,
+            banUntil: value.banUntil.toISOString()
+        });
+    });
+    
+    socket.emit('admin:ban_list_json', banListArray);
+});
+
+// Request Full Chat History (Diesel Carter only)
+socket.on('admin:request_full_chat_history', () => {
+    const user = users.get(socket.id);
+    if (!user || !user.isAdmin || user.displayName !== 'Diesel Carter') {
+        socket.emit('system_error', 'Unauthorized: This feature is restricted.');
+        return;
+    }
+    
+    const fullHistory = {
+        publicChat: chatHistory,
+        adminChat: adminChatHistory
+    };
+    
+    socket.emit('admin:chat_history_json', fullHistory);
+});
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
