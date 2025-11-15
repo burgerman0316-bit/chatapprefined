@@ -699,7 +699,7 @@ io.on('connection', socket => {
       broadcastUserCount();
   });
 
-  // 11. Admin: Unban User (FIXED)
+  // 11. Admin: Unban User (FIXED - Better lookup)
   socket.on("admin:google_unban_user", (data) => {
       const admin = users.get(socket.id);
       const targetName = (data.targetName || "").trim();
@@ -710,56 +710,62 @@ io.on('connection', socket => {
           return;
       }
       
-      // If no Google ID provided, try to find it by name
       let finalGoogleId = targetGoogleId;
+      let foundBannedName = null;
       
+      // If no Google ID provided, try to find it by name in ban list
       if (!finalGoogleId && targetName) {
-          // Look through the ban list for a matching name
-          googleBanList.forEach((banInfo, googleId) => {
-              if (banInfo.bannedName && banInfo.bannedName.toLowerCase() === targetName.toLowerCase()) {
-                  finalGoogleId = googleId;
-              }
-          });
+          const targetLower = targetName.toLowerCase();
           
+          // Search through ban list for matching name
+          for (const [googleId, banInfo] of googleBanList.entries()) {
+              if (banInfo.bannedName && banInfo.bannedName.toLowerCase() === targetLower) {
+                  finalGoogleId = googleId;
+                  foundBannedName = banInfo.bannedName;
+                  break;
+              }
+          }
+          
+          // If still not found, check currently connected users
           if (!finalGoogleId) {
-              // Also try to find user by name in current session
-              const targetUser = [...users.values()]
-                  .find(user => user.displayName.toLowerCase() === targetName.toLowerCase());
-              
-              if (targetUser) {
-                  finalGoogleId = targetUser.googleId;
+              for (const [socketId, user] of users.entries()) {
+                  if (user.displayName.toLowerCase() === targetLower && user.googleId) {
+                      finalGoogleId = user.googleId;
+                      foundBannedName = user.displayName;
+                      break;
+                  }
               }
           }
       }
       
       if (!finalGoogleId) {
-          socket.emit("system_error", "Unban failed: Could not find user by name or Google ID.");
+          socket.emit("system_error", `Unban failed: Could not find banned user '${targetName}'. Make sure the name matches exactly.`);
           return;
       }
       
       if (googleBanList.has(finalGoogleId)) {
           const bannedUser = googleBanList.get(finalGoogleId);
+          const unbannedName = bannedUser.bannedName || foundBannedName || "unknown user";
           googleBanList.delete(finalGoogleId);
           
           const unbanMsg = {
               username: "System",
-              content: `Moderator ${admin.displayName} has UNBANNED ${bannedUser.bannedName || "a user"}.`,
+              content: `Moderator ${admin.displayName} has UNBANNED ${unbannedName}.`,
               timestamp: new Date(),
               isAdmin: true,
               type: "system"
           };
           
+          pushHistory(unbanMsg, 'public');
           io.emit("chat message", unbanMsg);
-          socket.emit("system_alert", "User successfully unbanned.");
+          socket.emit("system_alert", `Successfully unbanned ${unbannedName}.`);
           
           // Send updated banlist to all admins
           io.to(STAFF_ROOM).emit("ban_list_update", getBanList());
       } else {
-          socket.emit("system_error", "User is not currently banned.");
+          socket.emit("system_error", `User '${targetName}' is not currently banned.`);
       }
   });
-
-
 
   // 11B. Admin: Rename User (with auto-save)
   socket.on('admin:rename_user', (data) => {
@@ -849,7 +855,52 @@ io.on('connection', socket => {
     }
   });
 
-  // 13. Disconnect 
+  // 13. Admin: Request Full Ban List (Diesel Carter only)
+  socket.on('admin:request_full_ban_list', () => {
+      const user = users.get(socket.id);
+      if (!user || !user.isAdmin || user.displayName !== 'Diesel Carter') {
+          socket.emit('system_error', 'Unauthorized: This feature is restricted.');
+          return;
+      }
+      
+      const banListArray = [];
+      googleBanList.forEach((value, key) => {
+          banListArray.push({
+              googleId: key,
+              bannedName: value.bannedName || 'Unknown',
+              reason: value.reason,
+              banUntil: value.banUntil.toISOString()
+          });
+      });
+      
+      socket.emit('admin:ban_list_json', banListArray);
+  });
+
+  // 14. Admin: Request Full Chat History (Diesel Carter only)
+  socket.on('admin:request_full_chat_history', () => {
+      const user = users.get(socket.id);
+      if (!user || !user.isAdmin || user.displayName !== 'Diesel Carter') {
+          socket.emit('system_error', 'Unauthorized: This feature is restricted.');
+          return;
+      }
+      
+      const fullHistory = {
+          publicChat: chatHistory,
+          adminChat: adminChatHistory
+      };
+      
+      socket.emit('admin:chat_history_json', fullHistory);
+  });
+
+  // 15. Admin: Request Ban List
+  socket.on('admin:request_ban_list', () => {
+      const user = users.get(socket.id);
+      if (!user || !user.isAdmin) return;
+      
+      socket.emit('ban_list_update', getBanList());
+  });
+
+  // 16. Disconnect 
   socket.on('disconnect', () => {
     const user = users.get(socket.id);
     if (!user) return;
@@ -873,47 +924,7 @@ io.on('connection', socket => {
   });
 });
 
-// Request Full Ban List (Diesel Carter only)
-socket.on('admin:request_full_ban_list', () => {
-    const user = users.get(socket.id);
-    if (!user || !user.isAdmin || user.displayName !== 'Diesel Carter') {
-        socket.emit('system_error', 'Unauthorized: This feature is restricted.');
-        return;
-    }
-    
-    const banListArray = [];
-    googleBanList.forEach((value, key) => {
-        banListArray.push({
-            googleId: key,
-            bannedName: value.bannedName || 'Unknown',
-            reason: value.reason,
-            banUntil: value.banUntil.toISOString()
-        });
-    });
-    
-    socket.emit('admin:ban_list_json', banListArray);
-});
-
-// Request Full Chat History (Diesel Carter only)
-socket.on('admin:request_full_chat_history', () => {
-    const user = users.get(socket.id);
-    if (!user || !user.isAdmin || user.displayName !== 'Diesel Carter') {
-        socket.emit('system_error', 'Unauthorized: This feature is restricted.');
-        return;
-    }
-    
-    const fullHistory = {
-        publicChat: chatHistory,
-        adminChat: adminChatHistory
-    };
-    
-    socket.emit('admin:chat_history_json', fullHistory);
-});
-
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
-
-
