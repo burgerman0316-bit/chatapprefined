@@ -417,10 +417,11 @@ function clearImagePreview() {
 // --- Event Listeners ---
 
 // --- Full Message Submit Function (Fixed for Image + Text) ---
+// --- Full Message Submit Function (Fixed for Image + Text) ---
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
 
-    // 1. FIX: Use textContent for cleaner input from contenteditable div
+    // 1. Use textContent for cleaner input from contenteditable div
     const content = messageInputDiv.textContent.trim();
 
     // 2. Cancel if empty AND no image
@@ -430,8 +431,11 @@ messageForm.addEventListener('submit', e => {
     if (content.startsWith('/')) {
         // Handle commands
         if (content.startsWith('/msg')) {
-            const parts = content.split(' ');
-            if (parts.length < 3) {
+            // FIX: Better parsing to handle quoted usernames
+            const msgRegex = /^\/msg\s+"([^"]+)"\s+(.+)$/;
+            const match = content.match(msgRegex);
+            
+            if (!match) {
                 appendMessage({ 
                     username: 'System', 
                     content: 'Usage: /msg "username" message', 
@@ -445,8 +449,8 @@ messageForm.addEventListener('submit', e => {
                 return;
             }
             
-            const recipient = parts[1].replace(/"/g, '');
-            const message = parts.slice(2).join(' ');
+            const recipient = match[1];
+            const message = match[2];
             socket.emit('private message', { recipient, content: message });
         } else if (content === '/clear' && isAdmin) {
             // Show confirmation modal for clear command
@@ -455,13 +459,16 @@ messageForm.addEventListener('submit', e => {
         } else if (content === '/machinegun' && isAdmin) {
             socket.emit('admin:machinegun');
         } else if (content.startsWith('/kick') && isAdmin) {
-            const target = content.split(' ')[1];
-            if (target) {
-                socket.emit('admin:kick_user', { targetName: target });
+            // FIX: Better parsing for kick command with quoted names
+            const kickRegex = /^\/kick\s+"?([^"]+)"?$/;
+            const match = content.match(kickRegex);
+            
+            if (match) {
+                socket.emit('admin:kick_user', { targetName: match[1].trim() });
             } else {
                 appendMessage({ 
                     username: 'System', 
-                    content: 'Usage: /kick username', 
+                    content: 'Usage: /kick "username"', 
                     timestamp: new Date(), 
                     type: 'system' 
                 });
@@ -471,18 +478,17 @@ messageForm.addEventListener('submit', e => {
             if (parts.length < 4) {
                 appendMessage({ 
                     username: 'System', 
-                    content: 'Usage: /ban username duration reason', 
+                    content: 'Usage: /ban "username" duration reason', 
                     timestamp: new Date(), 
                     type: 'system' 
                 });
                 return;
             }
             
-            const target = parts[1];
+            const target = parts[1].replace(/"/g, '');
             const duration = parts[2];
             const reason = parts.slice(3).join(' ');
             
-            // For simplicity, we'll just send the command as-is
             socket.emit('admin:google_ban_user', { 
                 targetName: target,
                 targetGoogleId: null, 
@@ -492,11 +498,13 @@ messageForm.addEventListener('submit', e => {
                 reason: reason
             });
         } else if (content.startsWith('/unban') && isAdmin) {
-            const target = content.split(' ')[1];
-            if (target) {
-                // Now properly implement the unban command - pass the target name
+            // FIX: Better parsing for unban command with quoted names
+            const unbanRegex = /^\/unban\s+"?([^"]+)"?$/;
+            const match = content.match(unbanRegex);
+            
+            if (match) {
                 socket.emit('admin:google_unban_user', { 
-                    targetName: target.replace(/"/g, '') // Remove quotes if present
+                    targetName: match[1].trim()
                 });
             } else {
                 appendMessage({ 
@@ -507,20 +515,22 @@ messageForm.addEventListener('submit', e => {
                 });
             }
         } else if (content.startsWith('/rename') && isAdmin) {
-            const parts = content.split(' ');
-            if (parts.length < 3) {
+            // FIX: Better parsing for rename command with quoted names
+            const renameRegex = /^\/rename\s+"([^"]+)"\s+"([^"]+)"$/;
+            const match = content.match(renameRegex);
+            
+            if (match) {
+                const oldName = match[1];
+                const newName = match[2];
+                socket.emit('admin:rename_user', { oldName, newName });
+            } else {
                 appendMessage({ 
                     username: 'System', 
-                    content: 'Usage: /rename username newname', 
+                    content: 'Usage: /rename "oldname" "newname"', 
                     timestamp: new Date(), 
                     type: 'system' 
                 });
-                return;
             }
-            
-            const oldName = parts[1];
-            const newName = parts[2];
-            socket.emit('admin:rename_user', { oldName, newName });
         } else {
             // Unknown command
             appendMessage({ 
@@ -540,15 +550,13 @@ messageForm.addEventListener('submit', e => {
     }
 
     // 3. --- Normal message sending (text + optional image) ---
-    // Payload is created using the captured 'content' variable
     const messagePayload = { content: content, isPrivate: false };
     if (selectedImageDataUrl) messagePayload.image = { type:'image', url: selectedImageDataUrl };
 
-    // Emit the message payload
     socket.emit('chat message', messagePayload);
 
-    // 4. FIX: INPUT CLEARING MOVED HERE: Clear the visible box ONLY after the message is emitted.
-    messageInputDiv.textContent = ''; // Use textContent for clearing
+    // 4. Clear input
+    messageInputDiv.textContent = '';
     charCountSpan.textContent = `0/${MAX_CHARS}`;
     charCountContainer.style.color = '#ccc';
     clearImagePreview();
@@ -704,6 +712,16 @@ renameBtn.addEventListener('click', () => {
     renameModal.show();
 });
 
+// Copy Ban List Button
+document.getElementById('copyBanListBtn').addEventListener('click', () => {
+    socket.emit('admin:request_full_ban_list');
+});
+
+// Copy Chat History Button
+document.getElementById('copyChatHistoryBtn').addEventListener('click', () => {
+    socket.emit('admin:request_full_chat_history');
+});
+
 // --- Socket Events ---
 
 // Shared function to handle successful login
@@ -720,11 +738,27 @@ function handleSuccessfulLogin(data) {
     renameBtn.style.display = 'block';
     document.getElementById('adminLogoutBtn').style.display = isAdmin ? 'block' : 'none'; 
     adminChatTab.style.display = isAdmin ? 'block' : 'none';
+
+    updateCopyButtonsVisibility();
     
     if (isAdmin && currentChatContext === ADMIN_CHAT_ID) {
         switchChatContext(ADMIN_CHAT_ID);
     } else {
         switchChatContext('public');
+    }
+}
+
+// Show copy buttons only for Diesel Carter
+function updateCopyButtonsVisibility() {
+    const copyBanListBtn = document.getElementById('copyBanListBtn');
+    const copyChatHistoryBtn = document.getElementById('copyChatHistoryBtn');
+    
+    if (displayName === 'Diesel Carter' && isAdmin) {
+        copyBanListBtn.style.display = 'block';
+        copyChatHistoryBtn.style.display = 'block';
+    } else {
+        copyBanListBtn.style.display = 'none';
+        copyChatHistoryBtn.style.display = 'none';
     }
 }
 
@@ -832,4 +866,45 @@ socket.on('user count', data => updatePublicUserList(data));
 // Admin User Map Update (for Admin Panel management list)
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
+});
+
+// Handle copy responses
+socket.on('admin:ban_list_json', (data) => {
+    navigator.clipboard.writeText(JSON.stringify(data, null, 2))
+        .then(() => {
+            appendMessage({ 
+                username: 'System', 
+                content: 'Ban list copied to clipboard!', 
+                timestamp: new Date(), 
+                type: 'system' 
+            });
+        })
+        .catch(err => {
+            appendMessage({ 
+                username: 'System', 
+                content: 'Failed to copy ban list: ' + err, 
+                timestamp: new Date(), 
+                type: 'system' 
+            });
+        });
+});
+
+socket.on('admin:chat_history_json', (data) => {
+    navigator.clipboard.writeText(JSON.stringify(data, null, 2))
+        .then(() => {
+            appendMessage({ 
+                username: 'System', 
+                content: 'Chat history copied to clipboard!', 
+                timestamp: new Date(), 
+                type: 'system' 
+            });
+        })
+        .catch(err => {
+            appendMessage({ 
+                username: 'System', 
+                content: 'Failed to copy chat history: ' + err, 
+                timestamp: new Date(), 
+                type: 'system' 
+            });
+        });
 });
