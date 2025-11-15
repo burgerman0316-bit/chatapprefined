@@ -35,14 +35,7 @@ const adminChatHistory = [];
 
 const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext, googleId }
 const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
-const googleBanList = new Map([
-  {
-    "googleId": "116544472850528383923",
-    "bannedName": "Burger Man",
-    "reason": "Spam/Hate Speech",
-    "banUntil": "2025-11-15T06:06:20.482Z"
-  }
-]); // googleId -> { banUntil: Date, reason: string }
+const googleBanList = new Map(); // googleId -> { banUntil: Date, reason: string }
 
 // Anonymous name generator
 const FIRST_NAMES = [
@@ -979,6 +972,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
