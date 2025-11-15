@@ -918,26 +918,53 @@ io.on('connection', socket => {
           return;
       }
       
-      // Filter out image data URLs to prevent huge JSON
+      // Sanitize chat history - remove images and convert dates
       const sanitizedPublicChat = chatHistory.map(msg => {
-          const sanitized = { ...msg };
-          if (sanitized.image && sanitized.image.url) {
-              sanitized.image = { type: 'image', url: '[IMAGE DATA REMOVED]' };
+          const sanitized = {
+              username: msg.username,
+              content: msg.content,
+              timestamp: msg.timestamp ? msg.timestamp.toISOString() : new Date().toISOString(),
+              isAdmin: msg.isAdmin || false,
+              type: msg.type || 'public',
+              isPrivate: msg.isPrivate || false
+          };
+          
+          if (msg.image) {
+              sanitized.image = { type: 'image', note: '[IMAGE DATA REMOVED]' };
           }
+          
+          if (msg.profilePic) {
+              sanitized.profilePic = '[PROFILE PIC URL]';
+          }
+          
           return sanitized;
       });
       
       const sanitizedAdminChat = adminChatHistory.map(msg => {
-          const sanitized = { ...msg };
-          if (sanitized.image && sanitized.image.url) {
-              sanitized.image = { type: 'image', url: '[IMAGE DATA REMOVED]' };
+          const sanitized = {
+              username: msg.username,
+              content: msg.content,
+              timestamp: msg.timestamp ? msg.timestamp.toISOString() : new Date().toISOString(),
+              isAdmin: msg.isAdmin || false,
+              type: msg.type || 'admin',
+              isPrivate: msg.isPrivate || false
+          };
+          
+          if (msg.image) {
+              sanitized.image = { type: 'image', note: '[IMAGE DATA REMOVED]' };
           }
+          
+          if (msg.profilePic) {
+              sanitized.profilePic = '[PROFILE PIC URL]';
+          }
+          
           return sanitized;
       });
       
       const fullHistory = {
           publicChat: sanitizedPublicChat,
-          adminChat: sanitizedAdminChat
+          adminChat: sanitizedAdminChat,
+          exportedAt: new Date().toISOString()
       };
       
       socket.emit('admin:chat_history_json', fullHistory);
@@ -979,6 +1006,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
