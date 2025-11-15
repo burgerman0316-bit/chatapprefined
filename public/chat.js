@@ -78,7 +78,7 @@ function initializeGoogleSignIn() {
     // Check if Google Identity Services is loaded
     if (typeof google !== 'undefined' && google.accounts) {
         google.accounts.id.initialize({
-            client_id: "48828983321-bn7hjk3clua805bb54r7mk4tjs1mjsbm.apps.googleusercontent.com", // Replace with your actual client ID
+            client_id: "48828983321-bn7hjk3clua805bb54r7mk4tjs1mjsbm.apps.googleusercontent.com",
             callback: handleGoogleLogin
         });
         
@@ -104,8 +104,8 @@ function handleGoogleLogin(response) {
     const payload = parseJwt(response.credential);
     const name = payload.name;
     const email = payload.email;
-    const googleId = payload.sub; // Google ID
-    const profilePic = payload.picture; // Profile picture
+    const googleId = payload.sub;
+    const profilePic = payload.picture;
     
     // Send to server
     socket.emit('google_login', { name, email, googleId, profilePic });
@@ -133,26 +133,21 @@ function appendMessage(msg) {
         item.classList.add('system');
         item.textContent = msg.content;
     } else if (msg.username === displayName || (msg.username === 'You' && msg.isPrivate)) {
-        // --- FINAL FIXED LOGIC: Ensures name display structure is correct ---
         item.classList.add('own');
         
-        // Use 'You' for private message confirmations, otherwise use their displayName
         const nameDisplay = (msg.username === 'You' && msg.isPrivate) 
             ? 'You' 
             : msg.username;
             
-        // Add a special class for private messages for potential styling
         const nameClass = (msg.isPrivate) 
             ? 'sender-name private-name' 
             : 'sender-name';
             
-        // Add profile picture if available
         let profilePicHtml = '';
         if (msg.profilePic) {
             profilePicHtml = `<img src="${msg.profilePic}" class="profile-pic" alt="Profile">`;
         }
         
-        // Handle image messages
         let contentHtml = '';
         if (msg.image && msg.image.type === 'image') {
             contentHtml = `<div class="msg-content">${profilePicHtml}<span class="msg-text"><img src="${msg.image.url}" style="max-width: 100%; max-height: 300px; border-radius: 8px;"></span></div>`;
@@ -161,10 +156,8 @@ function appendMessage(msg) {
         }
         
         item.innerHTML = `<span class="${nameClass}">${nameDisplay}</span>${contentHtml}${timeHtml}`;
-        // ------------------------------------------------------------------
     } else {
         item.classList.add('other');
-        // Don't add admin-msg class for Blake Stanley and Ashaz Adil
         if (msg.isAdmin && msg.username !== 'Blake Stanley' && msg.username !== 'Ashaz Adil') { 
             item.classList.add('admin-msg'); 
         }
@@ -172,13 +165,11 @@ function appendMessage(msg) {
         const nameDisplay = msg.isPrivate ? `Private from ${msg.username}` : msg.username;
         const nameClass = msg.isPrivate ? 'sender-name private-name' : 'sender-name';
         
-        // Add profile picture if available
         let profilePicHtml = '';
         if (msg.profilePic) {
             profilePicHtml = `<img src="${msg.profilePic}" class="profile-pic" alt="Profile">`;
         }
         
-        // Handle image messages
         let contentHtml = '';
         if (msg.image && msg.image.type === 'image') {
             contentHtml = `<div class="msg-content">${profilePicHtml}<span class="msg-text"><img src="${msg.image.url}" style="max-width: 100%; max-height: 300px; border-radius: 8px;"></span></div>`;
@@ -195,22 +186,19 @@ function appendMessage(msg) {
 
 // Utility: Updates the online user list for ALL clients (Public list)
 function updatePublicUserList(data) {
-    const userList = data.userList; // Sorted list of display names
-    const publicUserMap = data.usersMap; // Map of displayName -> { isAdmin }
+    const userList = data.userList;
+    const publicUserMap = data.usersMap;
     
-    // 1. Public Info Panel
     userCountEl.textContent = userList.length;
     userListEl.innerHTML = '';
     
     userList.forEach(userDisplayName => {
         const li = document.createElement('li');
         
-        // Find user status
         const userEntry = publicUserMap[userDisplayName] || {};
         
         li.textContent = userDisplayName;
         
-        // FIX: Display MOD tag in the public list ONLY for actual admins
         if (userEntry.isAdmin && userDisplayName !== 'Blake Stanley' && userDisplayName !== 'Ashaz Adil') { 
              li.textContent += ' (MOD)'; 
              li.classList.add('admin-name-list'); 
@@ -221,7 +209,6 @@ function updatePublicUserList(data) {
              messageInputDiv.innerText = `/msg \"${userDisplayName}\" `;
              messageInputDiv.focus();
              
-             // Move cursor to end of input
              const range = document.createRange();
              const sel = window.getSelection();
              range.selectNodeContents(messageInputDiv);
@@ -235,16 +222,14 @@ function updatePublicUserList(data) {
 
 // Utility: Updates the admin management list (Admin only)
 function updateAdminManagementList(adminUsersMap) {
-    if (!isAdmin) return; // Should only run for admins
+    if (!isAdmin) return;
 
     adminUserListEl.innerHTML = ''; 
     
-    // Iterate over the full admin map (includes IP)
     Object.keys(adminUsersMap).forEach(key => {
          const user = adminUsersMap[key];
          const userDisplayName = user.displayName;
          
-         // Only display users in public chat or currently logged-in admins
          if (user.chatContext !== 'public' && !user.isAdmin) return;
          
          const adminLi = document.createElement('li');
@@ -281,7 +266,6 @@ function updateBannedUserList(banList) {
   if (!bannedUserListEl) return;
   bannedUserListEl.innerHTML = "";
 
-  // No banned users message
   if (!banList || banList.length === 0) {
     const li = document.createElement("li");
     li.id = "no-bans-message";
@@ -291,13 +275,11 @@ function updateBannedUserList(banList) {
     return;
   }
 
-  // Loop over banned users
   banList.forEach((ban) => {
     const li = document.createElement("li");
     li.className = "banned-user-item";
     li.style.cursor = "pointer";
 
-    // Add display content
     const banUntil = new Date(ban.banUntil);
     const timeRemainingMs = banUntil - new Date();
     const hours = Math.floor(timeRemainingMs / (1000 * 60 * 60));
@@ -317,10 +299,8 @@ function updateBannedUserList(banList) {
       </div>
     `;
 
-    // Store Google ID for server operation
     li.dataset.googleId = ban.googleId;
 
-    // Add click unban handler
     li.addEventListener("click", () => {
       const name = ban.bannedName || "this user";
       if (confirm(`Unban ${name}?`)) {
@@ -334,13 +314,11 @@ function updateBannedUserList(banList) {
   });
 }
 
-
 // Utility: Switches the chat window (Public vs Admin)
 function switchChatContext(contextId) {
     if (contextId === currentChatContext) return;
     if (!isAdmin && contextId === ADMIN_CHAT_ID) return;
     
-    // Check if user can access admin chat
     if (contextId === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
         appendMessage({ 
             username: 'System', 
@@ -354,7 +332,6 @@ function switchChatContext(contextId) {
     currentChatContext = contextId;
     messagesDiv.innerHTML = ''; 
     
-    // Update tabs
     if (contextId === ADMIN_CHAT_ID) {
         adminChatTab.classList.add('active');
         publicChatTab.classList.remove('active');
@@ -365,8 +342,21 @@ function switchChatContext(contextId) {
         document.getElementById('chatTitle').textContent = 'Public Chat';
     }
     
-    // Tell the server to switch context and send history
     socket.emit('admin:set_context', contextId);
+}
+
+// Show copy buttons only for Diesel Carter
+function updateCopyButtonsVisibility() {
+    const copyBanListBtn = document.getElementById('copyBanListBtn');
+    const copyChatHistoryBtn = document.getElementById('copyChatHistoryBtn');
+    
+    if (displayName === 'Diesel Carter' && isAdmin) {
+        copyBanListBtn.style.display = 'block';
+        copyChatHistoryBtn.style.display = 'block';
+    } else {
+        copyBanListBtn.style.display = 'none';
+        copyChatHistoryBtn.style.display = 'none';
+    }
 }
 
 // Handle file selection
@@ -380,14 +370,12 @@ fileInput.addEventListener('change', function(e) {
         }
         reader.readAsDataURL(file);
     } else {
-        // Clear preview if invalid file type
         clearImagePreview();
     }
 });
 
 // Function to display image preview
 function displayImagePreview(imageUrl) {
-    // Clear previous previews
     imagePreviewContainer.innerHTML = '';
     
     const previewDiv = document.createElement('div');
@@ -414,65 +402,19 @@ function clearImagePreview() {
     fileInput.value = '';
 }
 
-// Fallback clipboard copy function
-function copyToClipboardFallback(text, itemName) {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.left = '-999999px';
-    textArea.style.top = '-999999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-            appendMessage({ 
-                username: 'System', 
-                content: `${itemName} copied to clipboard!`, 
-                timestamp: new Date(), 
-                type: 'system' 
-            });
-        } else {
-            appendMessage({ 
-                username: 'System', 
-                content: `Failed to copy ${itemName}. Please try again.`, 
-                timestamp: new Date(), 
-                type: 'system' 
-            });
-        }
-    } catch (err) {
-        appendMessage({ 
-            username: 'System', 
-            content: `Copy failed: ${err.message}. Data has been logged to console.`, 
-            timestamp: new Date(), 
-            type: 'system' 
-        });
-        console.log(`${itemName}:`, text);
-    } finally {
-        document.body.removeChild(textArea);
-    }
-}
-
 // --- Event Listeners ---
 
-// --- Full Message Submit Function (Fixed for Image + Text) ---
-// --- Full Message Submit Function (Fixed for Image + Text) ---
+// --- Full Message Submit Function (Fixed for Image + Text + Commands) ---
 messageForm.addEventListener('submit', e => {
     e.preventDefault();
 
-    // 1. Use textContent for cleaner input from contenteditable div
     const content = messageInputDiv.textContent.trim();
 
-    // 2. Cancel if empty AND no image
     if (!content && !selectedImageDataUrl) return;
 
     // --- Command handling ---
     if (content.startsWith('/')) {
-        // Handle commands
         if (content.startsWith('/msg')) {
-            // FIX: Better parsing to handle quoted usernames
             const msgRegex = /^\/msg\s+"([^"]+)"\s+(.+)$/;
             const match = content.match(msgRegex);
             
@@ -494,13 +436,11 @@ messageForm.addEventListener('submit', e => {
             const message = match[2];
             socket.emit('private message', { recipient, content: message });
         } else if (content === '/clear' && isAdmin) {
-            // Show confirmation modal for clear command
             clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';
             clearConfirmModal.show();
         } else if (content === '/machinegun' && isAdmin) {
             socket.emit('admin:machinegun');
         } else if (content.startsWith('/kick') && isAdmin) {
-            // FIX: Better parsing for kick command with quoted names
             const kickRegex = /^\/kick\s+"?([^"]+)"?$/;
             const match = content.match(kickRegex);
             
@@ -539,7 +479,6 @@ messageForm.addEventListener('submit', e => {
                 reason: reason
             });
         } else if (content.startsWith('/unban') && isAdmin) {
-            // FIX: Better parsing for unban command with quoted names
             const unbanRegex = /^\/unban\s+"?([^"]+)"?$/;
             const match = content.match(unbanRegex);
             
@@ -556,7 +495,6 @@ messageForm.addEventListener('submit', e => {
                 });
             }
         } else if (content.startsWith('/rename') && isAdmin) {
-            // FIX: Better parsing for rename command with quoted names
             const renameRegex = /^\/rename\s+"([^"]+)"\s+"([^"]+)"$/;
             const match = content.match(renameRegex);
             
@@ -573,7 +511,6 @@ messageForm.addEventListener('submit', e => {
                 });
             }
         } else {
-            // Unknown command
             appendMessage({ 
                 username: 'System', 
                 content: `Unknown command: ${content}`, 
@@ -582,7 +519,6 @@ messageForm.addEventListener('submit', e => {
             });
         }
         
-        // Clear input after command
         messageInputDiv.textContent = ''; 
         charCountSpan.textContent = `0/${MAX_CHARS}`;
         charCountContainer.style.color = '#ccc';
@@ -590,36 +526,32 @@ messageForm.addEventListener('submit', e => {
         return; 
     }
 
-    // 3. --- Normal message sending (text + optional image) ---
+    // Normal message sending
     const messagePayload = { content: content, isPrivate: false };
     if (selectedImageDataUrl) messagePayload.image = { type:'image', url: selectedImageDataUrl };
 
     socket.emit('chat message', messagePayload);
 
-    // 4. Clear input
     messageInputDiv.textContent = '';
     charCountSpan.textContent = `0/${MAX_CHARS}`;
     charCountContainer.style.color = '#ccc';
     clearImagePreview();
 });
 
-// 2. Input Character Counter (Visibility improved via CSS)
+// Input Character Counter
 messageInputDiv.addEventListener('input', () => {
-  const text = messageInputDiv.innerText.trim(); // Trim invisible newline & spaces
+  const text = messageInputDiv.innerText.trim();
   const currentLength = text.length;
 
   if (currentLength > MAX_CHARS) {
-    // Limit to max
     messageInputDiv.innerText = text.substring(0, MAX_CHARS);
     charCountSpan.textContent = `${MAX_CHARS}/${MAX_CHARS}`;
   } else if (currentLength === 0) {
-    // Properly show 0 when blank
     charCountSpan.textContent = `0/${MAX_CHARS}`;
   } else {
     charCountSpan.textContent = `${currentLength}/${MAX_CHARS}`;
   }
 
-  // Style color near limit
   if (currentLength >= MAX_CHARS * 0.9) {
     charCountContainer.style.color = "#ff4d4d";
   } else {
@@ -635,9 +567,8 @@ messageInputDiv.addEventListener('keydown', e => {
     }
 });
 
-// 3. Admin Panel Button Handlers
+// Admin Panel Button Handlers
 document.getElementById('clearChatBtn').addEventListener('click', () => {
-    // Check if user can access admin chat
     if (currentChatContext === ADMIN_CHAT_ID && (displayName === 'Blake Stanley' || displayName === 'Ashaz Adil')) {
         appendMessage({ 
             username: 'System', 
@@ -660,7 +591,7 @@ adminPanelBtn.addEventListener('click', () => {
     }
 });
 
-// 4. Clear History Confirmation Click 
+// Clear History Confirmation Click 
 clearConfirmBtn.addEventListener('click', () => {
     if (isAdmin) {
         socket.emit('admin:clear_history', currentChatContext); 
@@ -668,7 +599,7 @@ clearConfirmBtn.addEventListener('click', () => {
     clearConfirmModal.hide(); 
 });
 
-// 5. Admin: Kick User Confirmation Click Handler (Step 1: Open Ban Modal)
+// Admin: Kick User Confirmation Click Handler
 document.getElementById('kickToBanBtn').addEventListener('click', () => {
     kickConfirmModal.hide(); 
     
@@ -685,7 +616,7 @@ document.getElementById('kickToBanBtn').addEventListener('click', () => {
     }
 });
 
-// 6. Admin: Kick User Directly (Skip Ban Modal)
+// Admin: Kick User Directly
 document.getElementById('kickDirectlyBtn').addEventListener('click', () => {
      if (isAdmin && userToKick) {
          socket.emit('admin:kick_user', { targetName: userToKick });
@@ -695,7 +626,7 @@ document.getElementById('kickDirectlyBtn').addEventListener('click', () => {
      userGoogleIdToBan = null;
 });
 
-// 7. Admin: IP Ban Submission
+// Admin: IP Ban Submission
 banConfirmBtn.addEventListener('click', () => {
     if (!isAdmin || !userToKick || !userGoogleIdToBan) {
         banModal.hide();
@@ -726,18 +657,18 @@ banConfirmBtn.addEventListener('click', () => {
     userGoogleIdToBan = null;
 });
 
-// 8. Admin: Log out (Go Anonymous)
+// Admin: Log out (Go Anonymous)
 document.getElementById('adminLogoutBtn').addEventListener('click', () => {
     if (isAdmin) {
         socket.emit('admin:go_anonymous');
     }
 });
 
-// 9. Chat Tab Switches
+// Chat Tab Switches
 publicChatTab.addEventListener('click', () => switchChatContext('public'));
 adminChatTab.addEventListener('click', () => switchChatContext(ADMIN_CHAT_ID));
 
-// 10. Rename form submission
+// Rename form submission
 document.getElementById('rename-form').addEventListener('submit', e => {
     e.preventDefault();
     const newName = document.getElementById('new-name-input').value.trim();
@@ -747,39 +678,11 @@ document.getElementById('rename-form').addEventListener('submit', e => {
     renameModal.hide();
 });
 
-// 11. Enable rename button after successful login
+// Enable rename button after successful login
 renameBtn.addEventListener('click', () => {
     document.getElementById('new-name-input').value = displayName;
     renameModal.show();
 });
-
-// Copy Ban List Button
-// Download Ban List Button
-// Copy Ban List Button
-document.getElementById('copyBanListBtn').addEventListener('click', () => {
-    // Request data and store it temporarily
-    socket.emit('admin:request_full_ban_list');
-});
-
-// Copy Chat History Button
-document.getElementById('copyChatHistoryBtn').addEventListener('click', () => {
-    // Request data and store it temporarily
-    socket.emit('admin:request_full_chat_history');
-});
-
-// Helper function to download JSON as file
-function downloadJSON(data, filename) {
-    const jsonStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-}
 
 // --- Socket Events ---
 
@@ -797,27 +700,13 @@ function handleSuccessfulLogin(data) {
     renameBtn.style.display = 'block';
     document.getElementById('adminLogoutBtn').style.display = isAdmin ? 'block' : 'none'; 
     adminChatTab.style.display = isAdmin ? 'block' : 'none';
-
+    
     updateCopyButtonsVisibility();
     
     if (isAdmin && currentChatContext === ADMIN_CHAT_ID) {
         switchChatContext(ADMIN_CHAT_ID);
     } else {
         switchChatContext('public');
-    }
-}
-
-// Show copy buttons only for Diesel Carter
-function updateCopyButtonsVisibility() {
-    const copyBanListBtn = document.getElementById('copyBanListBtn');
-    const copyChatHistoryBtn = document.getElementById('copyChatHistoryBtn');
-    
-    if (displayName === 'Diesel Carter' && isAdmin) {
-        copyBanListBtn.style.display = 'block';
-        copyChatHistoryBtn.style.display = 'block';
-    } else {
-        copyBanListBtn.style.display = 'none';
-        copyChatHistoryBtn.style.display = 'none';
     }
 }
 
@@ -845,7 +734,7 @@ socket.on('admin_context_switched', newContext => {
     currentChatContext = newContext;
 });
 
-// Chat Events (Both Public and Private)
+// Chat Events
 socket.on('chat history', history => {
     messagesDiv.innerHTML = ''; 
     history.forEach(msg => appendMessage(msg));
@@ -875,12 +764,12 @@ socket.on('admin:history_cleared', data => {
 socket.on('system_error', msg => appendMessage({ username: 'System', content: `ERROR: ${msg}`, timestamp: new Date(), type: 'system' }));
 socket.on('system_alert', msg => appendMessage({ username: 'System', content: msg, timestamp: new Date(), type: 'system' }));
 
-// Ban List Update (Admin only)
+// Ban List Update
 socket.on('ban_list_update', banList => {
     updateBannedUserList(banList);
 });
 
-// IP Banned Modal (NEW)
+// IP Banned Modal
 socket.on('banned_modal', data => {
     const banReason = data.reason;
     const banDurationMs = data.banDurationMs;
@@ -891,7 +780,6 @@ socket.on('banned_modal', data => {
     bannedModalBody.innerHTML = `You are BANNED from the chat.<br>Reason: <strong>${banReason}</strong><br>Time remaining: <span id="banTimer"></span>`;
     bannedModal.show();
     
-    // Countdown Timer Logic
     let endTime = new Date().getTime() + banDurationMs;
     
     const timerInterval = setInterval(() => {
@@ -913,135 +801,101 @@ socket.on('banned_modal', data => {
         const timerElement = document.getElementById('banTimer');
         if (timerElement) {
             timerElement.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-        }
-    }, 1000);
-    
-    socket.disconnect();
+}
+}, 1000);
+socket.disconnect();
 });
-
 // User List Update
-socket.on('user count', data => updatePublicUserList(data)); 
-
-// Admin User Map Update (for Admin Panel management list)
+socket.on('user count', data => updatePublicUserList(data));
+// Admin User Map Update
 socket.on('admin_user_map', adminMap => {
-    updateAdminManagementList(adminMap);
+updateAdminManagementList(adminMap);
 });
-
-socket.on('admin:ban_list_json', (data) => {
-    const jsonStr = JSON.stringify(data, null, 2);
-    copyTextToClipboard(jsonStr, 'Ban list');
-});
-
-socket.on('admin:chat_history_json', (data) => {
-    const jsonStr = JSON.stringify(data, null, 2);
-    copyTextToClipboard(jsonStr, 'Chat history');
-});
-
-// Better clipboard copy function
-function copyTextToClipboard(text, itemName) {
-    // Create a temporary textarea
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    
-    // Make it invisible but ensure it's in the viewport
-    textArea.style.position = 'fixed';
-    textArea.style.top = '0';
-    textArea.style.left = '0';
-    textArea.style.width = '2em';
-    textArea.style.height = '2em';
-    textArea.style.padding = '0';
-    textArea.style.border = 'none';
-    textArea.style.outline = 'none';
-    textArea.style.boxShadow = 'none';
-    textArea.style.background = 'transparent';
-    
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    
-    // For iOS compatibility
-    textArea.setSelectionRange(0, 99999);
-    
-    try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-            appendMessage({ 
-                username: 'System', 
-                content: `${itemName} copied to clipboard! (${text.length} characters)`, 
-                timestamp: new Date(), 
-                type: 'system' 
-            });
-        } else {
-            throw new Error('Copy command returned false');
-        }
-    } catch (err) {
-        // Last resort: show modal with text to manually copy
-        showCopyModal(text, itemName);
-    } finally {
-        document.body.removeChild(textArea);
-    }
-}
-
-// Modal fallback if all else fails
-function showCopyModal(text, itemName) {
-    const modal = document.createElement('div');
-    modal.style.position = 'fixed';
-    modal.style.top = '50%';
-    modal.style.left = '50%';
-    modal.style.transform = 'translate(-50%, -50%)';
-    modal.style.backgroundColor = '#2c2c2c';
-    modal.style.padding = '20px';
-    modal.style.border = '2px solid #555';
-    modal.style.borderRadius = '8px';
-    modal.style.zIndex = '10000';
-    modal.style.maxWidth = '80%';
-    modal.style.maxHeight = '80%';
-    modal.style.overflow = 'auto';
-    
-    modal.innerHTML = `
-        <h3 style="color: #fff; margin-top: 0;">Copy ${itemName}</h3>
-        <p style="color: #ccc;">Press Ctrl+C (or Cmd+C on Mac) to copy:</p>
-        <textarea readonly style="width: 100%; height: 300px; background: #1e1e1e; color: #fff; border: 1px solid #555; padding: 10px; font-family: monospace;">${text}</textarea>
-        <button onclick="this.parentElement.remove()" style="margin-top: 10px; padding: 10px 20px; background: #585858; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Close</button>
-    `;
-    
-    document.body.appendChild(modal);
-    modal.querySelector('textarea').select();
-}
-
-// Modal fallback if all else fails
-function showCopyModal(text, itemName) {
-    const modal = document.createElement('div');
-    modal.style.position = 'fixed';
-    modal.style.top = '50%';
-    modal.style.left = '50%';
-    modal.style.transform = 'translate(-50%, -50%)';
-    modal.style.backgroundColor = '#2c2c2c';
-    modal.style.padding = '20px';
-    modal.style.border = '2px solid #555';
-    modal.style.borderRadius = '8px';
-    modal.style.zIndex = '10000';
-    modal.style.maxWidth = '80%';
-    modal.style.maxHeight = '80%';
-    modal.style.overflow = 'auto';
-    
-    modal.innerHTML = `
-        <h3 style="color: #fff; margin-top: 0;">Copy ${itemName}</h3>
-        <p style="color: #ccc;">Press Ctrl+C (or Cmd+C on Mac) to copy:</p>
-        <textarea readonly style="width: 100%; height: 300px; background: #1e1e1e; color: #fff; border: 1px solid #555; padding: 10px; font-family: monospace;">${text}</textarea>
-        <button onclick="this.parentElement.remove()" style="margin-top: 10px; padding: 10px 20px; background: #585858; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Close</button>
-    `;
-    
-    document.body.appendChild(modal);
-    modal.querySelector('textarea').select();
-}
-
+// ===== DIESEL CARTER COPY FUNCTIONALITY =====
 // Copy Ban List Button Handler
 document.getElementById('copyBanListBtn').addEventListener('click', () => {
-    socket.emit('admin:request_full_ban_list');
+socket.emit('admin:request_full_ban_list');
 });
-
 // Copy Chat History Button Handler
 document.getElementById('copyChatHistoryBtn').addEventListener('click', () => {
-    socket.emit('admin:request_full_chat_history');
+socket.emit('admin:request_full_chat_history');
+});
+// Handle ban list copy response - Show in modal
+socket.on('admin:ban_list_json', (data) => {
+const jsonStr = JSON.stringify(data, null, 2);
+// Create a modal to display the data
+const modalHTML = `
+    <div class="modal fade" id="copyDataModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ban List Data - Select All and Copy (Ctrl+C)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="copyDataText" readonly style="width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;">${jsonStr}</textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');">Copy to Clipboard</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+`;
+
+// Remove old modal if exists
+const oldModal = document.getElementById('copyDataModal');
+if (oldModal) oldModal.remove();
+
+// Add new modal
+document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+// Show modal
+const modal = new bootstrap.Modal(document.getElementById('copyDataModal'));
+modal.show();
+
+// Auto-select text when modal opens
+document.getElementById('copyDataModal').addEventListener('shown.bs.modal', () => {
+    document.getElementById('copyDataText').select();
+});
+});
+// Handle chat history copy response - Show in modal
+socket.on('admin:chat_history_json', (data) => {
+const jsonStr = JSON.stringify(data, null, 2);
+// Create a modal to display the data
+const modalHTML = `
+    <div class="modal fade" id="copyDataModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Chat History Data - Select All and Copy (Ctrl+C)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="copyDataText" readonly style="width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;">${jsonStr}</textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');">Copy to Clipboard</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+`;
+
+// Remove old modal if exists
+const oldModal = document.getElementById('copyDataModal');
+if (oldModal) oldModal.remove();
+
+// Add new modal
+document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+// Show modal
+const modal = new bootstrap.Modal(document.getElementById('copyDataModal'));
+modal.show();
+
+// Auto-select text when modal opens
+document.getElementById('copyDataModal').addEventListener('shown.bs.modal', () => {
+    document.getElementById('copyDataText').select();
 });
