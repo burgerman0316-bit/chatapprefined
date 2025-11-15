@@ -30,41 +30,7 @@ const LIMITED_BAN_USERS = {
   
 };
 
-const chatHistory = [{
-  "publicChat": [
-    {
-      "username": "System",
-      "content": "A moderator has entered the chat.",
-      "timestamp": "2025-11-15T05:44:42.399Z",
-      "isAdmin": true,
-      "type": "system"
-    },
-    {
-      "username": "System",
-      "content": "Burger Man has joined the chat.",
-      "timestamp": "2025-11-15T05:44:44.945Z",
-      "isAdmin": false,
-      "type": "system"
-    },
-    {
-      "username": "Burger Man",
-      "content": "hi",
-      "timestamp": "2025-11-15T05:44:51.179Z",
-      "isAdmin": false,
-      "profilePic": "https://lh3.googleusercontent.com/a/ACg8ocLyzQTiD7Jz0ALNzos8gRUVuZjujhyL0WuK1YIScDot1QUdRw=s96-c",
-      "type": "public"
-    },
-    {
-      "username": "Diesel Carter",
-      "content": "hi",
-      "timestamp": "2025-11-15T05:44:54.518Z",
-      "isAdmin": true,
-      "profilePic": "https://lh3.googleusercontent.com/a/ACg8ocIndl6vnMlbMEXoJg0p0hBBw7hkc56F8duSpF1g4GQpucsZ2nPG=s96-c",
-      "type": "public"
-    }
-  ],
-  "adminChat": []
-}];
+const chatHistory = [];
 const adminChatHistory = []; 
 
 const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext, googleId }
@@ -1006,6 +972,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
