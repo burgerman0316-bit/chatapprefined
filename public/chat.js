@@ -972,3 +972,99 @@ socket.on('admin:chat_history_json', (data) => {
         copyToClipboardFallback(jsonStr, 'chat history');
     }
 });
+
+// ===== DIESEL CARTER COPY FUNCTIONALITY =====
+
+// Better clipboard copy function
+function copyTextToClipboard(text, itemName) {
+    // Create a temporary textarea
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    
+    // Make it invisible but ensure it's in the viewport
+    textArea.style.position = 'fixed';
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+    textArea.style.padding = '0';
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+    textArea.style.background = 'transparent';
+    
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    // For iOS compatibility
+    textArea.setSelectionRange(0, 99999);
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            appendMessage({ 
+                username: 'System', 
+                content: `${itemName} copied to clipboard! (${text.length} characters)`, 
+                timestamp: new Date(), 
+                type: 'system' 
+            });
+        } else {
+            throw new Error('Copy command returned false');
+        }
+    } catch (err) {
+        // Last resort: show modal with text to manually copy
+        showCopyModal(text, itemName);
+    } finally {
+        document.body.removeChild(textArea);
+    }
+}
+
+// Modal fallback if all else fails
+function showCopyModal(text, itemName) {
+    const modal = document.createElement('div');
+    modal.style.position = 'fixed';
+    modal.style.top = '50%';
+    modal.style.left = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+    modal.style.backgroundColor = '#2c2c2c';
+    modal.style.padding = '20px';
+    modal.style.border = '2px solid #555';
+    modal.style.borderRadius = '8px';
+    modal.style.zIndex = '10000';
+    modal.style.maxWidth = '80%';
+    modal.style.maxHeight = '80%';
+    modal.style.overflow = 'auto';
+    
+    modal.innerHTML = `
+        <h3 style="color: #fff; margin-top: 0;">Copy ${itemName}</h3>
+        <p style="color: #ccc;">Press Ctrl+C (or Cmd+C on Mac) to copy:</p>
+        <textarea readonly style="width: 100%; height: 300px; background: #1e1e1e; color: #fff; border: 1px solid #555; padding: 10px; font-family: monospace;">${text}</textarea>
+        <button onclick="this.parentElement.remove()" style="margin-top: 10px; padding: 10px 20px; background: #585858; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.querySelector('textarea').select();
+}
+
+// Copy Ban List Button Handler
+document.getElementById('copyBanListBtn').addEventListener('click', () => {
+    socket.emit('admin:request_full_ban_list');
+});
+
+// Copy Chat History Button Handler
+document.getElementById('copyChatHistoryBtn').addEventListener('click', () => {
+    socket.emit('admin:request_full_chat_history');
+});
+
+// Handle ban list copy response
+socket.on('admin:ban_list_json', (data) => {
+    const jsonStr = JSON.stringify(data, null, 2);
+    copyTextToClipboard(jsonStr, 'Ban list');
+});
+
+// Handle chat history copy response
+socket.on('admin:chat_history_json', (data) => {
+    const jsonStr = JSON.stringify(data, null, 2);
+    copyTextToClipboard(jsonStr, 'Chat history');
+});
