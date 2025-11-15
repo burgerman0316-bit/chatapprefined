@@ -755,12 +755,15 @@ renameBtn.addEventListener('click', () => {
 
 // Copy Ban List Button
 // Download Ban List Button
+// Copy Ban List Button
 document.getElementById('copyBanListBtn').addEventListener('click', () => {
+    // Request data and store it temporarily
     socket.emit('admin:request_full_ban_list');
 });
 
-// Download Chat History Button
+// Copy Chat History Button
 document.getElementById('copyChatHistoryBtn').addEventListener('click', () => {
+    // Request data and store it temporarily
     socket.emit('admin:request_full_chat_history');
 });
 
@@ -924,56 +927,15 @@ socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
 });
 
-// Handle copy responses with fallback
 socket.on('admin:ban_list_json', (data) => {
     const jsonStr = JSON.stringify(data, null, 2);
-    
-    // Try modern clipboard API first
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(jsonStr)
-            .then(() => {
-                appendMessage({ 
-                    username: 'System', 
-                    content: 'Ban list copied to clipboard!', 
-                    timestamp: new Date(), 
-                    type: 'system' 
-                });
-            })
-            .catch(() => {
-                // Fallback to legacy method
-                copyToClipboardFallback(jsonStr, 'ban list');
-            });
-    } else {
-        // Use fallback method directly
-        copyToClipboardFallback(jsonStr, 'ban list');
-    }
+    copyTextToClipboard(jsonStr, 'Ban list');
 });
 
 socket.on('admin:chat_history_json', (data) => {
     const jsonStr = JSON.stringify(data, null, 2);
-    
-    // Try modern clipboard API first
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(jsonStr)
-            .then(() => {
-                appendMessage({ 
-                    username: 'System', 
-                    content: 'Chat history copied to clipboard!', 
-                    timestamp: new Date(), 
-                    type: 'system' 
-                });
-            })
-            .catch(() => {
-                // Fallback to legacy method
-                copyToClipboardFallback(jsonStr, 'chat history');
-            });
-    } else {
-        // Use fallback method directly
-        copyToClipboardFallback(jsonStr, 'chat history');
-    }
+    copyTextToClipboard(jsonStr, 'Chat history');
 });
-
-// ===== DIESEL CARTER COPY FUNCTIONALITY =====
 
 // Better clipboard copy function
 function copyTextToClipboard(text, itemName) {
@@ -1047,6 +1009,33 @@ function showCopyModal(text, itemName) {
     modal.querySelector('textarea').select();
 }
 
+// Modal fallback if all else fails
+function showCopyModal(text, itemName) {
+    const modal = document.createElement('div');
+    modal.style.position = 'fixed';
+    modal.style.top = '50%';
+    modal.style.left = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+    modal.style.backgroundColor = '#2c2c2c';
+    modal.style.padding = '20px';
+    modal.style.border = '2px solid #555';
+    modal.style.borderRadius = '8px';
+    modal.style.zIndex = '10000';
+    modal.style.maxWidth = '80%';
+    modal.style.maxHeight = '80%';
+    modal.style.overflow = 'auto';
+    
+    modal.innerHTML = `
+        <h3 style="color: #fff; margin-top: 0;">Copy ${itemName}</h3>
+        <p style="color: #ccc;">Press Ctrl+C (or Cmd+C on Mac) to copy:</p>
+        <textarea readonly style="width: 100%; height: 300px; background: #1e1e1e; color: #fff; border: 1px solid #555; padding: 10px; font-family: monospace;">${text}</textarea>
+        <button onclick="this.parentElement.remove()" style="margin-top: 10px; padding: 10px 20px; background: #585858; color: #fff; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.querySelector('textarea').select();
+}
+
 // Copy Ban List Button Handler
 document.getElementById('copyBanListBtn').addEventListener('click', () => {
     socket.emit('admin:request_full_ban_list');
@@ -1055,16 +1044,4 @@ document.getElementById('copyBanListBtn').addEventListener('click', () => {
 // Copy Chat History Button Handler
 document.getElementById('copyChatHistoryBtn').addEventListener('click', () => {
     socket.emit('admin:request_full_chat_history');
-});
-
-// Handle ban list copy response
-socket.on('admin:ban_list_json', (data) => {
-    const jsonStr = JSON.stringify(data, null, 2);
-    copyTextToClipboard(jsonStr, 'Ban list');
-});
-
-// Handle chat history copy response
-socket.on('admin:chat_history_json', (data) => {
-    const jsonStr = JSON.stringify(data, null, 2);
-    copyTextToClipboard(jsonStr, 'Chat history');
 });
