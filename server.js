@@ -30,117 +30,7 @@ const LIMITED_BAN_USERS = {
   
 };
 
-const chatHistory = [{
-  "publicChat": [
-    {
-      "username": "System",
-      "content": "A moderator has entered the chat.",
-      "timestamp": "2025-11-15T05:50:34.201Z",
-      "isAdmin": true,
-      "type": "system",
-      "isPrivate": false
-    },
-    {
-      "username": "System",
-      "content": "Burger Man has joined the chat.",
-      "timestamp": "2025-11-15T05:50:37.310Z",
-      "isAdmin": false,
-      "type": "system",
-      "isPrivate": false
-    },
-    {
-      "username": "Burger Man",
-      "content": "h",
-      "timestamp": "2025-11-15T05:50:40.601Z",
-      "isAdmin": false,
-      "type": "public",
-      "isPrivate": false,
-      "profilePic": "[PROFILE PIC URL]"
-    },
-    {
-      "username": "Burger Man",
-      "content": "h",
-      "timestamp": "2025-11-15T05:50:40.799Z",
-      "isAdmin": false,
-      "type": "public",
-      "isPrivate": false,
-      "profilePic": "[PROFILE PIC URL]"
-    },
-    {
-      "username": "Burger Man",
-      "content": "h",
-      "timestamp": "2025-11-15T05:50:40.979Z",
-      "isAdmin": false,
-      "type": "public",
-      "isPrivate": false,
-      "profilePic": "[PROFILE PIC URL]"
-    },
-    {
-      "username": "Burger Man",
-      "content": "h",
-      "timestamp": "2025-11-15T05:50:41.165Z",
-      "isAdmin": false,
-      "type": "public",
-      "isPrivate": false,
-      "profilePic": "[PROFILE PIC URL]"
-    },
-    {
-      "username": "Burger Man",
-      "content": "h",
-      "timestamp": "2025-11-15T05:50:41.302Z",
-      "isAdmin": false,
-      "type": "public",
-      "isPrivate": false,
-      "profilePic": "[PROFILE PIC URL]"
-    },
-    {
-      "username": "Diesel Carter",
-      "content": "hh",
-      "timestamp": "2025-11-15T05:50:43.939Z",
-      "isAdmin": true,
-      "type": "public",
-      "isPrivate": false,
-      "profilePic": "[PROFILE PIC URL]"
-    },
-    {
-      "username": "Diesel Carter",
-      "content": "h",
-      "timestamp": "2025-11-15T05:50:44.319Z",
-      "isAdmin": true,
-      "type": "public",
-      "isPrivate": false,
-      "profilePic": "[PROFILE PIC URL]"
-    },
-    {
-      "username": "Diesel Carter",
-      "content": "h",
-      "timestamp": "2025-11-15T05:50:44.519Z",
-      "isAdmin": true,
-      "type": "public",
-      "isPrivate": false,
-      "profilePic": "[PROFILE PIC URL]"
-    },
-    {
-      "username": "Diesel Carter",
-      "content": "h",
-      "timestamp": "2025-11-15T05:50:44.719Z",
-      "isAdmin": true,
-      "type": "public",
-      "isPrivate": false,
-      "profilePic": "[PROFILE PIC URL]"
-    },
-    {
-      "username": "Diesel Carter",
-      "content": "h",
-      "timestamp": "2025-11-15T05:50:46.059Z",
-      "isAdmin": true,
-      "type": "public",
-      "isPrivate": false,
-      "profilePic": "[PROFILE PIC URL]"
-    }
-  ],
-  "exportedAt": "2025-11-15T05:50:48.885Z"
-}];
+const chatHistory = [];
 const adminChatHistory = []; 
 
 const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext, googleId }
@@ -1082,6 +972,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
