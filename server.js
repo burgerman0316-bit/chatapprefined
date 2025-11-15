@@ -884,9 +884,26 @@ io.on('connection', socket => {
           return;
       }
       
+      // Filter out image data URLs to prevent huge JSON
+      const sanitizedPublicChat = chatHistory.map(msg => {
+          const sanitized = { ...msg };
+          if (sanitized.image && sanitized.image.url) {
+              sanitized.image = { type: 'image', url: '[IMAGE DATA REMOVED]' };
+          }
+          return sanitized;
+      });
+      
+      const sanitizedAdminChat = adminChatHistory.map(msg => {
+          const sanitized = { ...msg };
+          if (sanitized.image && sanitized.image.url) {
+              sanitized.image = { type: 'image', url: '[IMAGE DATA REMOVED]' };
+          }
+          return sanitized;
+      });
+      
       const fullHistory = {
-          publicChat: chatHistory,
-          adminChat: adminChatHistory
+          publicChat: sanitizedPublicChat,
+          adminChat: sanitizedAdminChat
       };
       
       socket.emit('admin:chat_history_json', fullHistory);
@@ -928,5 +945,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
