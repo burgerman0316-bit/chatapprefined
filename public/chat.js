@@ -283,17 +283,13 @@ function updateBannedUserList(banList) {
     const banUntil = new Date(ban.banUntil);
     const timeRemainingMs = banUntil - new Date();
     const hours = Math.floor(timeRemainingMs / (1000 * 60 * 60));
-    const minutes = Math.floor(
-      (timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60)
-    );
+    const minutes = Math.floor((timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60));
 
     li.innerHTML = `
       <div>
         <strong>${ban.bannedName || "Unknown"}</strong>
         <div class="ban-info">
-          ${hours > 0 || minutes > 0
-            ? `${hours}h ${minutes}m left`
-            : "Expired or permanent"}
+          ${hours > 0 || minutes > 0 ? `${hours}h ${minutes}m left` : "Expired or permanent"}
         </div>
         <div class="ban-reason">Reason: ${ban.reason || "No reason"}</div>
       </div>
@@ -801,101 +797,102 @@ socket.on('banned_modal', data => {
         const timerElement = document.getElementById('banTimer');
         if (timerElement) {
             timerElement.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-}
-}, 1000);
-socket.disconnect();
+        }
+        }, 1000);
+    
+    socket.disconnect();
 });
+
 // User List Update
-socket.on('user count', data => updatePublicUserList(data));
+socket.on('user count', data => updatePublicUserList(data)); 
+
 // Admin User Map Update
 socket.on('admin_user_map', adminMap => {
-updateAdminManagementList(adminMap);
+    updateAdminManagementList(adminMap);
 });
+
 // ===== DIESEL CARTER COPY FUNCTIONALITY =====
+
 // Copy Ban List Button Handler
 document.getElementById('copyBanListBtn').addEventListener('click', () => {
-socket.emit('admin:request_full_ban_list');
+    socket.emit('admin:request_full_ban_list');
 });
+
 // Copy Chat History Button Handler
 document.getElementById('copyChatHistoryBtn').addEventListener('click', () => {
-socket.emit('admin:request_full_chat_history');
+    socket.emit('admin:request_full_chat_history');
 });
+
 // Handle ban list copy response - Show in modal
 socket.on('admin:ban_list_json', (data) => {
-const jsonStr = JSON.stringify(data, null, 2);
-// Create a modal to display the data
-const modalHTML = `
-    <div class="modal fade" id="copyDataModal" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Ban List Data - Select All and Copy (Ctrl+C)</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <textarea id="copyDataText" readonly style="width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;">${jsonStr}</textarea>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" onclick="document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');">Copy to Clipboard</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    const jsonStr = JSON.stringify(data, null, 2);
+    
+    const modalHTML = `
+        <div class="modal fade" id="copyDataModal" tabindex="-1" data-bs-backdrop="static">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Ban List Data - Select All and Copy (Ctrl+C)</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <textarea id="copyDataText" readonly style="width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;">${jsonStr}</textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');">Copy to Clipboard</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-`;
-
-// Remove old modal if exists
-const oldModal = document.getElementById('copyDataModal');
-if (oldModal) oldModal.remove();
-
-// Add new modal
-document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-// Show modal
-const modal = new bootstrap.Modal(document.getElementById('copyDataModal'));
-modal.show();
-
-// Auto-select text when modal opens
-document.getElementById('copyDataModal').addEventListener('shown.bs.modal', () => {
-    document.getElementById('copyDataText').select();
+    `;
+    
+    const oldModal = document.getElementById('copyDataModal');
+    if (oldModal) oldModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    const modal = new bootstrap.Modal(document.getElementById('copyDataModal'));
+    modal.show();
+    
+    document.getElementById('copyDataModal').addEventListener('shown.bs.modal', () => {
+        document.getElementById('copyDataText').select();
+    });
 });
-});
+
 // Handle chat history copy response - Show in modal
 socket.on('admin:chat_history_json', (data) => {
-const jsonStr = JSON.stringify(data, null, 2);
-// Create a modal to display the data
-const modalHTML = `
-    <div class="modal fade" id="copyDataModal" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Chat History Data - Select All and Copy (Ctrl+C)</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <textarea id="copyDataText" readonly style="width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;">${jsonStr}</textarea>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" onclick="document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');">Copy to Clipboard</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+    const jsonStr = JSON.stringify(data, null, 2);
+    
+    const modalHTML = `
+        <div class="modal fade" id="copyDataModal" tabindex="-1" data-bs-backdrop="static">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Chat History Data - Select All and Copy (Ctrl+C)</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <textarea id="copyDataText" readonly style="width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;">${jsonStr}</textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');">Copy to Clipboard</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-`;
-
-// Remove old modal if exists
-const oldModal = document.getElementById('copyDataModal');
-if (oldModal) oldModal.remove();
-
-// Add new modal
-document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-// Show modal
-const modal = new bootstrap.Modal(document.getElementById('copyDataModal'));
-modal.show();
-
-// Auto-select text when modal opens
-document.getElementById('copyDataModal').addEventListener('shown.bs.modal', () => {
-    document.getElementById('copyDataText').select();
+    `;
+    
+    const oldModal = document.getElementById('copyDataModal');
+    if (oldModal) oldModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    const modal = new bootstrap.Modal(document.getElementById('copyDataModal'));
+    modal.show();
+    
+    document.getElementById('copyDataModal').addEventListener('shown.bs.modal', () => {
+        document.getElementById('copyDataText').select();
+    });
 });
