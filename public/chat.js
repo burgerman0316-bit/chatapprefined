@@ -713,14 +713,29 @@ renameBtn.addEventListener('click', () => {
 });
 
 // Copy Ban List Button
+// Download Ban List Button
 document.getElementById('copyBanListBtn').addEventListener('click', () => {
     socket.emit('admin:request_full_ban_list');
 });
 
-// Copy Chat History Button
+// Download Chat History Button
 document.getElementById('copyChatHistoryBtn').addEventListener('click', () => {
     socket.emit('admin:request_full_chat_history');
 });
+
+// Helper function to download JSON as file
+function downloadJSON(data, filename) {
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
 
 // --- Socket Events ---
 
@@ -908,3 +923,4 @@ socket.on('admin:chat_history_json', (data) => {
             });
         });
 });
+
