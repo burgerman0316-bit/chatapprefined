@@ -414,6 +414,47 @@ function clearImagePreview() {
     fileInput.value = '';
 }
 
+// Fallback clipboard copy function
+function copyToClipboardFallback(text, itemName) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            appendMessage({ 
+                username: 'System', 
+                content: `${itemName} copied to clipboard!`, 
+                timestamp: new Date(), 
+                type: 'system' 
+            });
+        } else {
+            appendMessage({ 
+                username: 'System', 
+                content: `Failed to copy ${itemName}. Please try again.`, 
+                timestamp: new Date(), 
+                type: 'system' 
+            });
+        }
+    } catch (err) {
+        appendMessage({ 
+            username: 'System', 
+            content: `Copy failed: ${err.message}. Data has been logged to console.`, 
+            timestamp: new Date(), 
+            type: 'system' 
+        });
+        console.log(`${itemName}:`, text);
+    } finally {
+        document.body.removeChild(textArea);
+    }
+}
+
 // --- Event Listeners ---
 
 // --- Full Message Submit Function (Fixed for Image + Text) ---
@@ -881,4 +922,53 @@ socket.on('user count', data => updatePublicUserList(data));
 // Admin User Map Update (for Admin Panel management list)
 socket.on('admin_user_map', adminMap => {
     updateAdminManagementList(adminMap);
+});
+
+// Handle copy responses with fallback
+socket.on('admin:ban_list_json', (data) => {
+    const jsonStr = JSON.stringify(data, null, 2);
+    
+    // Try modern clipboard API first
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(jsonStr)
+            .then(() => {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'Ban list copied to clipboard!', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+            })
+            .catch(() => {
+                // Fallback to legacy method
+                copyToClipboardFallback(jsonStr, 'ban list');
+            });
+    } else {
+        // Use fallback method directly
+        copyToClipboardFallback(jsonStr, 'ban list');
+    }
+});
+
+socket.on('admin:chat_history_json', (data) => {
+    const jsonStr = JSON.stringify(data, null, 2);
+    
+    // Try modern clipboard API first
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(jsonStr)
+            .then(() => {
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'Chat history copied to clipboard!', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+            })
+            .catch(() => {
+                // Fallback to legacy method
+                copyToClipboardFallback(jsonStr, 'chat history');
+            });
+    } else {
+        // Use fallback method directly
+        copyToClipboardFallback(jsonStr, 'chat history');
+    }
 });
