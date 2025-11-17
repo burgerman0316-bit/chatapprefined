@@ -52,6 +52,22 @@ const banDurationHoursInput = document.getElementById('banDurationHours');
 const banDurationMinutesInput = document.getElementById('banDurationMinutes');
 const banReasonInput = document.getElementById('banReason');
 
+// Modal Elements for Restore Ban List
+const restoreBanListModalEl = document.getElementById('restoreBanListModal');
+const restoreBanListModal = new bootstrap.Modal(restoreBanListModalEl);
+const restoreBanListTextarea = document.getElementById('restoreBanListTextarea');
+const confirmRestoreBanListBtn = document.getElementById('confirmRestoreBanListBtn');
+
+// Modal Elements for Restore Chat History
+const restoreChatHistoryModalEl = document.getElementById('restoreChatHistoryModal');
+const restoreChatHistoryModal = new bootstrap.Modal(restoreChatHistoryModalEl);
+const restoreChatHistoryTextarea = document.getElementById('restoreChatHistoryTextarea');
+const confirmRestoreChatHistoryBtn = document.getElementById('confirmRestoreChatHistoryBtn');
+
+// New restore buttons in admin panel
+const restoreBanListBtn = document.getElementById('restoreBanListBtn');
+const restoreChatHistoryBtn = document.getElementById('restoreChatHistoryBtn');
+
 // File upload variables
 let selectedImageDataUrl = null;
 const fileInput = document.getElementById('fileUpload');
@@ -127,7 +143,7 @@ function appendMessage(msg) {
     
     const time = new Date(msg.timestamp);
     const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); 
-    const timeHtml = `<span class="timestamp">${timeString}</span>`; 
+    const timeHtml = `<span class=\"timestamp\">${timeString}</span>`; 
 
     if (msg.type === 'system') {
         item.classList.add('system');
@@ -145,17 +161,17 @@ function appendMessage(msg) {
             
         let profilePicHtml = '';
         if (msg.profilePic) {
-            profilePicHtml = `<img src="${msg.profilePic}" class="profile-pic" alt="Profile">`;
+            profilePicHtml = `<img src=\"${msg.profilePic}\" class=\"profile-pic\" alt=\"Profile\">`;
         }
         
         let contentHtml = '';
         if (msg.image && msg.image.type === 'image') {
-            contentHtml = `<div class="msg-content">${profilePicHtml}<span class="msg-text"><img src="${msg.image.url}" style="max-width: 100%; max-height: 300px; border-radius: 8px;"></span></div>`;
+            contentHtml = `<div class=\"msg-content\">${profilePicHtml}<span class=\"msg-text\"><img src=\"${msg.image.url}\" style=\"max-width: 100%; max-height: 300px; border-radius: 8px;\"></span></div>`;
         } else {
-            contentHtml = `<div class="msg-content">${profilePicHtml}<span class="msg-text">${msg.content}</span></div>`;
+            contentHtml = `<div class=\"msg-content\">${profilePicHtml}<span class=\"msg-text\">${msg.content}</span></div>`;
         }
         
-        item.innerHTML = `<span class="${nameClass}">${nameDisplay}</span>${contentHtml}${timeHtml}`;
+        item.innerHTML = `<span class=\"${nameClass}\">${nameDisplay}</span>${contentHtml}${timeHtml}`;
     } else {
         item.classList.add('other');
         if (msg.isAdmin && msg.username !== 'Blake Stanley' && msg.username !== 'Ashaz Adil') { 
@@ -167,17 +183,17 @@ function appendMessage(msg) {
         
         let profilePicHtml = '';
         if (msg.profilePic) {
-            profilePicHtml = `<img src="${msg.profilePic}" class="profile-pic" alt="Profile">`;
+            profilePicHtml = `<img src=\"${msg.profilePic}\" class=\"profile-pic\" alt=\"Profile\">`;
         }
         
         let contentHtml = '';
         if (msg.image && msg.image.type === 'image') {
-            contentHtml = `<div class="msg-content">${profilePicHtml}<span class="msg-text"><img src="${msg.image.url}" style="max-width: 100%; max-height: 300px; border-radius: 8px;"></span></div>`;
+            contentHtml = `<div class=\"msg-content\">${profilePicHtml}<span class=\"msg-text\"><img src=\"${msg.image.url}\" style=\"max-width: 100%; max-height: 300px; border-radius: 8px;\"></span></div>`;
         } else {
-            contentHtml = `<div class="msg-content">${profilePicHtml}<span class="msg-text">${msg.content}</span></div>`;
+            contentHtml = `<div class=\"msg-content\">${profilePicHtml}<span class=\"msg-text\">${msg.content}</span></div>`;
         }
         
-        item.innerHTML = `<span class="${nameClass}">${nameDisplay}</span>${contentHtml}${timeHtml}`;
+        item.innerHTML = `<span class=\"${nameClass}\">${nameDisplay}</span>${contentHtml}${timeHtml}`;
     }
 
     messagesDiv.appendChild(item);
@@ -206,7 +222,7 @@ function updatePublicUserList(data) {
         
         li.title = `Click to send private message to ${userDisplayName}`;
         li.addEventListener('click', () => {
-             messageInputDiv.innerText = `/msg \"${userDisplayName}\" `;
+             messageInputDiv.innerText = `/msg \\\"${userDisplayName}\\\" `;
              messageInputDiv.focus();
              
              const range = document.createRange();
@@ -288,11 +304,11 @@ function updateBannedUserList(banList) {
     li.innerHTML = `
       <div>
         <strong>${ban.bannedName || "Unknown"}</strong>
-        <div class="ban-info">
-          ${hours > 0 || minutes > 0 ? `${hours}h ${minutes}m left` : "Expired or permanent"}
-        </div>
-        <div class="ban-reason">Reason: ${ban.reason || "No reason"}</div>
-      </div>
+        <div class=\"ban-info\">\
+          ${hours > 0 || minutes > 0 ? `${hours}h ${minutes}m left` : "Expired or permanent"}\
+        </div>\
+        <div class=\"ban-reason\">Reason: ${ban.reason || "No reason"}</div>\
+      </div>\
     `;
 
     li.dataset.googleId = ban.googleId;
@@ -341,17 +357,23 @@ function switchChatContext(contextId) {
     socket.emit('admin:set_context', contextId);
 }
 
-// Show copy buttons only for Diesel Carter
-function updateCopyButtonsVisibility() {
+// Show copy and restore buttons only for Diesel Carter
+function updateAdminPanelButtonsVisibility() {
     const copyBanListBtn = document.getElementById('copyBanListBtn');
     const copyChatHistoryBtn = document.getElementById('copyChatHistoryBtn');
+    const restoreBanListBtn = document.getElementById('restoreBanListBtn');
+    const restoreChatHistoryBtn = document.getElementById('restoreChatHistoryBtn');
     
     if (displayName === 'Diesel Carter' && isAdmin) {
         copyBanListBtn.style.display = 'block';
         copyChatHistoryBtn.style.display = 'block';
+        restoreBanListBtn.style.display = 'block';
+        restoreChatHistoryBtn.style.display = 'block';
     } else {
         copyBanListBtn.style.display = 'none';
         copyChatHistoryBtn.style.display = 'none';
+        restoreBanListBtn.style.display = 'none';
+        restoreChatHistoryBtn.style.display = 'none';
     }
 }
 
@@ -377,8 +399,8 @@ function displayImagePreview(imageUrl) {
     const previewDiv = document.createElement('div');
     previewDiv.className = 'image-preview';
     previewDiv.innerHTML = `
-        <img src="${imageUrl}" alt="Preview" style="max-width: 200px; max-height: 200px;">
-        <button type="button" onclick="removeImagePreview()">×</button>
+        <img src=\"${imageUrl}\" alt=\"Preview\" style=\"max-width: 200px; max-height: 200px;\">\
+        <button type=\"button\" onclick=\"removeImagePreview()\">×</button>\
     `;
     
     imagePreviewContainer.appendChild(previewDiv);
@@ -411,116 +433,116 @@ messageForm.addEventListener('submit', e => {
     // --- Command handling ---
     if (content.startsWith('/')) {
         if (content.startsWith('/msg')) {
-            const msgRegex = /^\/msg\s+"([^"]+)"\s+(.+)$/;
-            const match = content.match(msgRegex);
+            const msgRegex = /^\\/msg\\s+\"([^\"]+)\"\\s+(.+)$/;\
+            const match = content.match(msgRegex);\
             
-            if (!match) {
-                appendMessage({ 
-                    username: 'System', 
-                    content: 'Usage: /msg "username" message', 
-                    timestamp: new Date(), 
-                    type: 'system' 
-                });
-                messageInputDiv.textContent = ''; 
-                charCountSpan.textContent = `0/${MAX_CHARS}`;
-                charCountContainer.style.color = '#ccc';
-                clearImagePreview(); 
-                return;
-            }
+            if (!match) {\
+                appendMessage({ \
+                    username: 'System', \
+                    content: 'Usage: /msg \"username\" message', \
+                    timestamp: new Date(), \
+                    type: 'system' \
+                });\
+                messageInputDiv.textContent = ''; \
+                charCountSpan.textContent = `0/${MAX_CHARS}`;\
+                charCountContainer.style.color = '#ccc';\
+                clearImagePreview(); \
+                return;\
+            }\
             
-            const recipient = match[1];
-            const message = match[2];
-            socket.emit('private message', { recipient, content: message });
-        } else if (content === '/clear' && isAdmin) {
-            clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';
-            clearConfirmModal.show();
-        } else if (content === '/machinegun' && isAdmin) {
-            socket.emit('admin:machinegun');
-        } else if (content.startsWith('/kick') && isAdmin) {
-            const kickRegex = /^\/kick\s+"?([^"]+)"?$/;
-            const match = content.match(kickRegex);
+            const recipient = match[1];\
+            const message = match[2];\
+            socket.emit('private message', { recipient, content: message });\
+        } else if (content === '/clear' && isAdmin) {\
+            clearConfirmTargetName.textContent = currentChatContext === 'public' ? 'Public' : 'Admin';\
+            clearConfirmModal.show();\
+        } else if (content === '/machinegun' && isAdmin) {\
+            socket.emit('admin:machinegun');\
+        } else if (content.startsWith('/kick') && isAdmin) {\
+            const kickRegex = /^\\/kick\\s+\"?([^\"]+)\"?$/;\
+            const match = content.match(kickRegex);\
             
-            if (match) {
-                socket.emit('admin:kick_user', { targetName: match[1].trim() });
-            } else {
-                appendMessage({ 
-                    username: 'System', 
-                    content: 'Usage: /kick "username"', 
-                    timestamp: new Date(), 
-                    type: 'system' 
-                });
-            }
-        } else if (content.startsWith('/ban') && isAdmin) {
-            const parts = content.split(' ');
-            if (parts.length < 4) {
-                appendMessage({ 
-                    username: 'System', 
-                    content: 'Usage: /ban "username" duration reason', 
-                    timestamp: new Date(), 
-                    type: 'system' 
-                });
-                return;
-            }
+            if (match) {\
+                socket.emit('admin:kick_user', { targetName: match[1].trim() });\
+            } else {\
+                appendMessage({ \
+                    username: 'System', \
+                    content: 'Usage: /kick \"username\"', \
+                    timestamp: new Date(), \
+                    type: 'system' \
+                });\
+            }\
+        } else if (content.startsWith('/ban') && isAdmin) {\
+            const parts = content.split(' ');\
+            if (parts.length < 4) {\
+                appendMessage({ \
+                    username: 'System', \
+                    content: 'Usage: /ban \"username\" duration reason', \
+                    timestamp: new Date(), \
+                    type: 'system' \
+                });\
+                return;\
+            }\
             
-            const target = parts[1].replace(/"/g, '');
-            const duration = parts[2];
-            const reason = parts.slice(3).join(' ');
+            const target = parts[1].replace(/\"/g, '');\
+            const duration = parts[2];\
+            const reason = parts.slice(3).join(' ');\
             
-            socket.emit('admin:google_ban_user', { 
-                targetName: target,
-                targetGoogleId: null, 
-                days: 0, 
-                hours: 0, 
-                minutes: parseInt(duration) || 30,
-                reason: reason
-            });
-        } else if (content.startsWith('/unban') && isAdmin) {
-            const unbanRegex = /^\/unban\s+"?([^"]+)"?$/;
-            const match = content.match(unbanRegex);
+            socket.emit('admin:google_ban_user', { \
+                targetName: target,\
+                targetGoogleId: null, \
+                days: 0, \
+                hours: 0, \
+                minutes: parseInt(duration) || 30,\
+                reason: reason\
+            });\
+        } else if (content.startsWith('/unban') && isAdmin) {\
+            const unbanRegex = /^\\/unban\\s+\"?([^\"]+)\"?$/;\
+            const match = content.match(unbanRegex);\
             
-            if (match) {
-                socket.emit('admin:google_unban_user', { 
-                    targetName: match[1].trim()
-                });
-            } else {
-                appendMessage({ 
-                    username: 'System', 
-                    content: 'Usage: /unban "username"', 
-                    timestamp: new Date(), 
-                    type: 'system' 
-                });
-            }
-        } else if (content.startsWith('/rename') && isAdmin) {
-            const renameRegex = /^\/rename\s+"([^"]+)"\s+"([^"]+)"$/;
-            const match = content.match(renameRegex);
+            if (match) {\
+                socket.emit('admin:google_unban_user', { \
+                    targetName: match[1].trim()\
+                });\
+            } else {\
+                appendMessage({ \
+                    username: 'System', \
+                    content: 'Usage: /unban \"username\"', \
+                    timestamp: new Date(), \
+                    type: 'system' \
+                });\
+            }\
+        } else if (content.startsWith('/rename') && isAdmin) {\
+            const renameRegex = /^\\/rename\\s+\"([^\"]+)\"\\s+\"([^\"]+)\"$/;\
+            const match = content.match(renameRegex);\
             
-            if (match) {
-                const oldName = match[1];
-                const newName = match[2];
-                socket.emit('admin:rename_user', { oldName, newName });
-            } else {
-                appendMessage({ 
-                    username: 'System', 
-                    content: 'Usage: /rename "oldname" "newname"', 
-                    timestamp: new Date(), 
-                    type: 'system' 
-                });
-            }
-        } else {
-            appendMessage({ 
-                username: 'System', 
-                content: `Unknown command: ${content}`, 
-                timestamp: new Date(), 
-                type: 'system' 
-            });
-        }
-        
-        messageInputDiv.textContent = ''; 
-        charCountSpan.textContent = `0/${MAX_CHARS}`;
-        charCountContainer.style.color = '#ccc';
-        clearImagePreview(); 
-        return; 
-    }
+            if (match) {\
+                const oldName = match[1];\
+                const newName = match[2];\
+                socket.emit('admin:rename_user', { oldName, newName });\
+            } else {\
+                appendMessage({ \
+                    username: 'System', \
+                    content: 'Usage: /rename \"oldname\" \"newname\"', \
+                    timestamp: new Date(), \
+                    type: 'system' \
+                });\
+            }\
+        } else {\
+            appendMessage({ \
+                username: 'System', \
+                content: `Unknown command: ${content}`, \
+                timestamp: new Date(), \
+                type: 'system' \
+            });\
+        }\
+        \
+        messageInputDiv.textContent = ''; \
+        charCountSpan.textContent = `0/${MAX_CHARS}`;\
+        charCountContainer.style.color = '#ccc';\
+        clearImagePreview(); \
+        return; \
+    }\
 
     // Normal message sending
     const messagePayload = { content: content, isPrivate: false };
@@ -529,9 +551,9 @@ messageForm.addEventListener('submit', e => {
     socket.emit('chat message', messagePayload);
 
     messageInputDiv.textContent = '';
-    charCountSpan.textContent = `0/${MAX_CHARS}`;
-    charCountContainer.style.color = '#ccc';
-    clearImagePreview();
+    charCountSpan.textContent = `0/${MAX_CHARS}`;\
+    charCountContainer.style.color = '#ccc';\
+    clearImagePreview();\
 });
 
 // Input Character Counter
@@ -541,11 +563,11 @@ messageInputDiv.addEventListener('input', () => {
 
   if (currentLength > MAX_CHARS) {
     messageInputDiv.innerText = text.substring(0, MAX_CHARS);
-    charCountSpan.textContent = `${MAX_CHARS}/${MAX_CHARS}`;
+    charCountSpan.textContent = `${MAX_CHARS}/${MAX_CHARS}`;\
   } else if (currentLength === 0) {
-    charCountSpan.textContent = `0/${MAX_CHARS}`;
+    charCountSpan.textContent = `0/${MAX_CHARS}`;\
   } else {
-    charCountSpan.textContent = `${currentLength}/${MAX_CHARS}`;
+    charCountSpan.textContent = `${currentLength}/${MAX_CHARS}`;\
   }
 
   if (currentLength >= MAX_CHARS * 0.9) {
@@ -680,6 +702,43 @@ renameBtn.addEventListener('click', () => {
     renameModal.show();
 });
 
+// Restore Ban List Confirmation
+confirmRestoreBanListBtn.addEventListener('click', () => {
+    const jsonText = restoreBanListTextarea.value.trim();
+    if (!jsonText) {
+        alert('Please paste JSON data into the textarea.');
+        return;
+    }
+    try {
+        const banListData = JSON.parse(jsonText);
+        socket.emit('admin:restore_ban_list', banListData);
+        restoreBanListModal.hide();
+        restoreBanListTextarea.value = ''; // Clear textarea
+    } catch (error) {
+        alert('Invalid JSON format for Ban List. Please check your input.');
+        console.error('Error parsing ban list JSON:', error);
+    }
+});
+
+// Restore Chat History Confirmation
+confirmRestoreChatHistoryBtn.addEventListener('click', () => {
+    const jsonText = restoreChatHistoryTextarea.value.trim();
+    if (!jsonText) {
+        alert('Please paste JSON data into the textarea.');
+        return;
+    }
+    try {
+        const chatHistoryData = JSON.parse(jsonText);
+        socket.emit('admin:restore_chat_history', chatHistoryData);
+        restoreChatHistoryModal.hide();
+        restoreChatHistoryTextarea.value = ''; // Clear textarea
+    } catch (error) {
+        alert('Invalid JSON format for Chat History. Please check your input.');
+        console.error('Error parsing chat history JSON:', error);
+    }
+});
+
+
 // --- Socket Events ---
 
 // Shared function to handle successful login
@@ -697,7 +756,7 @@ function handleSuccessfulLogin(data) {
     document.getElementById('adminLogoutBtn').style.display = isAdmin ? 'block' : 'none'; 
     adminChatTab.style.display = isAdmin ? 'block' : 'none';
     
-    updateCopyButtonsVisibility();
+    updateAdminPanelButtonsVisibility(); // Use the updated function
     
     if (isAdmin && currentChatContext === ADMIN_CHAT_ID) {
         switchChatContext(ADMIN_CHAT_ID);
@@ -773,7 +832,7 @@ socket.on('banned_modal', data => {
     const bannedModalBody = document.getElementById('bannedModalBody');
     const bannedModal = new bootstrap.Modal(document.getElementById('bannedModal'));
     
-    bannedModalBody.innerHTML = `You are BANNED from the chat.<br>Reason: <strong>${banReason}</strong><br>Time remaining: <span id="banTimer"></span>`;
+    bannedModalBody.innerHTML = `You are BANNED from the chat.<br>Reason: <strong>${banReason}</strong><br>Time remaining: <span id=\"banTimer\"></span>`;
     bannedModal.show();
     
     let endTime = new Date().getTime() + banDurationMs;
@@ -828,23 +887,23 @@ socket.on('admin:ban_list_json', (data) => {
     const jsonStr = JSON.stringify(data, null, 2);
     
     const modalHTML = `
-        <div class="modal fade" id="copyDataModal" tabindex="-1" data-bs-backdrop="static">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Ban List Data - Select All and Copy (Ctrl+C)</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <textarea id="copyDataText" readonly style="width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;">${jsonStr}</textarea>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" onclick="document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');">Copy to Clipboard</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div class=\"modal fade\" id=\"copyDataModal\" tabindex=\"-1\" data-bs-backdrop=\"static\">\
+            <div class=\"modal-dialog modal-lg\">\
+                <div class=\"modal-content\">\
+                    <div class=\"modal-header\">\
+                        <h5 class=\"modal-title\">Ban List Data - Select All and Copy (Ctrl+C)</h5>\
+                        <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\"></button>\
+                    </div>\
+                    <div class=\"modal-body\">\
+                        <textarea id=\"copyDataText\" readonly style=\"width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;\">${jsonStr}</textarea>\
+                    </div>\
+                    <div class=\"modal-footer\">\
+                        <button type=\"button\" class=\"btn btn-primary\" onclick=\"document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');\">Copy to Clipboard</button>\
+                        <button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Close</button>\
+                    </div>\
+                </div>\
+            </div>\
+        </div>\
     `;
     
     const oldModal = document.getElementById('copyDataModal');
@@ -865,23 +924,23 @@ socket.on('admin:chat_history_json', (data) => {
     const jsonStr = JSON.stringify(data, null, 2);
     
     const modalHTML = `
-        <div class="modal fade" id="copyDataModal" tabindex="-1" data-bs-backdrop="static">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Chat History Data - Select All and Copy (Ctrl+C)</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <textarea id="copyDataText" readonly style="width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;">${jsonStr}</textarea>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" onclick="document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');">Copy to Clipboard</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div class=\"modal fade\" id=\"copyDataModal\" tabindex=\"-1\" data-bs-backdrop=\"static\">\
+            <div class=\"modal-dialog modal-lg\">\
+                <div class=\"modal-content\">\
+                    <div class=\"modal-header\">\
+                        <h5 class=\"modal-title\">Chat History Data - Select All and Copy (Ctrl+C)</h5>\
+                        <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\"></button>\
+                    </div>\
+                    <div class=\"modal-body\">\
+                        <textarea id=\"copyDataText\" readonly style=\"width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;\">${jsonStr}</textarea>\
+                    </div>\
+                    <div class=\"modal-footer\">\
+                        <button type=\"button\" class=\"btn btn-primary\" onclick=\"document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');\">Copy to Clipboard</button>\
+                        <button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Close</button>\
+                    </div>\
+                </div>\
+            </div>\
+        </div>\
     `;
     
     const oldModal = document.getElementById('copyDataModal');
