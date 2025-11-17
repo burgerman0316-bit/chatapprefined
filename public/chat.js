@@ -222,7 +222,8 @@ function updatePublicUserList(data) {
         
         li.title = `Click to send private message to ${userDisplayName}`;
         li.addEventListener('click', () => {
-             messageInputDiv.innerText = `/msg "${userDisplayName}" `;
+             // FIX: Escaped quotes for literal " in template literal
+             messageInputDiv.innerText = `/msg \"${userDisplayName}\" `;
              messageInputDiv.focus();
              
              const range = document.createRange();
@@ -433,6 +434,7 @@ messageForm.addEventListener('submit', e => {
     // --- Command handling ---
     if (content.startsWith('/')) {
         if (content.startsWith('/msg')) {
+            // Regex literals are fine with single / for literal slash, and " for literal quote
             const msgRegex = /^\/msg\s+"([^"]+)"\s+(.+)$/;
             const match = content.match(msgRegex);
             
