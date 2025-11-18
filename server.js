@@ -980,6 +980,111 @@ io.on('connection', socket => {
 
   // 17. Admin: Restore Chat History (Diesel Carter only)
   socket.on('admin:restore_chat_history', (historyData) => {
+      const user = users.get(socket.id);
+      if (!user || !user.isAdmin || user.displayName !== 'Diesel Carter') {
+          socket.emit('system_error', 'Unauthorized: This feature is restricted.');
+          return;
+      }
+
+      console.log('Restore chat history received:', historyData); // Debug log
+
+      if (!historyData || typeof historyData !== 'object') {
+          socket.emit('system_error', 'Restore Chat History failed: Invalid data format. Expected object with publicChat and adminChat arrays.');
+          return;
+      }
+
+      // Handle case where historyData might be the full export object
+      let publicChatData = historyData.publicChat;
+      let adminChatData = historyData.adminChat;
+
+      if (!publicChatData || !Array.isArray(publicChatData)) {
+          socket.emit('system_error', 'Restore Chat History failed: publicChat must be an array.');
+          return;
+      }
+
+      if (!adminChatData || !Array.isArray(adminChatData)) {
+          socket.emit('system_error', 'Restore Chat History failed: adminChat must be an array.');
+          return;
+      }
+
+      chatHistory.length = 0; // Clear existing public chat history
+      let publicCount = 0;
+      publicChatData.forEach(msg => {
+          // Basic validation and date conversion
+          if (msg.username && msg.timestamp) {
+              const restoredMsg = {
+                  username: msg.username,
+                  content: msg.content || '',
+                  timestamp: new Date(msg.timestamp),
+                  isAdmin: msg.isAdmin || false,
+                  type: msg.type || 'public',
+                  isPrivate: msg.isPrivate || false
+              };
+              
+              // Only add profilePic if it exists and isn't a placeholder
+              if (msg.profilePic && msg.profilePic !== '[PROFILE PIC URL]') {
+                  restoredMsg.profilePic = msg.profilePic;
+              }
+              
+              // Only add image if it exists and isn't a placeholder
+              if (msg.image && msg.image.url && msg.image.type === 'image') {
+                  restoredMsg.image = msg.image;
+              }
+              
+              chatHistory.push(restoredMsg);
+              publicCount++;
+          }
+      });
+
+      adminChatHistory.length = 0; // Clear existing admin chat history
+      let adminCount = 0;
+      adminChatData.forEach(msg => {
+          // Basic validation and date conversion
+          if (msg.username && msg.timestamp) {
+              const restoredMsg = {
+                  username: msg.username,
+                  content: msg.content || '',
+                  timestamp: new Date(msg.timestamp),
+                  isAdmin: msg.isAdmin || false,
+                  type: msg.type || 'admin',
+                  isPrivate: msg.isPrivate || false
+              };
+              
+              // Only add profilePic if it exists and isn't a placeholder
+              if (msg.profilePic && msg.profilePic !== '[PROFILE PIC URL]') {
+                  restoredMsg.profilePic = msg.profilePic;
+              }
+              
+              // Only add image if it exists and isn't a placeholder
+              if (msg.image && msg.image.url && msg.image.type === 'image') {
+                  restoredMsg.image = msg.image;
+              }
+              
+              adminChatHistory.push(restoredMsg);
+              adminCount++;
+          }
+      });
+
+      console.log(`Restored ${publicCount} public and ${adminCount} admin messages`); // Debug log
+
+      socket.emit('system_alert', `Successfully restored chat history (${publicCount} public, ${adminCount} admin messages).`);
+      
+      // Broadcast updated history to relevant clients
+      io.emit('chat history', chatHistory); // Update public chat for all
+      io.to(STAFF_ROOM).emit('chat history', adminChatHistory); // Update admin chat for admins
+      
+      // Send a system message about the restoration
+      const restoreMsg = {
+          username: 'System',
+          content: `Chat history was restored by Moderator ${user.displayName}.`,
+          timestamp: new Date(),
+          isAdmin: true,
+          type: 'system'
+      };
+      pushHistory(restoreMsg, 'public');
+      io.emit('chat message', restoreMsg);
+      io.to(STAFF_ROOM).emit('admin chat message', restoreMsg); // Also send to admin chat
+  });
 
   // 18. Disconnect 
   socket.on('disconnect', () => {
@@ -1009,5 +1114,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
