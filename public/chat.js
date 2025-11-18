@@ -658,8 +658,8 @@ banConfirmBtn.addEventListener('click', () => {
     const minutes = parseInt(banDurationMinutesInput.value);
     const reason = banReasonInput.value;
     
-    if (isNaN(days) || isNaN(hours) || isNaN(minutes) || (days === 0 && hours === 0 && minutes === 0) || days > 999 || hours > 99 || minutes > 99) {
-        alert('Invalid duration. Max: 999 days, 99 hours, 99 minutes. Duration must be > 0.');
+    if (isNaN(days) || isNaN(hours) || isNaN(minutes) || (days === 0 && hours === 0 && minutes === 0) || days > 999 || hours > 99 || minutes > 59) {
+        alert('Invalid duration. Max: 999 days, 99 hours, 59 minutes. Duration must be > 0.');
         return;
     }
     
@@ -1000,4 +1000,5 @@ confirmRestoreChatHistoryBtn.addEventListener('click', () => {
         console.error('Error parsing chat history JSON:', error);
     }
 });
+
 
