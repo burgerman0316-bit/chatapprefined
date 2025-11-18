@@ -263,10 +263,10 @@ body {
 
 /* Hide the sender name for subsequent messages in the same stack when same sender */
 /* We ONLY apply this rule to messages from OTHERS (.msg.other) to maintain grouping. */
-.msg.other + .msg.other .sender-name,
+/*.msg.other + .msg.other .sender-name,
 .msg.other + .msg.other ~ .msg.other .sender-name {
     display: none;
-}
+}*/
 
 /* --- END OF FIXED STACKING RULES --- */
 
@@ -651,6 +651,7 @@ body {
 .image-preview button:active {
     transform: translate(-50%, -50%) scale(0.95);
 }
+
 
 
 
