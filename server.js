@@ -990,7 +990,7 @@ io.on('connection', socket => {
           return;
       }
 
-      console.log('Restore chat history received'); // Debug log
+      console.log('Restore chat history received');
 
       if (!historyData || typeof historyData !== 'object') {
           socket.emit('system_error', 'Restore Chat History failed: Invalid data format.');
@@ -1023,11 +1023,13 @@ io.on('connection', socket => {
                   isPrivate: msg.isPrivate || false
               };
               
-              if (msg.profilePic && msg.profilePic !== '[PROFILE PIC URL]') {
+              // Restore profile pic if it exists
+              if (msg.profilePic) {
                   restoredMsg.profilePic = msg.profilePic;
               }
               
-              if (msg.image && msg.image.url && msg.image.type === 'image') {
+              // Restore image if it exists (keep the full image object)
+              if (msg.image && msg.image.type === 'image') {
                   restoredMsg.image = msg.image;
               }
               
@@ -1049,11 +1051,13 @@ io.on('connection', socket => {
                   isPrivate: msg.isPrivate || false
               };
               
-              if (msg.profilePic && msg.profilePic !== '[PROFILE PIC URL]') {
+              // Restore profile pic if it exists
+              if (msg.profilePic) {
                   restoredMsg.profilePic = msg.profilePic;
               }
               
-              if (msg.image && msg.image.url && msg.image.type === 'image') {
+              // Restore image if it exists (keep the full image object)
+              if (msg.image && msg.image.type === 'image') {
                   restoredMsg.image = msg.image;
               }
               
@@ -1122,6 +1126,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
