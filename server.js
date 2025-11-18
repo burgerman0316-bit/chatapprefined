@@ -614,7 +614,7 @@ io.on('connection', socket => {
       if (targetUser.isAdmin) {
           socket.emit('system_error', `Cannot kick Admin '${targetName}'.`);
           return;
-      }\
+      }
       
       io.to(targetSocketId).emit('system_error', `You have been KICKED by Moderator ${admin.displayName}.`);
       
@@ -1060,3 +1060,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
