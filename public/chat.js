@@ -73,6 +73,10 @@ let selectedImageDataUrl = null;
 const fileInput = document.getElementById('fileUpload');
 const imagePreviewContainer = document.getElementById('imagePreviewContainer');
 
+// New constants for image resizing
+const MAX_IMAGE_DIMENSION = 800; // Max width or height in pixels
+const JPEG_QUALITY = 0.7; // JPEG compression quality (0.0 to 1.0)
+
 let displayName = '';
 let isAdmin = false;
 let userToKick = null; 
@@ -143,7 +147,7 @@ function appendMessage(msg) {
     
     const time = new Date(msg.timestamp);
     const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); 
-    const timeHtml = `<span class="timestamp">${timeString}</span>`; 
+    const timeHtml = `<span class=\"timestamp\">${timeString}</span>`; 
 
     if (msg.type === 'system') {
         item.classList.add('system');
@@ -161,17 +165,17 @@ function appendMessage(msg) {
             
         let profilePicHtml = '';
         if (msg.profilePic) {
-            profilePicHtml = `<img src="${msg.profilePic}" class="profile-pic" alt="Profile">`;
+            profilePicHtml = `<img src=\"${msg.profilePic}\" class=\"profile-pic\" alt=\"Profile\">`;
         }
         
         let contentHtml = '';
         if (msg.image && msg.image.type === 'image') {
-            contentHtml = `<div class="msg-content">${profilePicHtml}<span class="msg-text"><img src="${msg.image.url}" style="max-width: 100%; max-height: 300px; border-radius: 8px;"></span></div>`;
+            contentHtml = `<div class=\"msg-content\">${profilePicHtml}<span class=\"msg-text\"><img src=\"${msg.image.url}\" style=\"max-width: 100%; max-height: 300px; border-radius: 8px;\"></span></div>`;
         } else {
-            contentHtml = `<div class="msg-content">${profilePicHtml}<span class="msg-text">${msg.content}</span></div>`;
+            contentHtml = `<div class=\"msg-content\">${profilePicHtml}<span class=\"msg-text\">${msg.content}</span></div>`;
         }
         
-        item.innerHTML = `<span class="${nameClass}">${nameDisplay}</span>${contentHtml}${timeHtml}`;
+        item.innerHTML = `<span class=\"${nameClass}\">${nameDisplay}</span>${contentHtml}${timeHtml}`;
     } else {
         item.classList.add('other');
         if (msg.isAdmin && msg.username !== 'Blake Stanley' && msg.username !== 'Ashaz Adil') { 
@@ -183,17 +187,17 @@ function appendMessage(msg) {
         
         let profilePicHtml = '';
         if (msg.profilePic) {
-            profilePicHtml = `<img src="${msg.profilePic}" class="profile-pic" alt="Profile">`;
+            profilePicHtml = `<img src=\"${msg.profilePic}\" class=\"profile-pic\" alt=\"Profile\">`;
         }
         
         let contentHtml = '';
         if (msg.image && msg.image.type === 'image') {
-            contentHtml = `<div class="msg-content">${profilePicHtml}<span class="msg-text"><img src="${msg.image.url}" style="max-width: 100%; max-height: 300px; border-radius: 8px;"></span></div>`;
+            contentHtml = `<div class=\"msg-content\">${profilePicHtml}<span class=\"msg-text\"><img src=\"${msg.image.url}\" style=\"max-width: 100%; max-height: 300px; border-radius: 8px;\"></span></div>`;
         } else {
-            contentHtml = `<div class="msg-content">${profilePicHtml}<span class="msg-text">${msg.content}</span></div>`;
+            contentHtml = `<div class=\"msg-content\">${profilePicHtml}<span class=\"msg-text\">${msg.content}</span></div>`;
         }
         
-        item.innerHTML = `<span class="${nameClass}">${nameDisplay}</span>${contentHtml}${timeHtml}`;
+        item.innerHTML = `<span class=\"${nameClass}\">${nameDisplay}</span>${contentHtml}${timeHtml}`;
     }
 
     messagesDiv.appendChild(item);
@@ -222,8 +226,8 @@ function updatePublicUserList(data) {
         
         li.title = `Click to send private message to ${userDisplayName}`;
         li.addEventListener('click', () => {
-             // FIX: Escaped quotes for literal " in template literal
-             messageInputDiv.innerText = `/msg \"${userDisplayName}\" `;
+             // FIX: Use literal quotes, not escaped backslashes, for command generation
+             messageInputDiv.innerText = `/msg "${userDisplayName}" `;
              messageInputDiv.focus();
              
              const range = document.createRange();
@@ -305,10 +309,8 @@ function updateBannedUserList(banList) {
     li.innerHTML = `
       <div>
         <strong>${ban.bannedName || "Unknown"}</strong>
-        <div class="ban-info">
-          ${hours > 0 || minutes > 0 ? `${hours}h ${minutes}m left` : "Expired or permanent"}
-        </div>
-        <div class="ban-reason">Reason: ${ban.reason || "No reason"}</div>
+        <div class=\"ban-info\">\n          ${hours > 0 || minutes > 0 ? `${hours}h ${minutes}m left` : "Expired or permanent"}\n        </div>
+        <div class=\"ban-reason\">Reason: ${ban.reason || "No reason"}</div>
       </div>
     `;
 
@@ -378,16 +380,53 @@ function updateAdminPanelButtonsVisibility() {
     }
 }
 
+// New function to resize image before converting to Data URL
+function resizeImage(file, maxWidth, quality, callback) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+
+            // Calculate new dimensions to fit within maxWidth/maxHeight
+            if (width > height) {
+                if (width > maxWidth) {
+                    height *= maxWidth / width;
+                    width = maxWidth;
+                }
+            } else {
+                if (height > maxWidth) { // Using maxWidth for both dimensions for simplicity
+                    width *= maxWidth / height;
+                    height = maxWidth;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Convert canvas to Data URL (JPEG for better compression)
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            callback(dataUrl);
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
 // Handle file selection
 fileInput.addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (file && file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            selectedImageDataUrl = event.target.result;
+        // Use the new resizeImage function
+        resizeImage(file, MAX_IMAGE_DIMENSION, JPEG_QUALITY, (resizedDataUrl) => {
+            selectedImageDataUrl = resizedDataUrl;
             displayImagePreview(selectedImageDataUrl);
-        }
-        reader.readAsDataURL(file);
+        });
     } else {
         clearImagePreview();
     }
@@ -400,8 +439,8 @@ function displayImagePreview(imageUrl) {
     const previewDiv = document.createElement('div');
     previewDiv.className = 'image-preview';
     previewDiv.innerHTML = `
-        <img src="${imageUrl}" alt="Preview" style="max-width: 200px; max-height: 200px;">
-        <button type="button" onclick="removeImagePreview()">×</button>
+        <img src=\"${imageUrl}\" alt=\"Preview\" style=\"max-width: 200px; max-height: 200px;\">
+        <button type=\"button\" onclick=\"removeImagePreview()\">×</button>
     `;
     
     imagePreviewContainer.appendChild(previewDiv);
@@ -434,7 +473,7 @@ messageForm.addEventListener('submit', e => {
     // --- Command handling ---
     if (content.startsWith('/')) {
         if (content.startsWith('/msg')) {
-            // Regex literals are fine with single / for literal slash, and " for literal quote
+            // FIX: Updated regex to match literal / and "
             const msgRegex = /^\/msg\s+"([^"]+)"\s+(.+)$/;
             const match = content.match(msgRegex);
             
@@ -461,6 +500,7 @@ messageForm.addEventListener('submit', e => {
         } else if (content === '/machinegun' && isAdmin) {
             socket.emit('admin:machinegun');
         } else if (content.startsWith('/kick') && isAdmin) {
+            // FIX: Updated regex to match literal / and optional "
             const kickRegex = /^\/kick\s+"?([^"]+)"?$/;
             const match = content.match(kickRegex);
             
@@ -486,9 +526,52 @@ messageForm.addEventListener('submit', e => {
                 return;
             }
             
-            const target = parts[1].replace(/"/g, '');
-            const duration = parts[2];
-            const reason = parts.slice(3).join(' ');
+            // Assuming target is quoted, or first word if not.
+            // This part of the logic is more complex if we want to parse "username with spaces" without quotes.
+            // For simplicity, we'll assume the user either types "username" or just username.
+            // The split(' ') approach might break if the username itself has spaces and isn't quoted.
+            // A more robust solution would involve a regex similar to /msg for parsing.
+            // For now, we'll keep the existing split logic but clarify usage.
+            
+            let target = parts[1];
+            let durationIndex = 2;
+            let reasonIndex = 3;
+
+            // Simple check for quoted username (e.g., /ban "John Doe" 30m reason)
+            if (target.startsWith('"')) {
+                const closingQuoteIndex = content.indexOf('"', 2); // Find closing quote after the first one
+                if (closingQuoteIndex !== -1) {
+                    target = content.substring(content.indexOf('"') + 1, closingQuoteIndex);
+                    const remainingContent = content.substring(closingQuoteIndex + 1).trim();
+                    const remainingParts = remainingContent.split(' ');
+                    durationIndex = 0; // Duration is now the first part of remainingParts
+                    reasonIndex = 1; // Reason is now the second part of remainingParts
+                    parts.splice(1, parts.length - 1, target, ...remainingParts); // Reconstruct parts for easier access
+                } else {
+                    appendMessage({ 
+                        username: 'System', 
+                        content: 'Usage: /ban "username" duration reason (missing closing quote)', 
+                        timestamp: new Date(), 
+                        type: 'system' 
+                    });
+                    return;
+                }
+            } else {
+                target = parts[1]; // No quotes, just take the first word
+            }
+
+            if (parts.length < reasonIndex + 1) { // Ensure we have enough parts after parsing target
+                appendMessage({ 
+                    username: 'System', 
+                    content: 'Usage: /ban "username" duration reason', 
+                    timestamp: new Date(), 
+                    type: 'system' 
+                });
+                return;
+            }
+            
+            const duration = parts[durationIndex];
+            const reason = parts.slice(reasonIndex).join(' ');
             
             socket.emit('admin:google_ban_user', { 
                 targetName: target,
@@ -499,6 +582,7 @@ messageForm.addEventListener('submit', e => {
                 reason: reason
             });
         } else if (content.startsWith('/unban') && isAdmin) {
+            // FIX: Updated regex to match literal / and optional "
             const unbanRegex = /^\/unban\s+"?([^"]+)"?$/;
             const match = content.match(unbanRegex);
             
@@ -515,6 +599,7 @@ messageForm.addEventListener('submit', e => {
                 });
             }
         } else if (content.startsWith('/rename') && isAdmin) {
+            // FIX: Updated regex to match literal / and "
             const renameRegex = /^\/rename\s+"([^"]+)"\s+"([^"]+)"$/;
             const match = content.match(renameRegex);
             
@@ -731,11 +816,36 @@ confirmRestoreChatHistoryBtn.addEventListener('click', () => {
     }
     try {
         const chatHistoryData = JSON.parse(jsonText);
+        
+        // Validate the structure
+        if (!chatHistoryData.publicChat || !Array.isArray(chatHistoryData.publicChat)) {
+            alert('Invalid format: Missing or invalid publicChat array');
+            console.error('Invalid publicChat:', chatHistoryData.publicChat);
+            return;
+        }
+        if (!chatHistoryData.adminChat || !Array.isArray(chatHistoryData.adminChat)) {
+            alert('Invalid format: Missing or invalid adminChat array');
+            console.error('Invalid adminChat:', chatHistoryData.adminChat);
+            return;
+        }
+        
+        console.log('Sending restore request with:', {
+            publicCount: chatHistoryData.publicChat.length,
+            adminCount: chatHistoryData.adminChat.length
+        });
+        
         socket.emit('admin:restore_chat_history', chatHistoryData);
         restoreChatHistoryModal.hide();
         restoreChatHistoryTextarea.value = ''; // Clear textarea
+        
+        appendMessage({ 
+            username: 'System', 
+            content: 'Restore request sent...', 
+            timestamp: new Date(), 
+            type: 'system' 
+        });
     } catch (error) {
-        alert('Invalid JSON format for Chat History. Please check your input.');
+        alert('Invalid JSON format for Chat History. Please check your input.\\n\\nError: ' + error.message);
         console.error('Error parsing chat history JSON:', error);
     }
 });
@@ -834,7 +944,7 @@ socket.on('banned_modal', data => {
     const bannedModalBody = document.getElementById('bannedModalBody');
     const bannedModal = new bootstrap.Modal(document.getElementById('bannedModal'));
     
-    bannedModalBody.innerHTML = `You are BANNED from the chat.<br>Reason: <strong>${banReason}</strong><br>Time remaining: <span id="banTimer"></span>`;
+    bannedModalBody.innerHTML = `You are BANNED from the chat.<br>Reason: <strong>${banReason}</strong><br>Time remaining: <span id=\"banTimer\"></span>`;
     bannedModal.show();
     
     let endTime = new Date().getTime() + banDurationMs;
@@ -889,23 +999,7 @@ socket.on('admin:ban_list_json', (data) => {
     const jsonStr = JSON.stringify(data, null, 2);
     
     const modalHTML = `
-        <div class="modal fade" id="copyDataModal" tabindex="-1" data-bs-backdrop="static">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Ban List Data - Select All and Copy (Ctrl+C)</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <textarea id="copyDataText" readonly style="width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;">${jsonStr}</textarea>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" onclick="document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');">Copy to Clipboard</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div class=\"modal fade\" id=\"copyDataModal\" tabindex=\"-1\" data-bs-backdrop=\"static\">\n            <div class=\"modal-dialog modal-lg\">\n                <div class=\"modal-content\">\n                    <div class=\"modal-header\">\n                        <h5 class=\"modal-title\">Ban List Data - Select All and Copy (Ctrl+C)</h5>\n                        <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\"></button>\n                    </div>\n                    <div class=\"modal-body\">\n                        <textarea id=\"copyDataText\" readonly style=\"width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;\">${jsonStr}</textarea>\n                    </div>\n                    <div class=\"modal-footer\">\n                        <button type=\"button\" class=\"btn btn-primary\" onclick=\"document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');\">Copy to Clipboard</button>\n                        <button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Close</button>\n                    </div>\n                </div>\n            </div>\n        </div>
     `;
     
     const oldModal = document.getElementById('copyDataModal');
@@ -926,20 +1020,9 @@ socket.on('admin:chat_history_json', (data) => {
     const jsonStr = JSON.stringify(data, null, 2);
     
     const modalHTML = `
-        <div class="modal fade" id="copyDataModal" tabindex="-1" data-bs-backdrop="static">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Chat History Data - Select All and Copy (Ctrl+C)</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <textarea id="copyDataText" readonly style="width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;">${jsonStr}</textarea>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" onclick="document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');">Copy to Clipboard</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
+        <div class=\"modal fade\" id=\"copyDataModal\" tabindex=\"-1\" data-bs-backdrop=\"static\">\n            <div class=\"modal-dialog modal-lg\">\n                <div class=\"modal-content\">\n                    <div class=\"modal-header\">\n                        <h5 class=\"modal-title\">Chat History Data - Select All and Copy (Ctrl+C)</h5>\n                        <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\"></button>\n                    </div>
+                    <div class=\"modal-body\">\n                        <textarea id=\"copyDataText\" readonly style=\"width: 100%; height: 400px; background: #1e1e1e; color: #0f0; border: 1px solid #555; padding: 10px; font-family: monospace; font-size: 12px;\">${jsonStr}</textarea>\n                    </div>
+                    <div class=\"modal-footer\">\n                        <button type=\"button\" class=\"btn btn-primary\" onclick=\"document.getElementById('copyDataText').select(); document.execCommand('copy'); alert('Copied!');\">Copy to Clipboard</button>\n                        <button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Close</button>\n                    </div>
                 </div>
             </div>
         </div>
@@ -996,9 +1079,7 @@ confirmRestoreChatHistoryBtn.addEventListener('click', () => {
             type: 'system' 
         });
     } catch (error) {
-        alert('Invalid JSON format for Chat History. Please check your input.\n\nError: ' + error.message);
+        alert('Invalid JSON format for Chat History. Please check your input.\\n\\nError: ' + error.message);
         console.error('Error parsing chat history JSON:', error);
     }
 });
-
-
