@@ -957,3 +957,46 @@ socket.on('admin:chat_history_json', (data) => {
         document.getElementById('copyDataText').select();
     });
 });
+
+// Restore Chat History Confirmation
+confirmRestoreChatHistoryBtn.addEventListener('click', () => {
+    const jsonText = restoreChatHistoryTextarea.value.trim();
+    if (!jsonText) {
+        alert('Please paste JSON data into the textarea.');
+        return;
+    }
+    try {
+        const chatHistoryData = JSON.parse(jsonText);
+        
+        // Validate the structure
+        if (!chatHistoryData.publicChat || !Array.isArray(chatHistoryData.publicChat)) {
+            alert('Invalid format: Missing or invalid publicChat array');
+            console.error('Invalid publicChat:', chatHistoryData.publicChat);
+            return;
+        }
+        if (!chatHistoryData.adminChat || !Array.isArray(chatHistoryData.adminChat)) {
+            alert('Invalid format: Missing or invalid adminChat array');
+            console.error('Invalid adminChat:', chatHistoryData.adminChat);
+            return;
+        }
+        
+        console.log('Sending restore request with:', {
+            publicCount: chatHistoryData.publicChat.length,
+            adminCount: chatHistoryData.adminChat.length
+        });
+        
+        socket.emit('admin:restore_chat_history', chatHistoryData);
+        restoreChatHistoryModal.hide();
+        restoreChatHistoryTextarea.value = ''; // Clear textarea
+        
+        appendMessage({ 
+            username: 'System', 
+            content: 'Restore request sent...', 
+            timestamp: new Date(), 
+            type: 'system' 
+        });
+    } catch (error) {
+        alert('Invalid JSON format for Chat History. Please check your input.\n\nError: ' + error.message);
+        console.error('Error parsing chat history JSON:', error);
+    }
+});
