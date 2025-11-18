@@ -980,57 +980,6 @@ io.on('connection', socket => {
 
   // 17. Admin: Restore Chat History (Diesel Carter only)
   socket.on('admin:restore_chat_history', (historyData) => {
-      const user = users.get(socket.id);
-      if (!user || !user.isAdmin || user.displayName !== 'Diesel Carter') {
-          socket.emit('system_error', 'Unauthorized: This feature is restricted.');
-          return;
-      }
-
-      if (!historyData || typeof historyData !== 'object' || !Array.isArray(historyData.publicChat) || !Array.isArray(historyData.adminChat)) {
-          socket.emit('system_error', 'Restore Chat History failed: Invalid data format. Expected object with publicChat and adminChat arrays.');
-          return;
-      }
-
-      chatHistory.length = 0; // Clear existing public chat history
-      historyData.publicChat.forEach(msg => {
-          // Basic validation and date conversion
-          if (msg.username && msg.content && msg.timestamp) {
-              chatHistory.push({
-                  ...msg,
-                  timestamp: new Date(msg.timestamp) // Convert timestamp string back to Date object
-              });
-          }
-      });
-
-      adminChatHistory.length = 0; // Clear existing admin chat history
-      historyData.adminChat.forEach(msg => {
-          // Basic validation and date conversion
-          if (msg.username && msg.content && msg.timestamp) {
-              adminChatHistory.push({
-                  ...msg,
-                  timestamp: new Date(msg.timestamp) // Convert timestamp string back to Date object
-              });
-          }
-      });
-
-      socket.emit('system_alert', `Successfully restored chat history (${chatHistory.length} public, ${adminChatHistory.length} admin messages).`);
-      
-      // Broadcast updated history to relevant clients
-      io.emit('chat history', chatHistory); // Update public chat for all
-      io.to(STAFF_ROOM).emit('chat history', adminChatHistory); // Update admin chat for admins
-      
-      // Send a system message about the restoration
-      const restoreMsg = {
-          username: 'System',
-          content: `Chat history was restored by Moderator ${user.displayName}.`,
-          timestamp: new Date(),
-          isAdmin: true,
-          type: 'system'
-      };
-      pushHistory(restoreMsg, 'public');
-      io.emit('chat message', restoreMsg);
-      io.to(STAFF_ROOM).emit('admin chat message', restoreMsg); // Also send to admin chat
-  });
 
   // 18. Disconnect 
   socket.on('disconnect', () => {
@@ -1060,4 +1009,5 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
