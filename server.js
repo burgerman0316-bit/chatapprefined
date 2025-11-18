@@ -884,7 +884,7 @@ io.on('connection', socket => {
           return;
       }
       
-      // Sanitize chat history - remove images and convert dates
+      // Sanitize chat history - Convert dates but KEEP images and profile pics
       const sanitizedPublicChat = chatHistory.map(msg => {
           const sanitized = {
               username: msg.username,
@@ -895,12 +895,14 @@ io.on('connection', socket => {
               isPrivate: msg.isPrivate || false
           };
           
+          // Keep the actual image data
           if (msg.image) {
-              sanitized.image = { type: 'image', note: '[IMAGE DATA REMOVED]' };
+              sanitized.image = msg.image;
           }
           
+          // Keep the actual profile pic URL
           if (msg.profilePic) {
-              sanitized.profilePic = '[PROFILE PIC URL]';
+              sanitized.profilePic = msg.profilePic;
           }
           
           return sanitized;
@@ -916,12 +918,14 @@ io.on('connection', socket => {
               isPrivate: msg.isPrivate || false
           };
           
+          // Keep the actual image data
           if (msg.image) {
-              sanitized.image = { type: 'image', note: '[IMAGE DATA REMOVED]' };
+              sanitized.image = msg.image;
           }
           
+          // Keep the actual profile pic URL
           if (msg.profilePic) {
-              sanitized.profilePic = '[PROFILE PIC URL]';
+              sanitized.profilePic = msg.profilePic;
           }
           
           return sanitized;
@@ -1118,6 +1122,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
