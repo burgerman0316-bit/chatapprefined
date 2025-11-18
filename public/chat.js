@@ -1000,3 +1000,4 @@ confirmRestoreChatHistoryBtn.addEventListener('click', () => {
         console.error('Error parsing chat history JSON:', error);
     }
 });
+
