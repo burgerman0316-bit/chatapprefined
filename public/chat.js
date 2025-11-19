@@ -79,6 +79,7 @@ const JPEG_QUALITY = 0.7; // JPEG compression quality (0.0 to 1.0)
 
 let displayName = '';
 let isAdmin = false;
+let userGoogleId = null;
 let userToKick = null; 
 let userGoogleIdToBan = null; 
 let currentChatContext = 'public'; 
@@ -1083,3 +1084,4 @@ confirmRestoreChatHistoryBtn.addEventListener('click', () => {
         console.error('Error parsing chat history JSON:', error);
     }
 });
+
