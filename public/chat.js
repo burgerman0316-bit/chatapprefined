@@ -860,7 +860,8 @@ confirmRestoreChatHistoryBtn.addEventListener('click', () => {
 // Shared function to handle successful login
 function handleSuccessfulLogin(data) {
     displayName = data.displayName;
-    isAdmin = data.isAdmin || false; 
+    isAdmin = data.isAdmin || false;
+    userGoogleId = data.googleId || userGoogleId;  // ADD THIS LINE
     displayNameEl.textContent = displayName + (isAdmin ? ' (MOD)' : '');
     currentChatContext = data.currentContext || 'public';
     
@@ -872,7 +873,7 @@ function handleSuccessfulLogin(data) {
     document.getElementById('adminLogoutBtn').style.display = isAdmin ? 'block' : 'none'; 
     adminChatTab.style.display = isAdmin ? 'block' : 'none';
     
-    updateAdminPanelButtonsVisibility(); // Use the updated function
+    updateAdminPanelButtonsVisibility();
     
     if (isAdmin && currentChatContext === ADMIN_CHAT_ID) {
         switchChatContext(ADMIN_CHAT_ID);
@@ -883,7 +884,7 @@ function handleSuccessfulLogin(data) {
 
 // Login Success events
 socket.on('name_accepted', name => {
-    handleSuccessfulLogin({ displayName: name, isAdmin: false });
+    handleSuccessfulLogin({ displayName: name, isAdmin: false, googleId: userGoogleId });
 });
 socket.on('staff_status_update', data => {
     handleSuccessfulLogin(data);
@@ -1087,5 +1088,6 @@ confirmRestoreChatHistoryBtn.addEventListener('click', () => {
         console.error('Error parsing chat history JSON:', error);
     }
 });
+
 
 
