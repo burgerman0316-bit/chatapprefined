@@ -370,7 +370,7 @@ io.on('connection', socket => {
   });
 
   // 4. Normal Chat Messages
-  socket.on('chat message', msg => {
+socket.on('chat message', msg => {
     const user = users.get(socket.id);
     if (!user) {
         socket.emit('system_error', 'You must set a name first.');
@@ -391,6 +391,7 @@ io.on('connection', socket => {
       timestamp: new Date(),
       isAdmin: user.isAdmin,
       profilePic: user.profilePic,
+      googleId: user.googleId,  // ADD THIS LINE
       type: 'public'
     };
     
@@ -1126,6 +1127,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
