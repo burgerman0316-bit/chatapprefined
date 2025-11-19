@@ -201,7 +201,8 @@ io.on('connection', socket => {
         isAdmin: true,
         displayName: staffMember.displayName,
         secureName: staffMember.loginName,
-        currentContext: 'public'
+        currentContext: 'public',
+        googleId: googleId
       });
       
       const publicMsg = {
@@ -1127,6 +1128,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
