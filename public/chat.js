@@ -128,6 +128,9 @@ function handleGoogleLogin(response) {
     const googleId = payload.sub;
     const profilePic = payload.picture;
     
+    // Store the Google ID locally
+    userGoogleId = googleId;  // ADD THIS LINE
+    
     // Send to server
     socket.emit('google_login', { name, email, googleId, profilePic });
 }
@@ -1084,4 +1087,5 @@ confirmRestoreChatHistoryBtn.addEventListener('click', () => {
         console.error('Error parsing chat history JSON:', error);
     }
 });
+
 
