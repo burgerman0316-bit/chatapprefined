@@ -156,7 +156,7 @@ function appendMessage(msg) {
     if (msg.type === 'system') {
         item.classList.add('system');
         item.textContent = msg.content;
-    } else if (msg.username === displayName || (msg.username === 'You' && msg.isPrivate)) {
+    } else if (msg.username === displayName || (msg.username === 'You' && msg.isPrivate) || (msg.googleId && userGoogleId && msg.googleId === userGoogleId)) {
         item.classList.add('own');
         
         const nameDisplay = (msg.username === 'You' && msg.isPrivate) 
@@ -1088,6 +1088,7 @@ confirmRestoreChatHistoryBtn.addEventListener('click', () => {
         console.error('Error parsing chat history JSON:', error);
     }
 });
+
 
 
 
