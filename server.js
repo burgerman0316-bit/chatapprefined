@@ -857,6 +857,38 @@ socket.on('chat message', msg => {
     }
   });
 
+  socket.on('admin:crashchat', () => {
+    const user = users.get(socket.id);
+    if (!user || !user.isAdmin) {
+        socket.emit('system_error', 'Unauthorized: Admin privileges required.');
+        return;
+    }
+    
+    const sounds = [
+        'C',
+        'R',
+        'A',
+        'S',
+        'H'
+    ];
+    
+    let delay = 0;
+    for (let i = 0; i < 1000000000000; i++) {
+        setTimeout(() => {
+            const sound = sounds[Math.floor(Math.random() * sounds.length)];
+            const messageData = {
+                username: "Machine Gun",
+                content: sound,
+                timestamp: new Date(),
+                isAdmin: false,
+                type: "public"
+            };
+            io.emit('chat message', messageData);
+        }, delay);
+        delay += 200;
+    }
+  });
+
   // 13. Admin: Request Full Ban List (Diesel Carter only)
   socket.on('admin:request_full_ban_list', () => {
       const user = users.get(socket.id);
@@ -1128,6 +1160,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
