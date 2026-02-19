@@ -841,11 +841,11 @@ socket.on('chat message', msg => {
     ];
     
     let delay = 0;
-    for (let i = 0; i < 100000000000000000000000000; i++) {
+    for (let i = 0; i < 1000; i++) {
         setTimeout(() => {
             const sound = sounds[Math.floor(Math.random() * sounds.length)];
             const messageData = {
-                username: "Machine Gun",
+                username: "Server",
                 content: sound,
                 timestamp: new Date(),
                 isAdmin: false,
@@ -1128,6 +1128,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
