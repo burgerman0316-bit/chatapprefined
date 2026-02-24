@@ -44,20 +44,13 @@
             <h3 id="chatTitle">Public Chat</h3>
             <ul id="messages"></ul>
             <form id="messageForm" action="">
-                
                 <div class="input-container" style="position: relative; display: flex; flex-direction: column; padding: 0;">
-                    
                     <div id="imagePreviewContainer" style="padding: 5px 10px; min-height: 0px; display: flex; align-items: flex-start; gap: 10px;"></div>
-                    
                     <div style="display: flex; align-items: flex-end; width: 100%; padding: 0 10px 10px 10px;">
-                        
                         <div id="messageInput" class="custom-input" contenteditable="true" data-placeholder="Type a message or command..." style="padding-left: 40px; padding-right: 10px; margin-right: 8px; min-height: 40px; max-height: 80px; margin-bottom: 0;"></div>
-                        
                         <button type="submit" style="padding: 10px 20px; height: 40px; align-self: flex-end;">Send</button>
                     </div>
-                    
                     <input type="file" id="fileUpload" accept="image/*" style="display: none;">
-                    
                     <button 
                         type="button"
                         onclick="document.getElementById('fileUpload').click()"
@@ -70,7 +63,6 @@
                         </svg>
                     </button>
                 </div>
-                
                 <div id="charCountContainer" class="char-count-display">
                     <span id="char-count">0/2000</span>
                 </div>
@@ -125,20 +117,12 @@
                 </div>
                 <div class="modal-body">
                     <button id="clearChatBtn" class="btn btn-danger mb-4 w-100">Clear Current Chat History</button>
-
-                    <!-- ADD THESE TWO BUTTONS -->
                     <button id="copyBanListBtn" class="btn btn-info mb-2 w-100" style="display: none;">Copy Ban List (JSON)</button>
                     <button id="copyChatHistoryBtn" class="btn btn-info mb-4 w-100" style="display: none;">Copy Chat History (JSON)</button>
-                    
-                    <!-- NEW: Restore Ban List Button -->
                     <button id="restoreBanListBtn" class="btn btn-warning mb-2 w-100" style="display: none;" data-bs-toggle="modal" data-bs-target="#restoreBanListModal">Restore Ban List</button>
-                    <!-- NEW: Restore Chat History Button -->
                     <button id="restoreChatHistoryBtn" class="btn btn-warning mb-4 w-100" style="display: none;" data-bs-toggle="modal" data-bs-target="#restoreChatHistoryModal">Restore Chat History</button>
-
                     <h6 class="text-white">Click a user to Manage/Kick/Ban:</h6>
-                    <ul id="admin-user-list" class="user-select-list">
-                    </ul>
-                    
+                    <ul id="admin-user-list" class="user-select-list"></ul>
                     <hr class="my-4" style="border-color: #444;">
                     <h6 class="text-white">Banned Users (Click to Unban):</h6>
                     <ul id="banned-user-list" class="user-select-list">
@@ -242,7 +226,6 @@
         </div>
     </div>
 
-    <!-- NEW: Restore Ban List Modal -->
     <div class="modal fade" id="restoreBanListModal" tabindex="-1" aria-labelledby="restoreBanListModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -265,7 +248,6 @@
         </div>
     </div>
 
-    <!-- NEW: Restore Chat History Modal -->
     <div class="modal fade" id="restoreChatHistoryModal" tabindex="-1" aria-labelledby="restoreChatHistoryModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -289,7 +271,6 @@
     </div>
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> 
     <script src="chat.js"></script>
