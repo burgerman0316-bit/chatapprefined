@@ -9,14 +9,12 @@ const io = new Server(server, {
   cors: { origin: '*' }
 });
 
-// --- SETTINGS & DATA STRUCTURES ---
 const STAFF_ROOM = 'staff_room';
 const ADMIN_CHAT_ID = 'admin_chat'; 
 const MAX_HISTORY = 100;
 const CONTENT_MAX_CHARS = 2000; 
 const BANNED_WORDS = ['hitler', 'Albert'];
 
-// Staff accounts - NOTE: LoginName is the SECURE password/key
 const STAFF_LIST = [
   { loginName: 'Liam Stern', displayName: 'Liam Stern' },
   { loginName: 'Diesel Carter', displayName: 'Diesel Carter' },
@@ -25,7 +23,6 @@ const STAFF_LIST = [
   { loginName: 'Donovan Powell', displayName: 'Donovan Powell' }
 ];
 
-// Add a special property to track which users can only ban one person
 const LIMITED_BAN_USERS = {
   
 };
@@ -33,11 +30,10 @@ const LIMITED_BAN_USERS = {
 const chatHistory = [];
 const adminChatHistory = []; 
 
-const users = new Map(); // socket.id -> { displayName, secureName, isAdmin, ip, chatContext, googleId }
-const usernamesMap = new Map(); // lowercasedDisplayName -> socket.id
-const googleBanList = new Map(); // googleId -> { banUntil: Date, reason: string }
+const users = new Map(); 
+const usernamesMap = new Map(); 
+const googleBanList = new Map(); 
 
-// Anonymous name generator
 const FIRST_NAMES = [
   "Ethan", "Olivia", "Noah", "Sophia", "Liam",
   "Ava", "Mason", "Isabella", "Lucas", "Mia",
@@ -58,14 +54,11 @@ function generateAnonName() {
   return `${first} ${last}`;
 }
 
-
-// --- STATIC FILE SERVING ---
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// --- HELPER FUNCTIONS ---
 function cleanUpUser(socketId) {
     const user = users.get(socketId);
     if (!user) return;
@@ -83,12 +76,10 @@ function isNameReservedOrBanned(name) {
     if (!name) return true;
     const lower = name.trim().toLowerCase();
     
-    // 1. Check for banned words
     if (BANNED_WORDS.some(banned => lower.includes(banned.toLowerCase()))) {
         return true;
     }
     
-    // 2. Check for staff display names (Prevents regular users from taking 'Liam Stern')
     if (STAFF_LIST.some(s => s.displayName.toLowerCase() === lower)) {
         return true;
     }
@@ -114,7 +105,6 @@ function broadcastUserCount() {
   const userMap = {};
   users.forEach(user => {
     if (user.chatContext === 'public' || user.isAdmin) {
-        // FIX: Include isAdmin status for all clients to see who is a moderator
         userMap[user.displayName] = { 
             isAdmin: user.isAdmin,
             googleId: user.googleId,
@@ -125,7 +115,6 @@ function broadcastUserCount() {
 
   io.emit('user count', { userList: Object.keys(userMap).sort(), usersMap: userMap });
   
-  // This event remains for admin-only tools (it includes IP and secureName)
   io.to(STAFF_ROOM).emit('admin_user_map', Object.fromEntries(users));
 }
 
@@ -144,12 +133,10 @@ function getBanList() {
   return banArray;
 }
 
-// --- SOCKET LOGIC ---
 io.on('connection', socket => {
   const userIp = socket.handshake.address;
   console.log('Client connected:', socket.id, 'IP:', userIp);
 
-  // 0. Google Ban Check
   const user = users.get(socket.id);
   if (user && user.googleId) {
     const banEntry = googleBanList.get(user.googleId);
@@ -163,28 +150,23 @@ io.on('connection', socket => {
     }
   }
 
-  // Initial setup
   socket.emit('chat history', chatHistory);
   broadcastUserCount();
 
-  // 1. Google Login
   socket.on('google_login', userData => {
     const { name, email, googleId, profilePic } = userData;
     const lower = name.toLowerCase();
     
     cleanUpUser(socket.id);
     
-    // Check if user is admin
     const staffMember = STAFF_LIST.find(s => s.displayName.toLowerCase() === lower);
     
     if (staffMember) {
-      // Admin login
       if (usernamesMap.has(lower)) {
         socket.emit('name_rejected', `The staff display name '${staffMember.displayName}' is already in use.`);
         return;
       }
       
-      // SUCCESSFUL ADMIN LOGIN - Removed the restriction that blocked Blake and Ashaz
       users.set(socket.id, {
         displayName: staffMember.displayName,
         secureName: staffMember.loginName,
@@ -217,7 +199,6 @@ io.on('connection', socket => {
       socket.emit('ban_list_update', getBanList());
       broadcastUserCount();
     } else {
-      // Regular user login
       if (usernamesMap.has(lower)) {
         socket.emit('name_rejected', 'That name is already in use.');
         return;
@@ -228,7 +209,6 @@ io.on('connection', socket => {
         return;
       }
       
-      // Check if user is banned by Google ID
       const banEntry = googleBanList.get(googleId);
       if (banEntry && banEntry.banUntil > new Date()) {
         const banDurationMs = banEntry.banUntil.getTime() - new Date().getTime();
@@ -264,7 +244,6 @@ io.on('connection', socket => {
     }
   });
 
-  // 2. Name check & Login
   socket.on('check_staff_status', enteredName => {
     const name = (enteredName || '').trim();
     const lower = name.toLowerCase();
@@ -276,19 +255,16 @@ io.on('connection', socket => {
       return;
     }
     
-    // --- ADMIN LOGIN ATTEMPT (Requires secure key) ---
     const staffLoginAttempt = STAFF_LIST.find(s => s.loginName === name);
     if (staffLoginAttempt) {
         const staffName = staffLoginAttempt.displayName;
         const staffLower = staffName.toLowerCase();
 
-        // SUCCESSFUL ADMIN LOGIN - Removed the restriction that blocked Blake and Ashaz
         if (usernamesMap.has(staffLower)) {
             socket.emit('name_rejected', `The staff display name '${staffName}' is already in use.`);
             return;
         }
 
-        // SUCCESSFUL ADMIN LOGIN
         users.set(socket.id, { 
             displayName: staffName, 
             secureName: staffLoginAttempt.loginName, 
@@ -315,21 +291,17 @@ io.on('connection', socket => {
         broadcastUserCount();
         return;
     }
-    // --- END ADMIN LOGIN ATTEMPT ---
 
-    // Name uniqueness check (after admin attempt fails)
     if (usernamesMap.has(lower)) {
         socket.emit('name_rejected', 'That name is already in use (Name collision).');
         return;
     }
 
-    // Reserved/Banned name check (Non-admin name)
     if (isNameReservedOrBanned(name)) {
         socket.emit('name_rejected', 'That name is either reserved for staff or not allowed.');
         return;
     }
 
-    // Normal User Login Logic
     users.set(socket.id, { 
         displayName: name, 
         secureName: name, 
@@ -354,7 +326,6 @@ io.on('connection', socket => {
     broadcastUserCount();
   });
 
-  // 3. Change Chat Context (Admin only)
   socket.on('admin:set_context', newContext => {
       const user = users.get(socket.id);
       if (!user || !user.isAdmin || (newContext !== 'public' && newContext !== ADMIN_CHAT_ID)) {
@@ -370,7 +341,6 @@ io.on('connection', socket => {
       broadcastUserCount();
   });
 
-  // 4. Normal Chat Messages
 socket.on('chat message', msg => {
     const user = users.get(socket.id);
     if (!user) {
@@ -392,11 +362,10 @@ socket.on('chat message', msg => {
       timestamp: new Date(),
       isAdmin: user.isAdmin,
       profilePic: user.profilePic,
-      googleId: user.googleId,  // ADD THIS LINE
+      googleId: user.googleId,
       type: 'public'
     };
     
-    // If there's an image, include it in the message
     if (msg.image) {
       messageData.image = msg.image;
     }
@@ -415,7 +384,6 @@ socket.on('chat message', msg => {
     broadcastUserCount();
   });
   
-  // 5. Name Change (All Users)
   socket.on('name_change', newName => {
     const user = users.get(socket.id);
     if (!user) {
@@ -468,7 +436,6 @@ socket.on('chat message', msg => {
     broadcastUserCount();
   });
 
-  // 6. Admin: Go Anonymous 
   socket.on('admin:go_anonymous', () => {
       const user = users.get(socket.id);
       if (!user || !user.isAdmin) return;
@@ -510,7 +477,6 @@ socket.on('chat message', msg => {
       broadcastUserCount();
   });
 
-  // 7. Private Message
   socket.on('private message', msg => {
     const sender = users.get(socket.id);
     if (!sender || sender.chatContext !== 'public') {
@@ -557,7 +523,6 @@ socket.on('chat message', msg => {
     }
   });
 
-  // 8. Admin: Clear History
   socket.on('admin:clear_history', targetChatId => {
     const user = users.get(socket.id);
     if (!user || !user.isAdmin) {
@@ -586,7 +551,6 @@ socket.on('chat message', msg => {
     }
   });
 
-  // 9. Admin: Kick User (/kick, Button)
   socket.on('admin:kick_user', data => {
       const admin = users.get(socket.id); 
       const targetName = (data.targetName || '').trim();
@@ -596,7 +560,6 @@ socket.on('chat message', msg => {
           return;
       }
       
-      // Check if user has limited ban permissions
       if (LIMITED_BAN_USERS[admin.displayName]) {
           const allowedTarget = LIMITED_BAN_USERS[admin.displayName];
           if (targetName !== allowedTarget) {
@@ -636,7 +599,6 @@ socket.on('chat message', msg => {
       }
   });
   
-  // 10. Admin: Google Ban User
   socket.on('admin:google_ban_user', data => {
       const admin = users.get(socket.id);
       const targetName = (data.targetName || '').trim();
@@ -651,7 +613,6 @@ socket.on('chat message', msg => {
           return;
       }
       
-      // Check if user has limited ban permissions
       if (LIMITED_BAN_USERS[admin.displayName]) {
           const allowedTarget = LIMITED_BAN_USERS[admin.displayName];
           if (targetName !== allowedTarget) {
@@ -701,7 +662,6 @@ socket.on('chat message', msg => {
       broadcastUserCount();
   });
 
-  // 11. Admin: Unban User (FIXED - Better lookup)
   socket.on("admin:google_unban_user", (data) => {
       const admin = users.get(socket.id);
       const targetName = (data.targetName || "").trim();
@@ -715,11 +675,9 @@ socket.on('chat message', msg => {
       let finalGoogleId = targetGoogleId;
       let foundBannedName = null;
       
-      // If no Google ID provided, try to find it by name in ban list
       if (!finalGoogleId && targetName) {
           const targetLower = targetName.toLowerCase();
           
-          // Search through ban list for matching name
           for (const [googleId, banInfo] of googleBanList.entries()) {
               if (banInfo.bannedName && banInfo.bannedName.toLowerCase() === targetLower) {
                   finalGoogleId = googleId;
@@ -728,7 +686,6 @@ socket.on('chat message', msg => {
               }
           }
           
-          // If still not found, check currently connected users
           if (!finalGoogleId) {
               for (const [socketId, user] of users.entries()) {
                   if (user.displayName.toLowerCase() === targetLower && user.googleId) {
@@ -762,14 +719,12 @@ socket.on('chat message', msg => {
           io.emit("chat message", unbanMsg);
           socket.emit("system_alert", `Successfully unbanned ${unbannedName}.`);
           
-          // Send updated banlist to all admins
           io.to(STAFF_ROOM).emit("ban_list_update", getBanList());
       } else {
           socket.emit("system_error", `User '${targetName}' is not currently banned.`);
       }
   });
 
-  // 11B. Admin: Rename User (with auto-save)
   socket.on('admin:rename_user', (data) => {
     const admin = users.get(socket.id);
     const oldName = (data.oldName || '').trim();
@@ -784,7 +739,6 @@ socket.on('chat message', msg => {
       return;
     }
   
-    // Find the target user
     const targetSocketId = [...users.entries()]
       .find(([_, user]) => user.displayName.toLowerCase() === oldName.toLowerCase())?.[0];
   
@@ -806,13 +760,11 @@ socket.on('chat message', msg => {
       return;
     }
   
-    // Perform rename
     usernamesMap.delete(oldName.toLowerCase());
     usernamesMap.set(newLower, targetSocketId);
     targetUser.displayName = newName;
     users.set(targetSocketId, targetUser);
   
-    // Notify everyone
     const renameMsg = {
       username: 'System',
       content: `Moderator ${admin.displayName} renamed '${oldName}' to '${newName}'.`,
@@ -828,7 +780,6 @@ socket.on('chat message', msg => {
     broadcastUserCount();
   });
 
-  // 12. Admin: Machine Gun Sound
   socket.on('admin:machinegun', () => {
     const user = users.get(socket.id);
     if (!user || !user.isAdmin) {
@@ -857,7 +808,6 @@ socket.on('chat message', msg => {
     }
   });
 
-  // 13. Admin: Request Full Ban List (Diesel Carter only)
   socket.on('admin:request_full_ban_list', () => {
       const user = users.get(socket.id);
       if (!user || !user.isAdmin || user.displayName !== 'Diesel Carter') {
@@ -878,7 +828,6 @@ socket.on('chat message', msg => {
       socket.emit('admin:ban_list_json', banListArray);
   });
 
-  // 14. Admin: Request Full Chat History (Diesel Carter only)
   socket.on('admin:request_full_chat_history', () => {
       const user = users.get(socket.id);
       if (!user || !user.isAdmin || user.displayName !== 'Diesel Carter') {
@@ -886,7 +835,6 @@ socket.on('chat message', msg => {
           return;
       }
       
-      // Sanitize chat history - Convert dates but KEEP images and profile pics
       const sanitizedPublicChat = chatHistory.map(msg => {
           const sanitized = {
               username: msg.username,
@@ -897,12 +845,10 @@ socket.on('chat message', msg => {
               isPrivate: msg.isPrivate || false
           };
           
-          // Keep the actual image data
           if (msg.image) {
               sanitized.image = msg.image;
           }
           
-          // Keep the actual profile pic URL
           if (msg.profilePic) {
               sanitized.profilePic = msg.profilePic;
           }
@@ -920,12 +866,10 @@ socket.on('chat message', msg => {
               isPrivate: msg.isPrivate || false
           };
           
-          // Keep the actual image data
           if (msg.image) {
               sanitized.image = msg.image;
           }
           
-          // Keep the actual profile pic URL
           if (msg.profilePic) {
               sanitized.profilePic = msg.profilePic;
           }
@@ -942,7 +886,6 @@ socket.on('chat message', msg => {
       socket.emit('admin:chat_history_json', fullHistory);
   });
 
-  // 15. Admin: Request Ban List
   socket.on('admin:request_ban_list', () => {
       const user = users.get(socket.id);
       if (!user || !user.isAdmin) return;
@@ -950,7 +893,6 @@ socket.on('chat message', msg => {
       socket.emit('ban_list_update', getBanList());
   });
 
-  // 16. Admin: Restore Ban List (Diesel Carter only)
   socket.on('admin:restore_ban_list', (banListData) => {
       const user = users.get(socket.id);
       if (!user || !user.isAdmin || user.displayName !== 'Diesel Carter') {
@@ -963,12 +905,12 @@ socket.on('chat message', msg => {
           return;
       }
 
-      googleBanList.clear(); // Clear existing bans
+      googleBanList.clear(); 
       let restoredCount = 0;
       banListData.forEach(ban => {
           if (ban.googleId && ban.banUntil && ban.reason) {
               const banUntilDate = new Date(ban.banUntil);
-              if (!isNaN(banUntilDate.getTime())) { // Check if date is valid
+              if (!isNaN(banUntilDate.getTime())) { 
                   googleBanList.set(ban.googleId, {
                       banUntil: banUntilDate,
                       reason: ban.reason,
@@ -980,11 +922,10 @@ socket.on('chat message', msg => {
       });
 
       socket.emit('system_alert', `Successfully restored ${restoredCount} ban entries.`);
-      io.to(STAFF_ROOM).emit('ban_list_update', getBanList()); // Update all admins
-      broadcastUserCount(); // User count might change if banned users were online
+      io.to(STAFF_ROOM).emit('ban_list_update', getBanList()); 
+      broadcastUserCount(); 
   });
 
-  // 17. Admin: Restore Chat History (Diesel Carter only)
   socket.on('admin:restore_chat_history', (historyData) => {
       const user = users.get(socket.id);
       if (!user || !user.isAdmin || user.displayName !== 'Diesel Carter') {
@@ -1025,12 +966,10 @@ socket.on('chat message', msg => {
                   isPrivate: msg.isPrivate || false
               };
               
-              // Restore profile pic if it exists
               if (msg.profilePic) {
                   restoredMsg.profilePic = msg.profilePic;
               }
               
-              // Restore image if it exists (keep the full image object)
               if (msg.image && msg.image.type === 'image') {
                   restoredMsg.image = msg.image;
               }
@@ -1053,12 +992,10 @@ socket.on('chat message', msg => {
                   isPrivate: msg.isPrivate || false
               };
               
-              // Restore profile pic if it exists
               if (msg.profilePic) {
                   restoredMsg.profilePic = msg.profilePic;
               }
               
-              // Restore image if it exists (keep the full image object)
               if (msg.image && msg.image.type === 'image') {
                   restoredMsg.image = msg.image;
               }
@@ -1070,7 +1007,6 @@ socket.on('chat message', msg => {
 
       console.log(`Restored ${publicCount} public and ${adminCount} admin messages`);
 
-      // Send system message FIRST
       const restoreMsg = {
           username: 'System',
           content: `Chat history was restored by Moderator ${user.displayName}.`,
@@ -1079,7 +1015,6 @@ socket.on('chat message', msg => {
           type: 'system'
       };
       
-      // Broadcast the restored history to ALL users
       users.forEach((userData, socketId) => {
           const targetSocket = io.sockets.sockets.get(socketId);
           if (targetSocket) {
@@ -1091,16 +1026,13 @@ socket.on('chat message', msg => {
           }
       });
       
-      // Send confirmation
       socket.emit('system_alert', `Successfully restored chat history (${publicCount} public, ${adminCount} admin messages).`);
       
-      // Add restore message to history and broadcast it
       pushHistory(restoreMsg, 'public');
       io.emit('chat message', restoreMsg);
       io.to(STAFF_ROOM).emit('admin chat message', restoreMsg);
   });
 
-  // 18. Disconnect 
   socket.on('disconnect', () => {
     const user = users.get(socket.id);
     if (!user) return;
@@ -1128,14 +1060,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
 });
-
-
-
-
-
-
-
-
-
-
-
